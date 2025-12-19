@@ -438,24 +438,24 @@
 
 ### Server Actions for User Story 6
 
-- [ ] T211 [US6] Implement getTenantAction in src/app/actions/tenants.ts
-- [ ] T212 [US6] Implement updateTenantAction in src/app/actions/tenants.ts (office name, currency, settings)
-- [ ] T213 [US6] Implement getTenantUsersAction in src/app/actions/tenants.ts
+- [X] T211 [US6] Implement getTenantAction in src/app/actions/tenants.ts
+- [X] T212 [US6] Implement updateTenantAction in src/app/actions/tenants.ts (office name, currency, settings)
+- [X] T213 [US6] Implement getTenantUsersAction in src/app/actions/tenants.ts
 
 ### UI Components for User Story 6
 
-- [ ] T214 [US6] Create TenantSettings component in src/components/features/settings/tenant-settings.tsx
-- [ ] T215 [P] [US6] Create CurrencyDisplay component in src/components/ui/currency-display.tsx (uses tenant currency)
-- [ ] T216 [P] [US6] Create TenantBranding component in src/components/features/settings/tenant-branding.tsx
+- [X] T214 [US6] Create TenantSettings component in src/components/features/settings/tenant-settings.tsx
+- [X] T215 [P] [US6] Create CurrencyDisplay component in src/components/ui/currency-display.tsx (uses tenant currency)
+- [X] T216 [P] [US6] Create TenantBranding component in src/components/features/settings/tenant-branding.tsx
 
 ### Pages for User Story 6
 
-- [ ] T217 [US6] Create workspace settings page in src/app/[locale]/(dashboard)/settings/workspace/page.tsx
+- [X] T217 [US6] Create workspace settings page in src/app/[locale]/(dashboard)/settings/workspace/page.tsx
 
 ### Data Isolation Verification
 
-- [ ] T218 [US6] Add tenant ID to all Firestore queries in hooks (verify isolation)
-- [ ] T219 [US6] Update all server actions to verify tenant context from auth claims
+- [X] T218 [US6] Add tenant ID to all Firestore queries in hooks (verify isolation)
+- [X] T219 [US6] Update all server actions to verify tenant context from auth claims
 
 **Checkpoint**: User Story 6 - Multi-tenant isolation is fully functional and testable independently
 
@@ -469,13 +469,13 @@
 
 ### Implementation for User Story 8
 
-- [ ] T220 [US8] Complete Arabic translations in src/messages/ar.json for all features
-- [ ] T221 [P] [US8] Complete English translations in src/messages/en.json for all features
-- [ ] T222 [US8] Implement language preference persistence in user profile
-- [ ] T223 [P] [US8] Implement theme preference persistence in user profile
-- [ ] T224 [US8] Create RTL-aware icon components for directional icons in src/components/ui/rtl-icon.tsx
-- [ ] T225 [US8] Verify all components handle RTL layout correctly
-- [ ] T226 [P] [US8] Test dark theme across all components
+- [X] T220 [US8] Complete Arabic translations in src/messages/ar.json for all features
+- [X] T221 [P] [US8] Complete English translations in src/messages/en.json for all features
+- [X] T222 [US8] Implement language preference persistence in user profile
+- [X] T223 [P] [US8] Implement theme preference persistence in user profile
+- [X] T224 [US8] Create RTL-aware icon components for directional icons in src/components/ui/rtl-icon.tsx
+- [X] T225 [US8] Verify all components handle RTL layout correctly
+- [X] T226 [P] [US8] Test dark theme across all components
 
 **Checkpoint**: User Story 8 - Bilingual and theme support is fully functional and testable independently
 
