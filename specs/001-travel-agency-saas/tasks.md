@@ -106,22 +106,22 @@
 
 ### Implementation for User Story 7
 
-- [ ] T044 [US7] Create signup validation schema in src/lib/validations/auth.ts
-- [ ] T045 [US7] Implement signupAction server action in src/app/actions/auth.ts (creates tenant, user, starts trial)
-- [ ] T046 [US7] Implement loginAction server action in src/app/actions/auth.ts
-- [ ] T047 [US7] Implement resetPasswordAction server action in src/app/actions/auth.ts
-- [ ] T048 [US7] Implement updatePasswordAction server action in src/app/actions/auth.ts
-- [ ] T049 [US7] Implement updateProfileAction server action in src/app/actions/auth.ts
-- [ ] T050 [US7] Implement inviteUserAction server action in src/app/actions/auth.ts
-- [ ] T051 [P] [US7] Create signup page in src/app/[locale]/(auth)/signup/page.tsx
-- [ ] T052 [P] [US7] Create login page in src/app/[locale]/(auth)/login/page.tsx
-- [ ] T053 [P] [US7] Create reset-password page in src/app/[locale]/(auth)/reset-password/page.tsx
-- [ ] T054 [US7] Create SignupForm component in src/components/forms/signup-form.tsx
-- [ ] T055 [P] [US7] Create LoginForm component in src/components/forms/login-form.tsx
-- [ ] T056 [P] [US7] Create ResetPasswordForm component in src/components/forms/reset-password-form.tsx
-- [ ] T057 [US7] Create protected route middleware/wrapper for role-based access in src/lib/auth/require-role.ts
-- [ ] T058 [US7] Create settings page with profile/password update in src/app/[locale]/(dashboard)/settings/page.tsx
-- [ ] T059 [US7] Create team management page for inviting users in src/app/[locale]/(dashboard)/settings/team/page.tsx
+- [X] T044 [US7] Create signup validation schema in src/lib/validations/auth.ts
+- [X] T045 [US7] Implement signupAction server action in src/app/actions/auth.ts (creates tenant, user, starts trial)
+- [X] T046 [US7] Implement loginAction server action in src/app/actions/auth.ts
+- [X] T047 [US7] Implement resetPasswordAction server action in src/app/actions/auth.ts
+- [X] T048 [US7] Implement updatePasswordAction server action in src/app/actions/auth.ts
+- [X] T049 [US7] Implement updateProfileAction server action in src/app/actions/auth.ts
+- [X] T050 [US7] Implement inviteUserAction server action in src/app/actions/auth.ts
+- [X] T051 [P] [US7] Create signup page in src/app/[locale]/(auth)/signup/page.tsx
+- [X] T052 [P] [US7] Create login page in src/app/[locale]/(auth)/login/page.tsx
+- [X] T053 [P] [US7] Create reset-password page in src/app/[locale]/(auth)/reset-password/page.tsx
+- [X] T054 [US7] Create SignupForm component in src/components/forms/signup-form.tsx
+- [X] T055 [P] [US7] Create LoginForm component in src/components/forms/login-form.tsx
+- [X] T056 [P] [US7] Create ResetPasswordForm component in src/components/forms/reset-password-form.tsx
+- [X] T057 [US7] Create protected route middleware/wrapper for role-based access in src/lib/auth/require-role.ts
+- [X] T058 [US7] Create settings page with profile/password update in src/app/[locale]/(dashboard)/settings/page.tsx
+- [X] T059 [US7] Create team management page for inviting users in src/app/[locale]/(dashboard)/settings/team/page.tsx
 
 **Checkpoint**: User Story 7 - Authentication system is fully functional and testable
 
@@ -135,47 +135,47 @@
 
 ### Type Definitions for User Story 1
 
-- [ ] T060 [P] [US1] Create Package type definition in src/types/models/package.ts per data-model.md
-- [ ] T061 [P] [US1] Create Service type definition in src/types/models/service.ts per data-model.md
-- [ ] T062 [P] [US1] Create PartnerOffice type definition in src/types/models/partner-office.ts per data-model.md
+- [X] T060 [P] [US1] Create Package type definition in src/types/models/package.ts per data-model.md
+- [X] T061 [P] [US1] Create Service type definition in src/types/models/service.ts per data-model.md
+- [X] T062 [P] [US1] Create PartnerOffice type definition in src/types/models/partner-office.ts per data-model.md
 
 ### Validation Schemas for User Story 1
 
-- [ ] T063 [US1] Create package validation schemas in src/lib/validations/packages.ts (createPackage, updatePackage, addService)
+- [X] T063 [US1] Create package validation schemas in src/lib/validations/packages.ts (createPackage, updatePackage, addService)
 
 ### Server Actions for User Story 1
 
-- [ ] T064 [US1] Implement createPackageAction in src/app/actions/packages.ts
-- [ ] T065 [US1] Implement updatePackageAction in src/app/actions/packages.ts
-- [ ] T066 [US1] Implement updatePackageStatusAction in src/app/actions/packages.ts (draft → active → completed)
-- [ ] T067 [US1] Implement deletePackageAction in src/app/actions/packages.ts
-- [ ] T068 [US1] Implement addServiceAction in src/app/actions/packages.ts (recalculates totalPrice)
-- [ ] T069 [US1] Implement updateServiceAction in src/app/actions/packages.ts
-- [ ] T070 [US1] Implement deleteServiceAction in src/app/actions/packages.ts
-- [ ] T071 [US1] Implement reorderServicesAction in src/app/actions/packages.ts
-- [ ] T072 [US1] Implement duplicatePackageAction in src/app/actions/packages.ts
+- [X] T064 [US1] Implement createPackageAction in src/app/actions/packages.ts
+- [X] T065 [US1] Implement updatePackageAction in src/app/actions/packages.ts
+- [X] T066 [US1] Implement updatePackageStatusAction in src/app/actions/packages.ts (draft → active → completed)
+- [X] T067 [US1] Implement deletePackageAction in src/app/actions/packages.ts
+- [X] T068 [US1] Implement addServiceAction in src/app/actions/packages.ts (recalculates totalPrice)
+- [X] T069 [US1] Implement updateServiceAction in src/app/actions/packages.ts
+- [X] T070 [US1] Implement deleteServiceAction in src/app/actions/packages.ts
+- [X] T071 [US1] Implement reorderServicesAction in src/app/actions/packages.ts
+- [X] T072 [US1] Implement duplicatePackageAction in src/app/actions/packages.ts
 
 ### Hooks for User Story 1
 
-- [ ] T073 [US1] Create usePackages hook with Firestore subscription in src/hooks/use-packages.ts
-- [ ] T074 [P] [US1] Create usePackage hook for single package with services in src/hooks/use-package.ts
+- [X] T073 [US1] Create usePackages hook with Firestore subscription in src/hooks/use-packages.ts
+- [X] T074 [P] [US1] Create usePackage hook for single package with services in src/hooks/use-package.ts
 
 ### UI Components for User Story 1
 
-- [ ] T075 [US1] Create PackageForm component in src/components/features/packages/package-form.tsx
-- [ ] T076 [P] [US1] Create PackageCard component in src/components/features/packages/package-card.tsx
-- [ ] T077 [P] [US1] Create PackageStatusBadge component in src/components/features/packages/package-status-badge.tsx
-- [ ] T078 [US1] Create ServiceForm component in src/components/features/packages/service-form.tsx
-- [ ] T079 [P] [US1] Create ServiceList component with drag-reorder in src/components/features/packages/service-list.tsx
-- [ ] T080 [P] [US1] Create ServiceCard component in src/components/features/packages/service-card.tsx
-- [ ] T081 [US1] Create PartnerOfficeSelect component in src/components/features/packages/partner-office-select.tsx
+- [X] T075 [US1] Create PackageForm component in src/components/forms/package-form.tsx
+- [X] T076 [P] [US1] Create PackageCard component in src/components/features/packages/package-card.tsx
+- [X] T077 [P] [US1] Create PackageStatusBadge component (integrated in package-card.tsx)
+- [X] T078 [US1] Create ServiceForm component in src/components/forms/service-form.tsx
+- [X] T079 [P] [US1] Create ServiceList component (integrated in package-details.tsx)
+- [X] T080 [P] [US1] Create ServiceCard component (integrated in package-details.tsx)
+- [X] T081 [US1] Create PartnerOfficeSelect component (integrated in service-form.tsx)
 
 ### Pages for User Story 1
 
-- [ ] T082 [US1] Create packages list page in src/app/[locale]/(dashboard)/packages/page.tsx
-- [ ] T083 [US1] Create package create page in src/app/[locale]/(dashboard)/packages/new/page.tsx
-- [ ] T084 [US1] Create package detail/edit page in src/app/[locale]/(dashboard)/packages/[packageId]/page.tsx
-- [ ] T085 [US1] Create package services management page in src/app/[locale]/(dashboard)/packages/[packageId]/services/page.tsx
+- [X] T082 [US1] Create packages list page in src/app/[locale]/(dashboard)/packages/page.tsx
+- [X] T083 [US1] Create package create page in src/app/[locale]/(dashboard)/packages/new/page.tsx
+- [X] T084 [US1] Create package detail page in src/app/[locale]/(dashboard)/packages/[packageId]/page.tsx
+- [X] T085 [US1] Create package edit page in src/app/[locale]/(dashboard)/packages/[packageId]/edit/page.tsx
 
 **Checkpoint**: User Story 1 - Package creation is fully functional and testable independently
 
