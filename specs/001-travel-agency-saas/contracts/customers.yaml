@@ -1,0 +1,635 @@
+# Customers API Contract
+# Travel Agency SaaS - Customer Management
+
+openapi: 3.1.0
+info:
+  title: Customers API
+  version: 1.0.0
+  description: |
+    Customer creation, profile management, and document handling.
+    Server Actions in `src/app/actions/customers.ts`
+
+components:
+  schemas:
+    CreateCustomerInput:
+      type: object
+      required:
+        - firstName
+        - lastName
+        - email
+        - phone
+      properties:
+        firstName:
+          type: string
+          minLength: 1
+          maxLength: 100
+        lastName:
+          type: string
+          minLength: 1
+          maxLength: 100
+        email:
+          type: string
+          format: email
+        phone:
+          type: string
+        nationality:
+          type: string
+          description: Country code (e.g., SA, EG, SD)
+        nationalId:
+          type: string
+        address:
+          type: object
+          properties:
+            street:
+              type: string
+            city:
+              type: string
+            country:
+              type: string
+            postalCode:
+              type: string
+        preferredLanguage:
+          type: string
+          enum: [ar, en]
+          default: ar
+        notes:
+          type: string
+        tags:
+          type: array
+          items:
+            type: string
+
+    UpdateCustomerInput:
+      type: object
+      properties:
+        firstName:
+          type: string
+        lastName:
+          type: string
+        email:
+          type: string
+          format: email
+        phone:
+          type: string
+        nationality:
+          type: string
+        nationalId:
+          type: string
+        address:
+          type: object
+          properties:
+            street:
+              type: string
+            city:
+              type: string
+            country:
+              type: string
+            postalCode:
+              type: string
+        preferredLanguage:
+          type: string
+          enum: [ar, en]
+        notes:
+          type: string
+        tags:
+          type: array
+          items:
+            type: string
+
+    Customer:
+      type: object
+      properties:
+        id:
+          type: string
+        firstName:
+          type: string
+        lastName:
+          type: string
+        fullName:
+          type: string
+          description: Computed from firstName + lastName
+        email:
+          type: string
+        phone:
+          type: string
+        nationality:
+          type: string
+        nationalId:
+          type: string
+        passport:
+          type: object
+          properties:
+            passportNumber:
+              type: string
+            fullName:
+              type: string
+            expiryDate:
+              type: string
+              format: date
+            nationality:
+              type: string
+            manuallyVerified:
+              type: boolean
+        address:
+          type: object
+          properties:
+            street:
+              type: string
+            city:
+              type: string
+            country:
+              type: string
+            postalCode:
+              type: string
+        preferredLanguage:
+          type: string
+        balance:
+          type: number
+          description: Positive = owes, Negative = credit
+        bookingCount:
+          type: integer
+        lastBookingDate:
+          type: string
+          format: date-time
+        tags:
+          type: array
+          items:
+            type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    CustomerDocument:
+      type: object
+      properties:
+        id:
+          type: string
+        type:
+          type: string
+          enum: [passport, visa, photo, vaccination, other]
+        name:
+          type: string
+        url:
+          type: string
+          format: uri
+        uploadedAt:
+          type: string
+          format: date-time
+
+    CustomerWithDetails:
+      allOf:
+        - $ref: '#/components/schemas/Customer'
+        - type: object
+          properties:
+            documents:
+              type: array
+              items:
+                $ref: '#/components/schemas/CustomerDocument'
+            bookings:
+              type: array
+              items:
+                type: object
+                properties:
+                  id:
+                    type: string
+                  bookingNumber:
+                    type: string
+                  packageName:
+                    type: string
+                  status:
+                    type: string
+                  totalAmount:
+                    type: number
+                  bookingDate:
+                    type: string
+                    format: date-time
+            invoices:
+              type: array
+              items:
+                type: object
+                properties:
+                  id:
+                    type: string
+                  invoiceNumber:
+                    type: string
+                  total:
+                    type: number
+                  balance:
+                    type: number
+                  status:
+                    type: string
+                  issueDate:
+                    type: string
+                    format: date-time
+
+paths:
+  /customers:
+    get:
+      operationId: listCustomers
+      summary: List customers
+      security:
+        - firebase: []
+      parameters:
+        - name: search
+          in: query
+          schema:
+            type: string
+          description: Search by name, email, phone, passport number
+        - name: hasBalance
+          in: query
+          schema:
+            type: boolean
+          description: Filter customers with outstanding balance
+        - name: tag
+          in: query
+          schema:
+            type: string
+        - name: sortBy
+          in: query
+          schema:
+            type: string
+            enum: [name, createdAt, lastBookingDate, balance]
+            default: createdAt
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        '200':
+          description: Customer list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  customers:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Customer'
+                  nextCursor:
+                    type: string
+                  totalCount:
+                    type: integer
+
+    post:
+      operationId: createCustomer
+      summary: Create new customer
+      description: |
+        Server Action: `createCustomerAction`
+        Checks for duplicate email/phone.
+      security:
+        - firebase: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateCustomerInput'
+      responses:
+        '200':
+          description: Customer created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      customerId:
+                        type: string
+        '400':
+          description: Duplicate email or phone
+
+  /customers/{customerId}:
+    parameters:
+      - name: customerId
+        in: path
+        required: true
+        schema:
+          type: string
+
+    get:
+      operationId: getCustomer
+      summary: Get customer details
+      security:
+        - firebase: []
+      parameters:
+        - name: include
+          in: query
+          schema:
+            type: string
+          description: Comma-separated list (documents, bookings, invoices)
+      responses:
+        '200':
+          description: Customer with optional related data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CustomerWithDetails'
+        '404':
+          description: Customer not found
+
+    patch:
+      operationId: updateCustomer
+      summary: Update customer
+      description: |
+        Server Action: `updateCustomerAction`
+      security:
+        - firebase: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateCustomerInput'
+      responses:
+        '200':
+          description: Customer updated
+
+    delete:
+      operationId: deleteCustomer
+      summary: Delete customer
+      description: |
+        Server Action: `deleteCustomerAction`
+        Only allowed if no bookings exist.
+        Soft delete if bookings exist.
+      security:
+        - firebase: []
+      responses:
+        '200':
+          description: Customer deleted
+        '400':
+          description: Cannot delete customer with bookings
+
+  /customers/{customerId}/passport:
+    parameters:
+      - name: customerId
+        in: path
+        required: true
+        schema:
+          type: string
+
+    post:
+      operationId: updatePassport
+      summary: Update passport data
+      description: |
+        Server Action: `updateCustomerPassportAction`
+        Used after OCR or manual entry.
+      security:
+        - firebase: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - passportNumber
+                - fullName
+                - expiryDate
+                - nationality
+              properties:
+                passportNumber:
+                  type: string
+                fullName:
+                  type: string
+                dateOfBirth:
+                  type: string
+                  format: date
+                expiryDate:
+                  type: string
+                  format: date
+                nationality:
+                  type: string
+                gender:
+                  type: string
+                  enum: [M, F]
+                issuingCountry:
+                  type: string
+                manuallyVerified:
+                  type: boolean
+                  default: true
+      responses:
+        '200':
+          description: Passport updated
+
+  /customers/{customerId}/documents:
+    parameters:
+      - name: customerId
+        in: path
+        required: true
+        schema:
+          type: string
+
+    get:
+      operationId: listCustomerDocuments
+      summary: List customer documents
+      security:
+        - firebase: []
+      responses:
+        '200':
+          description: Document list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  documents:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/CustomerDocument'
+
+    post:
+      operationId: uploadCustomerDocument
+      summary: Upload customer document
+      description: |
+        Server Action: `uploadCustomerDocumentAction`
+        Triggers OCR for passport type.
+      security:
+        - firebase: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - type
+                - file
+              properties:
+                type:
+                  type: string
+                  enum: [passport, visa, photo, vaccination, other]
+                file:
+                  type: string
+                  format: binary
+                name:
+                  type: string
+      responses:
+        '200':
+          description: Document uploaded
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      documentId:
+                        type: string
+                      url:
+                        type: string
+                      ocrResult:
+                        type: object
+                        description: Passport data if type is passport
+
+  /customers/{customerId}/documents/{documentId}:
+    parameters:
+      - name: customerId
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: documentId
+        in: path
+        required: true
+        schema:
+          type: string
+
+    delete:
+      operationId: deleteCustomerDocument
+      summary: Delete customer document
+      description: |
+        Server Action: `deleteCustomerDocumentAction`
+        Removes from Firebase Storage and Firestore.
+      security:
+        - firebase: []
+      responses:
+        '200':
+          description: Document deleted
+
+  /customers/{customerId}/link-user:
+    parameters:
+      - name: customerId
+        in: path
+        required: true
+        schema:
+          type: string
+
+    post:
+      operationId: linkCustomerToUser
+      summary: Link customer to user account
+      description: |
+        Server Action: `linkCustomerToUserAction`
+        Associates customer record with a registered user.
+      security:
+        - firebase: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - userId
+              properties:
+                userId:
+                  type: string
+      responses:
+        '200':
+          description: Customer linked to user
+
+  /customers/check-duplicate:
+    post:
+      operationId: checkDuplicate
+      summary: Check for duplicate customer
+      description: |
+        Server Action: `checkDuplicateCustomerAction`
+        Checks if email, phone, or passport exists.
+      security:
+        - firebase: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                phone:
+                  type: string
+                passportNumber:
+                  type: string
+      responses:
+        '200':
+          description: Duplicate check result
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  hasDuplicate:
+                    type: boolean
+                  existingCustomerId:
+                    type: string
+                  matchedFields:
+                    type: array
+                    items:
+                      type: string
+
+  /customers/merge:
+    post:
+      operationId: mergeCustomers
+      summary: Merge duplicate customers
+      description: |
+        Server Action: `mergeCustomersAction`
+        Combines two customer records.
+        Requires: admin role
+      security:
+        - firebase: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - sourceCustomerId
+                - targetCustomerId
+              properties:
+                sourceCustomerId:
+                  type: string
+                  description: Customer to merge from (will be deleted)
+                targetCustomerId:
+                  type: string
+                  description: Customer to merge into (will be kept)
+      responses:
+        '200':
+          description: Customers merged
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      mergedCustomerId:
+                        type: string
+                      bookingsMoved:
+                        type: integer
+                      invoicesMoved:
+                        type: integer

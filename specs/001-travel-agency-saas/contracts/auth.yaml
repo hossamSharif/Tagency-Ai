@@ -1,0 +1,348 @@
+# Authentication API Contract
+# Travel Agency SaaS - Firebase Authentication
+
+openapi: 3.1.0
+info:
+  title: Authentication API
+  version: 1.0.0
+  description: |
+    Authentication operations using Firebase Auth.
+    Implemented as Server Actions in `src/app/actions/auth.ts`
+
+servers:
+  - url: /actions
+    description: Next.js Server Actions
+
+components:
+  schemas:
+    SignupInput:
+      type: object
+      required:
+        - email
+        - password
+        - officeName
+        - phone
+        - currency
+      properties:
+        email:
+          type: string
+          format: email
+          description: Office admin email
+        password:
+          type: string
+          minLength: 8
+          description: At least 8 characters
+        officeName:
+          type: string
+          minLength: 2
+          maxLength: 200
+          description: Travel agency name
+        phone:
+          type: string
+          description: Contact phone number
+        currency:
+          type: string
+          enum: [USD, SAR, EUR, SDG, AED, EGP, GBP]
+          description: Office operating currency
+        language:
+          type: string
+          enum: [ar, en]
+          default: ar
+
+    LoginInput:
+      type: object
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+
+    ResetPasswordInput:
+      type: object
+      required:
+        - email
+      properties:
+        email:
+          type: string
+          format: email
+
+    UpdatePasswordInput:
+      type: object
+      required:
+        - currentPassword
+        - newPassword
+      properties:
+        currentPassword:
+          type: string
+        newPassword:
+          type: string
+          minLength: 8
+
+    InviteUserInput:
+      type: object
+      required:
+        - email
+        - role
+      properties:
+        email:
+          type: string
+          format: email
+        role:
+          type: string
+          enum: [admin, staff]
+        name:
+          type: string
+
+    UserProfile:
+      type: object
+      properties:
+        id:
+          type: string
+        email:
+          type: string
+        displayName:
+          type: string
+        role:
+          type: string
+          enum: [owner, admin, staff, customer, partner]
+        tenantId:
+          type: string
+        language:
+          type: string
+        theme:
+          type: string
+
+    ActionSuccess:
+      type: object
+      properties:
+        success:
+          type: boolean
+          const: true
+        data:
+          type: object
+        message:
+          type: string
+
+    ActionError:
+      type: object
+      properties:
+        error:
+          type: string
+        fieldErrors:
+          type: object
+          additionalProperties:
+            type: array
+            items:
+              type: string
+
+paths:
+  /signup:
+    post:
+      operationId: signup
+      summary: Register new office with trial
+      description: |
+        Creates new tenant, admin user, and starts 7-day trial.
+        Server Action: `signupAction`
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SignupInput'
+      responses:
+        '200':
+          description: Signup successful, verification email sent
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ActionSuccess'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          userId:
+                            type: string
+                          tenantId:
+                            type: string
+                          trialEndsAt:
+                            type: string
+                            format: date-time
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActionError'
+
+  /login:
+    post:
+      operationId: login
+      summary: Authenticate user
+      description: |
+        Firebase signInWithEmailAndPassword.
+        Client-side: `signInWithEmailAndPassword(auth, email, password)`
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginInput'
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ActionSuccess'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/UserProfile'
+        '401':
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActionError'
+
+  /logout:
+    post:
+      operationId: logout
+      summary: Sign out user
+      description: |
+        Firebase signOut.
+        Client-side: `signOut(auth)`
+      responses:
+        '200':
+          description: Logout successful
+
+  /reset-password:
+    post:
+      operationId: resetPassword
+      summary: Send password reset email
+      description: |
+        Firebase sendPasswordResetEmail.
+        Server Action: `resetPasswordAction`
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResetPasswordInput'
+      responses:
+        '200':
+          description: Reset email sent (always returns success for security)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActionSuccess'
+
+  /update-password:
+    post:
+      operationId: updatePassword
+      summary: Change current password
+      description: |
+        Requires reauthentication.
+        Server Action: `updatePasswordAction`
+      security:
+        - firebase: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdatePasswordInput'
+      responses:
+        '200':
+          description: Password updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActionSuccess'
+        '401':
+          description: Invalid current password
+
+  /invite-user:
+    post:
+      operationId: inviteUser
+      summary: Invite staff member to office
+      description: |
+        Creates pending user, sends invitation email.
+        Server Action: `inviteUserAction`
+        Requires: owner or admin role
+      security:
+        - firebase: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InviteUserInput'
+      responses:
+        '200':
+          description: Invitation sent
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ActionSuccess'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          userId:
+                            type: string
+                          invitationId:
+                            type: string
+        '403':
+          description: Insufficient permissions
+
+  /update-profile:
+    post:
+      operationId: updateProfile
+      summary: Update user profile
+      description: |
+        Update display name, language, theme preferences.
+        Server Action: `updateProfileAction`
+      security:
+        - firebase: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                displayName:
+                  type: string
+                phone:
+                  type: string
+                language:
+                  type: string
+                  enum: [ar, en]
+                theme:
+                  type: string
+                  enum: [light, dark, system]
+                emailNotifications:
+                  type: boolean
+      responses:
+        '200':
+          description: Profile updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActionSuccess'
+
+securityDefinitions:
+  firebase:
+    type: http
+    scheme: bearer
+    description: Firebase ID Token

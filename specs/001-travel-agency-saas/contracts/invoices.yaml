@@ -1,0 +1,658 @@
+# Invoices & Payments API Contract
+# Travel Agency SaaS - Financial Operations
+
+openapi: 3.1.0
+info:
+  title: Invoices & Payments API
+  version: 1.0.0
+  description: |
+    Invoice generation, payment processing, and financial tracking.
+    Server Actions in `src/app/actions/invoices.ts` and `src/app/actions/payments.ts`
+
+components:
+  schemas:
+    InvoiceStatus:
+      type: string
+      enum: [draft, issued, paid, partial, cancelled, overdue]
+
+    PaymentMethod:
+      type: string
+      enum: [stripe, bank_transfer, cash]
+
+    PaymentStatus:
+      type: string
+      enum: [pending, completed, failed, refunded, cancelled]
+
+    InvoiceLineItem:
+      type: object
+      properties:
+        id:
+          type: string
+        serviceId:
+          type: string
+        description:
+          type: string
+        quantity:
+          type: integer
+        unitPrice:
+          type: number
+        total:
+          type: number
+        isOutsourced:
+          type: boolean
+        partnerOfficeId:
+          type: string
+        partnerOfficeName:
+          type: string
+        commissionPercentage:
+          type: number
+        commissionAmount:
+          type: number
+
+    Invoice:
+      type: object
+      properties:
+        id:
+          type: string
+        invoiceNumber:
+          type: string
+        bookingId:
+          type: string
+        customerId:
+          type: string
+        customerName:
+          type: string
+        lineItems:
+          type: array
+          items:
+            $ref: '#/components/schemas/InvoiceLineItem'
+        subtotal:
+          type: number
+        discount:
+          type: number
+        tax:
+          type: number
+        total:
+          type: number
+        currency:
+          type: string
+        totalCommissions:
+          type: number
+        status:
+          $ref: '#/components/schemas/InvoiceStatus'
+        paidAmount:
+          type: number
+        balance:
+          type: number
+        issueDate:
+          type: string
+          format: date-time
+        dueDate:
+          type: string
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+
+    Payment:
+      type: object
+      properties:
+        id:
+          type: string
+        paymentNumber:
+          type: string
+        invoiceId:
+          type: string
+        customerId:
+          type: string
+        amount:
+          type: number
+        currency:
+          type: string
+        method:
+          $ref: '#/components/schemas/PaymentMethod'
+        status:
+          $ref: '#/components/schemas/PaymentStatus'
+        stripePaymentIntentId:
+          type: string
+        bankTransfer:
+          type: object
+          properties:
+            transactionReference:
+              type: string
+            proofDocumentUrl:
+              type: string
+            bankName:
+              type: string
+        paymentDate:
+          type: string
+          format: date-time
+        processedAt:
+          type: string
+          format: date-time
+
+    CreatePaymentInput:
+      type: object
+      required:
+        - invoiceId
+        - amount
+        - method
+      properties:
+        invoiceId:
+          type: string
+        amount:
+          type: number
+          minimum: 0.01
+        method:
+          $ref: '#/components/schemas/PaymentMethod'
+        notes:
+          type: string
+
+    BankTransferProofInput:
+      type: object
+      required:
+        - transactionReference
+        - proofDocument
+      properties:
+        transactionReference:
+          type: string
+        bankName:
+          type: string
+        proofDocument:
+          type: string
+          format: binary
+
+paths:
+  /invoices:
+    get:
+      operationId: listInvoices
+      summary: List invoices
+      security:
+        - firebase: []
+      parameters:
+        - name: status
+          in: query
+          schema:
+            $ref: '#/components/schemas/InvoiceStatus'
+        - name: customerId
+          in: query
+          schema:
+            type: string
+        - name: dateFrom
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: dateTo
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: overdue
+          in: query
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: Invoice list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  invoices:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Invoice'
+
+  /invoices/{invoiceId}:
+    parameters:
+      - name: invoiceId
+        in: path
+        required: true
+        schema:
+          type: string
+
+    get:
+      operationId: getInvoice
+      summary: Get invoice details
+      security:
+        - firebase: []
+      responses:
+        '200':
+          description: Invoice with payments
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Invoice'
+                  - type: object
+                    properties:
+                      payments:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Payment'
+                      commissionsByPartner:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            partnerOfficeId:
+                              type: string
+                            partnerOfficeName:
+                              type: string
+                            totalAmount:
+                              type: number
+                            status:
+                              type: string
+
+    patch:
+      operationId: updateInvoice
+      summary: Update invoice
+      description: |
+        Server Action: `updateInvoiceAction`
+        Only draft invoices can be modified.
+      security:
+        - firebase: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                discount:
+                  type: number
+                dueDate:
+                  type: string
+                  format: date
+                notes:
+                  type: string
+      responses:
+        '200':
+          description: Invoice updated
+        '400':
+          description: Cannot modify issued invoice
+
+  /invoices/{invoiceId}/issue:
+    parameters:
+      - name: invoiceId
+        in: path
+        required: true
+        schema:
+          type: string
+
+    post:
+      operationId: issueInvoice
+      summary: Issue draft invoice
+      description: |
+        Server Action: `issueInvoiceAction`
+        Changes status from draft to issued.
+        Sends invoice notification to customer.
+      security:
+        - firebase: []
+      responses:
+        '200':
+          description: Invoice issued
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      invoiceNumber:
+                        type: string
+                      issuedAt:
+                        type: string
+                        format: date-time
+
+  /invoices/{invoiceId}/cancel:
+    parameters:
+      - name: invoiceId
+        in: path
+        required: true
+        schema:
+          type: string
+
+    post:
+      operationId: cancelInvoice
+      summary: Cancel invoice
+      description: |
+        Server Action: `cancelInvoiceAction`
+        Only allowed if no payments received.
+      security:
+        - firebase: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reason:
+                  type: string
+      responses:
+        '200':
+          description: Invoice cancelled
+        '400':
+          description: Cannot cancel invoice with payments
+
+  /invoices/{invoiceId}/pdf:
+    parameters:
+      - name: invoiceId
+        in: path
+        required: true
+        schema:
+          type: string
+
+    get:
+      operationId: generateInvoicePdf
+      summary: Generate invoice PDF
+      description: |
+        API Route: `/api/invoices/{invoiceId}/pdf`
+        Generates printable PDF with RTL support.
+      security:
+        - firebase: []
+      responses:
+        '200':
+          description: PDF file
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+
+  /payments:
+    get:
+      operationId: listPayments
+      summary: List payments
+      security:
+        - firebase: []
+      parameters:
+        - name: invoiceId
+          in: query
+          schema:
+            type: string
+        - name: customerId
+          in: query
+          schema:
+            type: string
+        - name: method
+          in: query
+          schema:
+            $ref: '#/components/schemas/PaymentMethod'
+        - name: status
+          in: query
+          schema:
+            $ref: '#/components/schemas/PaymentStatus'
+        - name: pendingBankTransfers
+          in: query
+          schema:
+            type: boolean
+          description: Filter for pending bank transfer approvals
+      responses:
+        '200':
+          description: Payment list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  payments:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Payment'
+
+    post:
+      operationId: createPayment
+      summary: Record payment
+      description: |
+        Server Action: `createPaymentAction`
+        For cash payments or initiating bank transfer.
+        For Stripe, use /payments/stripe-checkout.
+      security:
+        - firebase: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreatePaymentInput'
+      responses:
+        '200':
+          description: Payment recorded
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      paymentId:
+                        type: string
+                      invoiceBalance:
+                        type: number
+
+  /payments/stripe-checkout:
+    post:
+      operationId: createStripeCheckout
+      summary: Create Stripe Checkout session
+      description: |
+        Server Action: `createStripeCheckoutAction`
+        Creates Stripe Checkout session for invoice payment.
+      security:
+        - firebase: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - invoiceId
+              properties:
+                invoiceId:
+                  type: string
+                amount:
+                  type: number
+                  description: Partial payment amount (optional, defaults to balance)
+      responses:
+        '200':
+          description: Checkout session created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      checkoutUrl:
+                        type: string
+                        format: uri
+                      sessionId:
+                        type: string
+
+  /payments/{paymentId}/bank-transfer-proof:
+    parameters:
+      - name: paymentId
+        in: path
+        required: true
+        schema:
+          type: string
+
+    post:
+      operationId: uploadBankTransferProof
+      summary: Upload bank transfer proof
+      description: |
+        Server Action: `uploadBankTransferProofAction`
+        Customer uploads proof document for pending bank transfer.
+      security:
+        - firebase: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/BankTransferProofInput'
+      responses:
+        '200':
+          description: Proof uploaded, awaiting approval
+
+  /payments/{paymentId}/approve:
+    parameters:
+      - name: paymentId
+        in: path
+        required: true
+        schema:
+          type: string
+
+    post:
+      operationId: approveBankTransfer
+      summary: Approve bank transfer payment
+      description: |
+        Server Action: `approveBankTransferAction`
+        Admin approves bank transfer after reviewing proof.
+        Requires: admin role
+      security:
+        - firebase: []
+      responses:
+        '200':
+          description: Payment approved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      invoiceBalance:
+                        type: number
+                      invoiceStatus:
+                        $ref: '#/components/schemas/InvoiceStatus'
+
+  /payments/{paymentId}/reject:
+    parameters:
+      - name: paymentId
+        in: path
+        required: true
+        schema:
+          type: string
+
+    post:
+      operationId: rejectBankTransfer
+      summary: Reject bank transfer payment
+      description: |
+        Server Action: `rejectBankTransferAction`
+        Admin rejects invalid bank transfer proof.
+        Sends notification to customer.
+      security:
+        - firebase: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - reason
+              properties:
+                reason:
+                  type: string
+      responses:
+        '200':
+          description: Payment rejected
+
+  /customers/{customerId}/balance:
+    parameters:
+      - name: customerId
+        in: path
+        required: true
+        schema:
+          type: string
+
+    get:
+      operationId: getCustomerBalance
+      summary: Get customer financial summary
+      security:
+        - firebase: []
+      responses:
+        '200':
+          description: Customer balance
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  customerId:
+                    type: string
+                  totalInvoiced:
+                    type: number
+                  totalPaid:
+                    type: number
+                  balance:
+                    type: number
+                    description: Positive = owes, Negative = credit
+                  overdueAmount:
+                    type: number
+                  invoiceCount:
+                    type: integer
+                  currency:
+                    type: string
+
+  /finance/dashboard:
+    get:
+      operationId: getFinanceDashboard
+      summary: Get financial overview
+      description: |
+        Aggregated financial metrics for admin dashboard.
+      security:
+        - firebase: []
+      parameters:
+        - name: period
+          in: query
+          schema:
+            type: string
+            enum: [day, week, month, quarter, year]
+            default: month
+      responses:
+        '200':
+          description: Financial overview
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  period:
+                    type: string
+                  totalRevenue:
+                    type: number
+                  totalReceived:
+                    type: number
+                  totalOutstanding:
+                    type: number
+                  totalOverdue:
+                    type: number
+                  totalCommissions:
+                    type: number
+                  pendingSettlements:
+                    type: number
+                  invoicesByStatus:
+                    type: object
+                    additionalProperties:
+                      type: integer
+                  recentPayments:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Payment'

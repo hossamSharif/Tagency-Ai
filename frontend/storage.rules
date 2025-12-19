@@ -1,0 +1,95 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    // ==========================================
+    // Helper Functions
+    // ==========================================
+
+    // Check if user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // Get the authenticated user's tenant ID from custom claims
+    function getTenantId() {
+      return request.auth.token.tenantId;
+    }
+
+    // Check if user belongs to a specific tenant
+    function belongsToTenant(tenantId) {
+      return isAuthenticated() && getTenantId() == tenantId;
+    }
+
+    // Check if user has write permissions
+    function hasWriteRole() {
+      return request.auth.token.role in ['owner', 'admin', 'staff'];
+    }
+
+    // Check file size (max 10MB)
+    function isValidSize() {
+      return request.resource.size < 10 * 1024 * 1024;
+    }
+
+    // Check if file is an allowed image type
+    function isImageType() {
+      return request.resource.contentType.matches('image/(jpeg|png|gif|webp)');
+    }
+
+    // Check if file is an allowed document type (images or PDF)
+    function isDocumentType() {
+      return request.resource.contentType.matches('image/(jpeg|png|gif|webp)') ||
+             request.resource.contentType == 'application/pdf';
+    }
+
+    // ==========================================
+    // Tenant Storage Rules
+    // ==========================================
+
+    match /tenants/{tenantId}/{allPaths=**} {
+      // Default: tenant members can read, write requires staff role
+      allow read: if belongsToTenant(tenantId);
+      allow write: if belongsToTenant(tenantId) &&
+                      hasWriteRole() &&
+                      isValidSize() &&
+                      isDocumentType();
+    }
+
+    // Package covers and gallery images
+    match /tenants/{tenantId}/packages/{packageId}/{allPaths=**} {
+      allow read: if belongsToTenant(tenantId);
+      allow write: if belongsToTenant(tenantId) &&
+                      hasWriteRole() &&
+                      isValidSize() &&
+                      isImageType();
+    }
+
+    // Customer documents (passport scans, visa copies, etc.)
+    match /tenants/{tenantId}/customers/{customerId}/documents/{document} {
+      allow read: if belongsToTenant(tenantId);
+      allow write: if belongsToTenant(tenantId) &&
+                      hasWriteRole() &&
+                      isValidSize() &&
+                      isDocumentType();
+    }
+
+    // Payment proofs (bank transfer receipts)
+    match /tenants/{tenantId}/payments/{paymentId}/{document} {
+      allow read: if belongsToTenant(tenantId);
+      allow write: if belongsToTenant(tenantId) &&
+                      hasWriteRole() &&
+                      isValidSize() &&
+                      isDocumentType();
+    }
+
+    // User avatars
+    match /tenants/{tenantId}/users/{userId}/avatar {
+      // Users can read any avatar, but only update their own
+      allow read: if belongsToTenant(tenantId);
+      allow write: if belongsToTenant(tenantId) &&
+                      request.auth.uid == userId &&
+                      isValidSize() &&
+                      isImageType();
+    }
+  }
+}

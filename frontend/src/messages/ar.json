@@ -1,0 +1,396 @@
+{
+  "common": {
+    "appName": "وكالة السفر",
+    "save": "حفظ",
+    "cancel": "إلغاء",
+    "delete": "حذف",
+    "edit": "تعديل",
+    "create": "إنشاء",
+    "add": "إضافة",
+    "remove": "إزالة",
+    "search": "بحث",
+    "filter": "تصفية",
+    "sort": "ترتيب",
+    "loading": "جاري التحميل...",
+    "noResults": "لا توجد نتائج",
+    "error": "خطأ",
+    "success": "تم بنجاح",
+    "confirm": "تأكيد",
+    "back": "رجوع",
+    "next": "التالي",
+    "previous": "السابق",
+    "submit": "إرسال",
+    "reset": "إعادة تعيين",
+    "close": "إغلاق",
+    "open": "فتح",
+    "view": "عرض",
+    "download": "تحميل",
+    "upload": "رفع",
+    "required": "مطلوب",
+    "optional": "اختياري",
+    "yes": "نعم",
+    "no": "لا",
+    "all": "الكل",
+    "none": "لا شيء",
+    "actions": "الإجراءات",
+    "status": "الحالة",
+    "date": "التاريخ",
+    "time": "الوقت",
+    "name": "الاسم",
+    "description": "الوصف",
+    "amount": "المبلغ",
+    "total": "الإجمالي",
+    "subtotal": "المجموع الفرعي",
+    "price": "السعر",
+    "currency": "العملة"
+  },
+  "auth": {
+    "login": "تسجيل الدخول",
+    "signup": "إنشاء حساب",
+    "logout": "تسجيل الخروج",
+    "email": "البريد الإلكتروني",
+    "password": "كلمة المرور",
+    "confirmPassword": "تأكيد كلمة المرور",
+    "forgotPassword": "نسيت كلمة المرور؟",
+    "resetPassword": "إعادة تعيين كلمة المرور",
+    "newPassword": "كلمة المرور الجديدة",
+    "currentPassword": "كلمة المرور الحالية",
+    "rememberMe": "تذكرني",
+    "signupTitle": "إنشاء حساب جديد",
+    "loginTitle": "تسجيل الدخول إلى حسابك",
+    "resetTitle": "إعادة تعيين كلمة المرور",
+    "officeName": "اسم المكتب",
+    "fullName": "الاسم الكامل",
+    "phone": "رقم الهاتف",
+    "agreeTerms": "أوافق على الشروط والأحكام",
+    "alreadyHaveAccount": "لديك حساب بالفعل؟",
+    "dontHaveAccount": "ليس لديك حساب؟",
+    "signupSuccess": "تم إنشاء الحساب بنجاح",
+    "loginSuccess": "تم تسجيل الدخول بنجاح",
+    "logoutSuccess": "تم تسجيل الخروج بنجاح",
+    "resetEmailSent": "تم إرسال رابط إعادة التعيين إلى بريدك الإلكتروني",
+    "invalidCredentials": "البريد الإلكتروني أو كلمة المرور غير صحيحة",
+    "emailRequired": "البريد الإلكتروني مطلوب",
+    "passwordRequired": "كلمة المرور مطلوبة",
+    "passwordMinLength": "كلمة المرور يجب أن تكون 8 أحرف على الأقل",
+    "passwordMismatch": "كلمتا المرور غير متطابقتين",
+    "emailInvalid": "البريد الإلكتروني غير صالح",
+    "startFreeTrial": "ابدأ تجربة مجانية لمدة أسبوع"
+  },
+  "packages": {
+    "title": "الباقات",
+    "package": "باقة",
+    "create": "إنشاء باقة جديدة",
+    "edit": "تعديل الباقة",
+    "delete": "حذف الباقة",
+    "duplicate": "نسخ الباقة",
+    "noPackages": "لا توجد باقات",
+    "createFirst": "قم بإنشاء باقتك الأولى",
+    "types": {
+      "hajj": "حج",
+      "umrah": "عمرة",
+      "honeymoon": "شهر العسل",
+      "custom": "مخصص"
+    },
+    "status": {
+      "draft": "مسودة",
+      "active": "نشط",
+      "completed": "مكتمل",
+      "cancelled": "ملغى"
+    },
+    "fields": {
+      "name": "اسم الباقة",
+      "type": "نوع الباقة",
+      "description": "الوصف",
+      "startDate": "تاريخ البداية",
+      "endDate": "تاريخ النهاية",
+      "duration": "المدة",
+      "days": "أيام",
+      "basePrice": "السعر الأساسي",
+      "totalPrice": "السعر الإجمالي",
+      "maxCapacity": "الحد الأقصى للحجوزات",
+      "currentBookings": "الحجوزات الحالية",
+      "coverImage": "صورة الغلاف",
+      "highlights": "المميزات"
+    },
+    "services": {
+      "title": "الخدمات",
+      "add": "إضافة خدمة",
+      "edit": "تعديل الخدمة",
+      "delete": "حذف الخدمة",
+      "reorder": "إعادة ترتيب",
+      "noServices": "لا توجد خدمات",
+      "categories": {
+        "flight": "طيران",
+        "hotel": "فندق",
+        "visa": "تأشيرة",
+        "transport": "نقل",
+        "guide": "مرشد",
+        "meal": "وجبات",
+        "other": "أخرى"
+      }
+    }
+  },
+  "customers": {
+    "title": "العملاء",
+    "customer": "عميل",
+    "create": "إضافة عميل جديد",
+    "edit": "تعديل بيانات العميل",
+    "delete": "حذف العميل",
+    "noCustomers": "لا يوجد عملاء",
+    "fields": {
+      "firstName": "الاسم الأول",
+      "lastName": "الاسم الأخير",
+      "email": "البريد الإلكتروني",
+      "phone": "رقم الهاتف",
+      "nationality": "الجنسية",
+      "nationalId": "رقم الهوية",
+      "address": "العنوان",
+      "balance": "الرصيد"
+    },
+    "passport": {
+      "title": "بيانات جواز السفر",
+      "scan": "مسح جواز السفر",
+      "number": "رقم الجواز",
+      "fullName": "الاسم الكامل",
+      "dateOfBirth": "تاريخ الميلاد",
+      "expiryDate": "تاريخ الانتهاء",
+      "issuingCountry": "بلد الإصدار",
+      "gender": "الجنس",
+      "male": "ذكر",
+      "female": "أنثى",
+      "scanInstructions": "ضع جواز السفر في مواجهة الكاميرا",
+      "extracting": "جاري استخراج البيانات...",
+      "extractionSuccess": "تم استخراج البيانات بنجاح",
+      "extractionFailed": "فشل استخراج البيانات، يرجى الإدخال يدوياً",
+      "verify": "تحقق من البيانات"
+    },
+    "documents": {
+      "title": "المستندات",
+      "upload": "رفع مستند",
+      "types": {
+        "passport": "جواز السفر",
+        "visa": "التأشيرة",
+        "photo": "صورة شخصية",
+        "vaccination": "شهادة التطعيم",
+        "other": "أخرى"
+      }
+    }
+  },
+  "bookings": {
+    "title": "الحجوزات",
+    "booking": "حجز",
+    "create": "إنشاء حجز جديد",
+    "edit": "تعديل الحجز",
+    "cancel": "إلغاء الحجز",
+    "noBookings": "لا توجد حجوزات",
+    "bookingNumber": "رقم الحجز",
+    "status": {
+      "pending": "قيد الانتظار",
+      "confirmed": "مؤكد",
+      "inProgress": "قيد التنفيذ",
+      "completed": "مكتمل",
+      "cancelled": "ملغى"
+    },
+    "paymentStatus": {
+      "unpaid": "غير مدفوع",
+      "partial": "مدفوع جزئياً",
+      "paid": "مدفوع بالكامل"
+    },
+    "fields": {
+      "customer": "العميل",
+      "package": "الباقة",
+      "travelDate": "تاريخ السفر",
+      "travelers": "المسافرون",
+      "totalAmount": "المبلغ الإجمالي",
+      "paidAmount": "المبلغ المدفوع",
+      "balance": "المتبقي",
+      "source": "مصدر الحجز"
+    },
+    "sources": {
+      "web": "الموقع",
+      "walkIn": "حضور شخصي",
+      "phone": "هاتف"
+    },
+    "travelers": {
+      "add": "إضافة مسافر",
+      "primary": "المسافر الرئيسي"
+    }
+  },
+  "invoices": {
+    "title": "الفواتير",
+    "invoice": "فاتورة",
+    "create": "إنشاء فاتورة",
+    "issue": "إصدار الفاتورة",
+    "cancel": "إلغاء الفاتورة",
+    "download": "تحميل PDF",
+    "noInvoices": "لا توجد فواتير",
+    "invoiceNumber": "رقم الفاتورة",
+    "status": {
+      "draft": "مسودة",
+      "issued": "صادرة",
+      "paid": "مدفوعة",
+      "partial": "مدفوعة جزئياً",
+      "cancelled": "ملغاة",
+      "overdue": "متأخرة"
+    },
+    "fields": {
+      "issueDate": "تاريخ الإصدار",
+      "dueDate": "تاريخ الاستحقاق",
+      "subtotal": "المجموع الفرعي",
+      "discount": "الخصم",
+      "tax": "الضريبة",
+      "total": "الإجمالي",
+      "paidAmount": "المدفوع",
+      "balance": "المتبقي"
+    },
+    "lineItems": {
+      "service": "الخدمة",
+      "quantity": "الكمية",
+      "unitPrice": "سعر الوحدة",
+      "total": "الإجمالي"
+    }
+  },
+  "payments": {
+    "title": "المدفوعات",
+    "payment": "دفعة",
+    "record": "تسجيل دفعة",
+    "approve": "اعتماد",
+    "reject": "رفض",
+    "noPayments": "لا توجد مدفوعات",
+    "paymentNumber": "رقم الدفعة",
+    "status": {
+      "pending": "قيد المراجعة",
+      "completed": "مكتملة",
+      "failed": "فاشلة",
+      "refunded": "مستردة"
+    },
+    "methods": {
+      "stripe": "بطاقة ائتمان",
+      "bankTransfer": "تحويل بنكي",
+      "cash": "نقداً"
+    },
+    "bankTransfer": {
+      "instructions": "تعليمات التحويل البنكي",
+      "uploadProof": "رفع إثبات التحويل",
+      "reference": "رقم المرجع",
+      "pendingReview": "في انتظار المراجعة",
+      "approved": "تم اعتماد التحويل",
+      "rejected": "تم رفض التحويل",
+      "rejectionReason": "سبب الرفض"
+    }
+  },
+  "partners": {
+    "title": "الشركاء",
+    "partner": "شريك",
+    "create": "إضافة شريك جديد",
+    "edit": "تعديل بيانات الشريك",
+    "noPartners": "لا يوجد شركاء",
+    "status": {
+      "active": "نشط",
+      "suspended": "موقوف",
+      "pending": "قيد الانتظار"
+    },
+    "fields": {
+      "name": "اسم المكتب",
+      "code": "الرمز",
+      "contactPerson": "شخص التواصل",
+      "email": "البريد الإلكتروني",
+      "phone": "رقم الهاتف",
+      "defaultCommission": "نسبة العمولة الافتراضية"
+    },
+    "commissions": {
+      "title": "العمولات",
+      "total": "إجمالي العمولات",
+      "pending": "عمولات معلقة",
+      "settled": "عمولات محصلة"
+    },
+    "settlements": {
+      "title": "التسويات",
+      "create": "إنشاء تسوية",
+      "approve": "اعتماد التسوية",
+      "markPaid": "تحديد كمدفوعة",
+      "dispute": "تقديم اعتراض",
+      "status": {
+        "pending": "قيد الانتظار",
+        "approved": "معتمدة",
+        "paid": "مدفوعة",
+        "disputed": "معترض عليها"
+      }
+    }
+  },
+  "subscription": {
+    "title": "الاشتراك",
+    "currentPlan": "الخطة الحالية",
+    "upgrade": "ترقية",
+    "manage": "إدارة الاشتراك",
+    "status": {
+      "active": "نشط",
+      "pastDue": "متأخر",
+      "cancelled": "ملغى",
+      "expired": "منتهي",
+      "pendingPayment": "في انتظار الدفع"
+    },
+    "trial": {
+      "title": "الفترة التجريبية",
+      "daysRemaining": "{days} أيام متبقية",
+      "ending": "تنتهي الفترة التجريبية قريباً",
+      "expired": "انتهت الفترة التجريبية"
+    },
+    "plans": {
+      "trial": "تجريبي",
+      "monthly": "شهري"
+    },
+    "payment": {
+      "selectMethod": "اختر طريقة الدفع",
+      "stripe": "بطاقة ائتمان",
+      "bankTransfer": "تحويل بنكي"
+    }
+  },
+  "settings": {
+    "title": "الإعدادات",
+    "profile": "الملف الشخصي",
+    "workspace": "مساحة العمل",
+    "team": "الفريق",
+    "subscription": "الاشتراك",
+    "notifications": "الإشعارات",
+    "language": "اللغة",
+    "theme": "المظهر",
+    "themes": {
+      "light": "فاتح",
+      "dark": "داكن",
+      "system": "تلقائي"
+    },
+    "inviteUser": "دعوة مستخدم",
+    "roles": {
+      "owner": "مالك",
+      "admin": "مدير",
+      "staff": "موظف",
+      "customer": "عميل",
+      "partner": "شريك"
+    }
+  },
+  "notifications": {
+    "title": "الإشعارات",
+    "markAllRead": "تحديد الكل كمقروء",
+    "noNotifications": "لا توجد إشعارات",
+    "preferences": "تفضيلات الإشعارات",
+    "email": "إشعارات البريد الإلكتروني"
+  },
+  "reports": {
+    "title": "التقارير",
+    "dashboard": "لوحة المعلومات",
+    "sales": "تقرير المبيعات",
+    "commissions": "تقرير العمولات",
+    "dateRange": "الفترة الزمنية"
+  },
+  "errors": {
+    "general": "حدث خطأ ما",
+    "notFound": "الصفحة غير موجودة",
+    "unauthorized": "غير مصرح لك بالوصول",
+    "networkError": "خطأ في الاتصال",
+    "validationError": "خطأ في البيانات المدخلة",
+    "serverError": "خطأ في الخادم",
+    "tryAgain": "حاول مرة أخرى"
+  }
+}

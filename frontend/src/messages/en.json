@@ -1,0 +1,396 @@
+{
+  "common": {
+    "appName": "Travel Agency",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "create": "Create",
+    "add": "Add",
+    "remove": "Remove",
+    "search": "Search",
+    "filter": "Filter",
+    "sort": "Sort",
+    "loading": "Loading...",
+    "noResults": "No results found",
+    "error": "Error",
+    "success": "Success",
+    "confirm": "Confirm",
+    "back": "Back",
+    "next": "Next",
+    "previous": "Previous",
+    "submit": "Submit",
+    "reset": "Reset",
+    "close": "Close",
+    "open": "Open",
+    "view": "View",
+    "download": "Download",
+    "upload": "Upload",
+    "required": "Required",
+    "optional": "Optional",
+    "yes": "Yes",
+    "no": "No",
+    "all": "All",
+    "none": "None",
+    "actions": "Actions",
+    "status": "Status",
+    "date": "Date",
+    "time": "Time",
+    "name": "Name",
+    "description": "Description",
+    "amount": "Amount",
+    "total": "Total",
+    "subtotal": "Subtotal",
+    "price": "Price",
+    "currency": "Currency"
+  },
+  "auth": {
+    "login": "Login",
+    "signup": "Sign Up",
+    "logout": "Logout",
+    "email": "Email",
+    "password": "Password",
+    "confirmPassword": "Confirm Password",
+    "forgotPassword": "Forgot Password?",
+    "resetPassword": "Reset Password",
+    "newPassword": "New Password",
+    "currentPassword": "Current Password",
+    "rememberMe": "Remember Me",
+    "signupTitle": "Create a New Account",
+    "loginTitle": "Sign In to Your Account",
+    "resetTitle": "Reset Your Password",
+    "officeName": "Office Name",
+    "fullName": "Full Name",
+    "phone": "Phone Number",
+    "agreeTerms": "I agree to the Terms and Conditions",
+    "alreadyHaveAccount": "Already have an account?",
+    "dontHaveAccount": "Don't have an account?",
+    "signupSuccess": "Account created successfully",
+    "loginSuccess": "Logged in successfully",
+    "logoutSuccess": "Logged out successfully",
+    "resetEmailSent": "Reset link sent to your email",
+    "invalidCredentials": "Invalid email or password",
+    "emailRequired": "Email is required",
+    "passwordRequired": "Password is required",
+    "passwordMinLength": "Password must be at least 8 characters",
+    "passwordMismatch": "Passwords do not match",
+    "emailInvalid": "Invalid email address",
+    "startFreeTrial": "Start 1-week free trial"
+  },
+  "packages": {
+    "title": "Packages",
+    "package": "Package",
+    "create": "Create New Package",
+    "edit": "Edit Package",
+    "delete": "Delete Package",
+    "duplicate": "Duplicate Package",
+    "noPackages": "No packages found",
+    "createFirst": "Create your first package",
+    "types": {
+      "hajj": "Hajj",
+      "umrah": "Umrah",
+      "honeymoon": "Honeymoon",
+      "custom": "Custom"
+    },
+    "status": {
+      "draft": "Draft",
+      "active": "Active",
+      "completed": "Completed",
+      "cancelled": "Cancelled"
+    },
+    "fields": {
+      "name": "Package Name",
+      "type": "Package Type",
+      "description": "Description",
+      "startDate": "Start Date",
+      "endDate": "End Date",
+      "duration": "Duration",
+      "days": "days",
+      "basePrice": "Base Price",
+      "totalPrice": "Total Price",
+      "maxCapacity": "Max Capacity",
+      "currentBookings": "Current Bookings",
+      "coverImage": "Cover Image",
+      "highlights": "Highlights"
+    },
+    "services": {
+      "title": "Services",
+      "add": "Add Service",
+      "edit": "Edit Service",
+      "delete": "Delete Service",
+      "reorder": "Reorder",
+      "noServices": "No services added",
+      "categories": {
+        "flight": "Flight",
+        "hotel": "Hotel",
+        "visa": "Visa",
+        "transport": "Transport",
+        "guide": "Guide",
+        "meal": "Meals",
+        "other": "Other"
+      }
+    }
+  },
+  "customers": {
+    "title": "Customers",
+    "customer": "Customer",
+    "create": "Add New Customer",
+    "edit": "Edit Customer",
+    "delete": "Delete Customer",
+    "noCustomers": "No customers found",
+    "fields": {
+      "firstName": "First Name",
+      "lastName": "Last Name",
+      "email": "Email",
+      "phone": "Phone Number",
+      "nationality": "Nationality",
+      "nationalId": "National ID",
+      "address": "Address",
+      "balance": "Balance"
+    },
+    "passport": {
+      "title": "Passport Data",
+      "scan": "Scan Passport",
+      "number": "Passport Number",
+      "fullName": "Full Name",
+      "dateOfBirth": "Date of Birth",
+      "expiryDate": "Expiry Date",
+      "issuingCountry": "Issuing Country",
+      "gender": "Gender",
+      "male": "Male",
+      "female": "Female",
+      "scanInstructions": "Position the passport facing the camera",
+      "extracting": "Extracting data...",
+      "extractionSuccess": "Data extracted successfully",
+      "extractionFailed": "Extraction failed, please enter manually",
+      "verify": "Verify Data"
+    },
+    "documents": {
+      "title": "Documents",
+      "upload": "Upload Document",
+      "types": {
+        "passport": "Passport",
+        "visa": "Visa",
+        "photo": "Photo",
+        "vaccination": "Vaccination Certificate",
+        "other": "Other"
+      }
+    }
+  },
+  "bookings": {
+    "title": "Bookings",
+    "booking": "Booking",
+    "create": "Create New Booking",
+    "edit": "Edit Booking",
+    "cancel": "Cancel Booking",
+    "noBookings": "No bookings found",
+    "bookingNumber": "Booking Number",
+    "status": {
+      "pending": "Pending",
+      "confirmed": "Confirmed",
+      "inProgress": "In Progress",
+      "completed": "Completed",
+      "cancelled": "Cancelled"
+    },
+    "paymentStatus": {
+      "unpaid": "Unpaid",
+      "partial": "Partially Paid",
+      "paid": "Fully Paid"
+    },
+    "fields": {
+      "customer": "Customer",
+      "package": "Package",
+      "travelDate": "Travel Date",
+      "travelers": "Travelers",
+      "totalAmount": "Total Amount",
+      "paidAmount": "Paid Amount",
+      "balance": "Balance",
+      "source": "Booking Source"
+    },
+    "sources": {
+      "web": "Website",
+      "walkIn": "Walk-in",
+      "phone": "Phone"
+    },
+    "travelers": {
+      "add": "Add Traveler",
+      "primary": "Primary Traveler"
+    }
+  },
+  "invoices": {
+    "title": "Invoices",
+    "invoice": "Invoice",
+    "create": "Create Invoice",
+    "issue": "Issue Invoice",
+    "cancel": "Cancel Invoice",
+    "download": "Download PDF",
+    "noInvoices": "No invoices found",
+    "invoiceNumber": "Invoice Number",
+    "status": {
+      "draft": "Draft",
+      "issued": "Issued",
+      "paid": "Paid",
+      "partial": "Partially Paid",
+      "cancelled": "Cancelled",
+      "overdue": "Overdue"
+    },
+    "fields": {
+      "issueDate": "Issue Date",
+      "dueDate": "Due Date",
+      "subtotal": "Subtotal",
+      "discount": "Discount",
+      "tax": "Tax",
+      "total": "Total",
+      "paidAmount": "Paid Amount",
+      "balance": "Balance"
+    },
+    "lineItems": {
+      "service": "Service",
+      "quantity": "Quantity",
+      "unitPrice": "Unit Price",
+      "total": "Total"
+    }
+  },
+  "payments": {
+    "title": "Payments",
+    "payment": "Payment",
+    "record": "Record Payment",
+    "approve": "Approve",
+    "reject": "Reject",
+    "noPayments": "No payments found",
+    "paymentNumber": "Payment Number",
+    "status": {
+      "pending": "Pending Review",
+      "completed": "Completed",
+      "failed": "Failed",
+      "refunded": "Refunded"
+    },
+    "methods": {
+      "stripe": "Credit Card",
+      "bankTransfer": "Bank Transfer",
+      "cash": "Cash"
+    },
+    "bankTransfer": {
+      "instructions": "Bank Transfer Instructions",
+      "uploadProof": "Upload Transfer Proof",
+      "reference": "Reference Number",
+      "pendingReview": "Pending Review",
+      "approved": "Transfer Approved",
+      "rejected": "Transfer Rejected",
+      "rejectionReason": "Rejection Reason"
+    }
+  },
+  "partners": {
+    "title": "Partners",
+    "partner": "Partner",
+    "create": "Add New Partner",
+    "edit": "Edit Partner",
+    "noPartners": "No partners found",
+    "status": {
+      "active": "Active",
+      "suspended": "Suspended",
+      "pending": "Pending"
+    },
+    "fields": {
+      "name": "Office Name",
+      "code": "Code",
+      "contactPerson": "Contact Person",
+      "email": "Email",
+      "phone": "Phone",
+      "defaultCommission": "Default Commission Rate"
+    },
+    "commissions": {
+      "title": "Commissions",
+      "total": "Total Commissions",
+      "pending": "Pending Commissions",
+      "settled": "Settled Commissions"
+    },
+    "settlements": {
+      "title": "Settlements",
+      "create": "Create Settlement",
+      "approve": "Approve Settlement",
+      "markPaid": "Mark as Paid",
+      "dispute": "Raise Dispute",
+      "status": {
+        "pending": "Pending",
+        "approved": "Approved",
+        "paid": "Paid",
+        "disputed": "Disputed"
+      }
+    }
+  },
+  "subscription": {
+    "title": "Subscription",
+    "currentPlan": "Current Plan",
+    "upgrade": "Upgrade",
+    "manage": "Manage Subscription",
+    "status": {
+      "active": "Active",
+      "pastDue": "Past Due",
+      "cancelled": "Cancelled",
+      "expired": "Expired",
+      "pendingPayment": "Pending Payment"
+    },
+    "trial": {
+      "title": "Trial Period",
+      "daysRemaining": "{days} days remaining",
+      "ending": "Trial ending soon",
+      "expired": "Trial expired"
+    },
+    "plans": {
+      "trial": "Trial",
+      "monthly": "Monthly"
+    },
+    "payment": {
+      "selectMethod": "Select Payment Method",
+      "stripe": "Credit Card",
+      "bankTransfer": "Bank Transfer"
+    }
+  },
+  "settings": {
+    "title": "Settings",
+    "profile": "Profile",
+    "workspace": "Workspace",
+    "team": "Team",
+    "subscription": "Subscription",
+    "notifications": "Notifications",
+    "language": "Language",
+    "theme": "Theme",
+    "themes": {
+      "light": "Light",
+      "dark": "Dark",
+      "system": "System"
+    },
+    "inviteUser": "Invite User",
+    "roles": {
+      "owner": "Owner",
+      "admin": "Admin",
+      "staff": "Staff",
+      "customer": "Customer",
+      "partner": "Partner"
+    }
+  },
+  "notifications": {
+    "title": "Notifications",
+    "markAllRead": "Mark All as Read",
+    "noNotifications": "No notifications",
+    "preferences": "Notification Preferences",
+    "email": "Email Notifications"
+  },
+  "reports": {
+    "title": "Reports",
+    "dashboard": "Dashboard",
+    "sales": "Sales Report",
+    "commissions": "Commissions Report",
+    "dateRange": "Date Range"
+  },
+  "errors": {
+    "general": "Something went wrong",
+    "notFound": "Page not found",
+    "unauthorized": "You are not authorized",
+    "networkError": "Network error",
+    "validationError": "Validation error",
+    "serverError": "Server error",
+    "tryAgain": "Try again"
+  }
+}

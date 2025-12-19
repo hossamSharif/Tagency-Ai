@@ -1,0 +1,746 @@
+# Partner Offices API Contract
+# Travel Agency SaaS - Partner & Commission Management
+
+openapi: 3.1.0
+info:
+  title: Partner Offices API
+  version: 1.0.0
+  description: |
+    Partner office management and commission tracking.
+    Server Actions in `src/app/actions/partners.ts`
+
+components:
+  schemas:
+    PartnerStatus:
+      type: string
+      enum: [active, suspended, pending]
+
+    SettlementStatus:
+      type: string
+      enum: [pending, approved, paid, disputed]
+
+    CreatePartnerInput:
+      type: object
+      required:
+        - name
+        - contactPerson
+        - email
+        - phone
+      properties:
+        name:
+          type: string
+          minLength: 2
+          maxLength: 200
+        code:
+          type: string
+          maxLength: 10
+          description: Short reference code (auto-generated if not provided)
+        contactPerson:
+          type: string
+        email:
+          type: string
+          format: email
+        phone:
+          type: string
+        address:
+          type: object
+          properties:
+            street:
+              type: string
+            city:
+              type: string
+            country:
+              type: string
+            postalCode:
+              type: string
+        defaultCommissionPercentage:
+          type: number
+          minimum: 0
+          maximum: 100
+          default: 10
+        bankDetails:
+          type: object
+          properties:
+            bankName:
+              type: string
+            accountNumber:
+              type: string
+            accountHolder:
+              type: string
+            iban:
+              type: string
+            swiftCode:
+              type: string
+        contractStartDate:
+          type: string
+          format: date
+        contractEndDate:
+          type: string
+          format: date
+        notes:
+          type: string
+
+    PartnerOffice:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        code:
+          type: string
+        contactPerson:
+          type: string
+        email:
+          type: string
+        phone:
+          type: string
+        address:
+          type: object
+        defaultCommissionPercentage:
+          type: number
+        bankDetails:
+          type: object
+        status:
+          $ref: '#/components/schemas/PartnerStatus'
+        contractStartDate:
+          type: string
+          format: date
+        contractEndDate:
+          type: string
+          format: date
+        totalEarned:
+          type: number
+          description: Total commissions earned (all time)
+        pendingAmount:
+          type: number
+          description: Unsettled commissions
+        userIds:
+          type: array
+          items:
+            type: string
+        createdAt:
+          type: string
+          format: date-time
+
+    CommissionSummary:
+      type: object
+      properties:
+        partnerOfficeId:
+          type: string
+        partnerOfficeName:
+          type: string
+        totalPending:
+          type: number
+        totalSettled:
+          type: number
+        pendingInvoices:
+          type: integer
+        settlementHistory:
+          type: array
+          items:
+            $ref: '#/components/schemas/Settlement'
+
+    Settlement:
+      type: object
+      properties:
+        id:
+          type: string
+        settlementNumber:
+          type: string
+        partnerOfficeId:
+          type: string
+        partnerOfficeName:
+          type: string
+        invoiceIds:
+          type: array
+          items:
+            type: string
+        totalAmount:
+          type: number
+        currency:
+          type: string
+        status:
+          $ref: '#/components/schemas/SettlementStatus'
+        periodStart:
+          type: string
+          format: date
+        periodEnd:
+          type: string
+          format: date
+        paymentMethod:
+          type: string
+        paymentReference:
+          type: string
+        paidAt:
+          type: string
+          format: date-time
+        dispute:
+          type: object
+          properties:
+            raisedBy:
+              type: string
+            raisedAt:
+              type: string
+              format: date-time
+            reason:
+              type: string
+            resolvedAt:
+              type: string
+              format: date-time
+            resolution:
+              type: string
+        createdAt:
+          type: string
+          format: date-time
+
+    CreateSettlementInput:
+      type: object
+      required:
+        - partnerOfficeId
+        - invoiceIds
+      properties:
+        partnerOfficeId:
+          type: string
+        invoiceIds:
+          type: array
+          items:
+            type: string
+          minItems: 1
+        periodStart:
+          type: string
+          format: date
+        periodEnd:
+          type: string
+          format: date
+        notes:
+          type: string
+
+paths:
+  /partners:
+    get:
+      operationId: listPartners
+      summary: List partner offices
+      security:
+        - firebase: []
+      parameters:
+        - name: status
+          in: query
+          schema:
+            $ref: '#/components/schemas/PartnerStatus'
+        - name: search
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Partner list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  partners:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/PartnerOffice'
+
+    post:
+      operationId: createPartner
+      summary: Create partner office
+      description: |
+        Server Action: `createPartnerAction`
+        Requires: admin role
+      security:
+        - firebase: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreatePartnerInput'
+      responses:
+        '200':
+          description: Partner created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      partnerId:
+                        type: string
+                      code:
+                        type: string
+
+  /partners/{partnerId}:
+    parameters:
+      - name: partnerId
+        in: path
+        required: true
+        schema:
+          type: string
+
+    get:
+      operationId: getPartner
+      summary: Get partner details
+      security:
+        - firebase: []
+      responses:
+        '200':
+          description: Partner with commission summary
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/PartnerOffice'
+                  - type: object
+                    properties:
+                      commissionSummary:
+                        $ref: '#/components/schemas/CommissionSummary'
+
+    patch:
+      operationId: updatePartner
+      summary: Update partner
+      description: |
+        Server Action: `updatePartnerAction`
+      security:
+        - firebase: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreatePartnerInput'
+      responses:
+        '200':
+          description: Partner updated
+
+  /partners/{partnerId}/status:
+    parameters:
+      - name: partnerId
+        in: path
+        required: true
+        schema:
+          type: string
+
+    post:
+      operationId: updatePartnerStatus
+      summary: Change partner status
+      description: |
+        Server Action: `updatePartnerStatusAction`
+        Activating/suspending partner.
+      security:
+        - firebase: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - status
+              properties:
+                status:
+                  $ref: '#/components/schemas/PartnerStatus'
+                reason:
+                  type: string
+      responses:
+        '200':
+          description: Status updated
+
+  /partners/{partnerId}/users:
+    parameters:
+      - name: partnerId
+        in: path
+        required: true
+        schema:
+          type: string
+
+    post:
+      operationId: invitePartnerUser
+      summary: Invite user to partner office
+      description: |
+        Server Action: `invitePartnerUserAction`
+        Creates user with 'partner' role.
+      security:
+        - firebase: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - name
+              properties:
+                email:
+                  type: string
+                  format: email
+                name:
+                  type: string
+      responses:
+        '200':
+          description: User invited
+
+  /partners/{partnerId}/commissions:
+    parameters:
+      - name: partnerId
+        in: path
+        required: true
+        schema:
+          type: string
+
+    get:
+      operationId: getPartnerCommissions
+      summary: Get partner commission details
+      description: |
+        Returns pending and settled commissions.
+      security:
+        - firebase: []
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [pending, settled]
+        - name: dateFrom
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: dateTo
+          in: query
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: Commission details
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  pendingCommissions:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        invoiceId:
+                          type: string
+                        invoiceNumber:
+                          type: string
+                        invoiceDate:
+                          type: string
+                          format: date
+                        serviceId:
+                          type: string
+                        serviceName:
+                          type: string
+                        servicePrice:
+                          type: number
+                        commissionPercentage:
+                          type: number
+                        commissionAmount:
+                          type: number
+                  settledCommissions:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        settlementId:
+                          type: string
+                        settlementNumber:
+                          type: string
+                        amount:
+                          type: number
+                        paidAt:
+                          type: string
+                          format: date-time
+                  totals:
+                    type: object
+                    properties:
+                      pending:
+                        type: number
+                      settled:
+                        type: number
+                      total:
+                        type: number
+
+  /settlements:
+    get:
+      operationId: listSettlements
+      summary: List settlements
+      security:
+        - firebase: []
+      parameters:
+        - name: partnerId
+          in: query
+          schema:
+            type: string
+        - name: status
+          in: query
+          schema:
+            $ref: '#/components/schemas/SettlementStatus'
+        - name: dateFrom
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: dateTo
+          in: query
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: Settlement list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  settlements:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Settlement'
+
+    post:
+      operationId: createSettlement
+      summary: Create settlement
+      description: |
+        Server Action: `createSettlementAction`
+        Groups pending commissions for payment.
+        Requires: admin role
+      security:
+        - firebase: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateSettlementInput'
+      responses:
+        '200':
+          description: Settlement created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      settlementId:
+                        type: string
+                      settlementNumber:
+                        type: string
+                      totalAmount:
+                        type: number
+
+  /settlements/{settlementId}:
+    parameters:
+      - name: settlementId
+        in: path
+        required: true
+        schema:
+          type: string
+
+    get:
+      operationId: getSettlement
+      summary: Get settlement details
+      security:
+        - firebase: []
+      responses:
+        '200':
+          description: Settlement with line items
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Settlement'
+                  - type: object
+                    properties:
+                      lineItems:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            invoiceId:
+                              type: string
+                            invoiceNumber:
+                              type: string
+                            serviceName:
+                              type: string
+                            amount:
+                              type: number
+
+  /settlements/{settlementId}/approve:
+    parameters:
+      - name: settlementId
+        in: path
+        required: true
+        schema:
+          type: string
+
+    post:
+      operationId: approveSettlement
+      summary: Approve settlement
+      description: |
+        Server Action: `approveSettlementAction`
+        Requires: admin role
+      security:
+        - firebase: []
+      responses:
+        '200':
+          description: Settlement approved
+
+  /settlements/{settlementId}/pay:
+    parameters:
+      - name: settlementId
+        in: path
+        required: true
+        schema:
+          type: string
+
+    post:
+      operationId: markSettlementPaid
+      summary: Mark settlement as paid
+      description: |
+        Server Action: `markSettlementPaidAction`
+        Record payment details.
+      security:
+        - firebase: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - paymentMethod
+              properties:
+                paymentMethod:
+                  type: string
+                  enum: [bank_transfer, cash, other]
+                paymentReference:
+                  type: string
+                notes:
+                  type: string
+      responses:
+        '200':
+          description: Settlement marked as paid
+
+  /settlements/{settlementId}/dispute:
+    parameters:
+      - name: settlementId
+        in: path
+        required: true
+        schema:
+          type: string
+
+    post:
+      operationId: disputeSettlement
+      summary: Raise dispute on settlement
+      description: |
+        Server Action: `disputeSettlementAction`
+        Can be raised by primary office or partner.
+      security:
+        - firebase: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - reason
+              properties:
+                reason:
+                  type: string
+      responses:
+        '200':
+          description: Dispute raised
+
+  /settlements/{settlementId}/resolve:
+    parameters:
+      - name: settlementId
+        in: path
+        required: true
+        schema:
+          type: string
+
+    post:
+      operationId: resolveDispute
+      summary: Resolve settlement dispute
+      description: |
+        Server Action: `resolveDisputeAction`
+        Requires: admin role
+      security:
+        - firebase: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - resolution
+              properties:
+                resolution:
+                  type: string
+                adjustedAmount:
+                  type: number
+                  description: If amount needs adjustment
+      responses:
+        '200':
+          description: Dispute resolved
+
+  /partners/dashboard:
+    get:
+      operationId: getPartnerDashboard
+      summary: Partner dashboard data
+      description: |
+        For partner role users viewing their own dashboard.
+      security:
+        - firebase: []
+      responses:
+        '200':
+          description: Partner dashboard
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  partner:
+                    $ref: '#/components/schemas/PartnerOffice'
+                  pendingServices:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        bookingId:
+                          type: string
+                        serviceName:
+                          type: string
+                        customerName:
+                          type: string
+                        serviceDate:
+                          type: string
+                          format: date
+                        status:
+                          type: string
+                  pendingCommissions:
+                    type: number
+                  recentSettlements:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Settlement'

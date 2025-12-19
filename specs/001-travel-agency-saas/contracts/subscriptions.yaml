@@ -1,0 +1,641 @@
+# Subscriptions API Contract
+# Travel Agency SaaS - Subscription & Billing
+
+openapi: 3.1.0
+info:
+  title: Subscriptions API
+  version: 1.0.0
+  description: |
+    Platform subscription management, trial handling, and billing.
+    Server Actions in `src/app/actions/subscriptions.ts`
+
+components:
+  schemas:
+    SubscriptionPlan:
+      type: string
+      enum: [trial, monthly]
+
+    SubscriptionStatus:
+      type: string
+      enum: [active, past_due, cancelled, expired, pending_payment]
+
+    Subscription:
+      type: object
+      properties:
+        id:
+          type: string
+        tenantId:
+          type: string
+        plan:
+          $ref: '#/components/schemas/SubscriptionPlan'
+        status:
+          $ref: '#/components/schemas/SubscriptionStatus'
+        trialStartedAt:
+          type: string
+          format: date-time
+        trialEndsAt:
+          type: string
+          format: date-time
+        trialDaysRemaining:
+          type: integer
+        currentPeriodStart:
+          type: string
+          format: date-time
+        currentPeriodEnd:
+          type: string
+          format: date-time
+        stripeCustomerId:
+          type: string
+        stripeSubscriptionId:
+          type: string
+        pendingBankTransfer:
+          type: object
+          properties:
+            paymentId:
+              type: string
+            submittedAt:
+              type: string
+              format: date-time
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    SubscriptionPayment:
+      type: object
+      properties:
+        id:
+          type: string
+        subscriptionId:
+          type: string
+        amount:
+          type: number
+        currency:
+          type: string
+        method:
+          type: string
+          enum: [stripe, bank_transfer]
+        status:
+          type: string
+          enum: [pending, completed, failed]
+        stripePaymentIntentId:
+          type: string
+        bankTransfer:
+          type: object
+          properties:
+            transactionReference:
+              type: string
+            proofDocumentUrl:
+              type: string
+            reviewedBy:
+              type: string
+            reviewedAt:
+              type: string
+              format: date-time
+        periodStart:
+          type: string
+          format: date-time
+        periodEnd:
+          type: string
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+
+    PricingInfo:
+      type: object
+      properties:
+        monthlyPrice:
+          type: number
+        currency:
+          type: string
+        trialDays:
+          type: integer
+        features:
+          type: array
+          items:
+            type: string
+
+paths:
+  /subscription:
+    get:
+      operationId: getSubscription
+      summary: Get current subscription
+      description: |
+        Returns subscription for authenticated user's tenant.
+      security:
+        - firebase: []
+      responses:
+        '200':
+          description: Subscription details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Subscription'
+
+  /subscription/status:
+    get:
+      operationId: getSubscriptionStatus
+      summary: Quick subscription status check
+      description: |
+        Lightweight check for access control.
+        Used on every authenticated request.
+      security:
+        - firebase: []
+      responses:
+        '200':
+          description: Status and access level
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  hasAccess:
+                    type: boolean
+                    description: Whether tenant can access the platform
+                  status:
+                    $ref: '#/components/schemas/SubscriptionStatus'
+                  plan:
+                    $ref: '#/components/schemas/SubscriptionPlan'
+                  trialDaysRemaining:
+                    type: integer
+                  expiresAt:
+                    type: string
+                    format: date-time
+                  message:
+                    type: string
+                    description: User-facing message (e.g., "Trial expires in 3 days")
+
+  /subscription/checkout:
+    post:
+      operationId: createSubscriptionCheckout
+      summary: Create Stripe subscription checkout
+      description: |
+        Server Action: `createSubscriptionCheckoutAction`
+        Creates Stripe Checkout session for subscription.
+      security:
+        - firebase: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                successUrl:
+                  type: string
+                  format: uri
+                cancelUrl:
+                  type: string
+                  format: uri
+      responses:
+        '200':
+          description: Checkout session created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      checkoutUrl:
+                        type: string
+                        format: uri
+                      sessionId:
+                        type: string
+
+  /subscription/portal:
+    post:
+      operationId: createBillingPortal
+      summary: Create Stripe billing portal session
+      description: |
+        Server Action: `createBillingPortalAction`
+        Allows customer to manage payment methods, view invoices.
+      security:
+        - firebase: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                returnUrl:
+                  type: string
+                  format: uri
+      responses:
+        '200':
+          description: Portal session created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      portalUrl:
+                        type: string
+                        format: uri
+
+  /subscription/bank-transfer:
+    post:
+      operationId: initiateBankTransfer
+      summary: Initiate bank transfer payment
+      description: |
+        Server Action: `initiateBankTransferAction`
+        Creates pending subscription payment for bank transfer.
+      security:
+        - firebase: []
+      responses:
+        '200':
+          description: Bank transfer initiated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      paymentId:
+                        type: string
+                      amount:
+                        type: number
+                      currency:
+                        type: string
+                      bankDetails:
+                        type: object
+                        properties:
+                          bankName:
+                            type: string
+                          accountNumber:
+                            type: string
+                          accountHolder:
+                            type: string
+                          reference:
+                            type: string
+                            description: Include in transfer
+
+  /subscription/bank-transfer/{paymentId}/proof:
+    parameters:
+      - name: paymentId
+        in: path
+        required: true
+        schema:
+          type: string
+
+    post:
+      operationId: uploadSubscriptionPaymentProof
+      summary: Upload bank transfer proof
+      description: |
+        Server Action: `uploadSubscriptionPaymentProofAction`
+        Submit proof document for pending bank transfer.
+      security:
+        - firebase: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - transactionReference
+                - proofDocument
+              properties:
+                transactionReference:
+                  type: string
+                bankName:
+                  type: string
+                proofDocument:
+                  type: string
+                  format: binary
+      responses:
+        '200':
+          description: Proof uploaded, awaiting approval
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+
+  /subscription/cancel:
+    post:
+      operationId: cancelSubscription
+      summary: Cancel subscription
+      description: |
+        Server Action: `cancelSubscriptionAction`
+        Cancels at end of current period.
+        Requires: owner role
+      security:
+        - firebase: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reason:
+                  type: string
+                feedback:
+                  type: string
+      responses:
+        '200':
+          description: Subscription cancelled
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      cancelledAt:
+                        type: string
+                        format: date-time
+                      accessUntil:
+                        type: string
+                        format: date-time
+
+  /subscription/reactivate:
+    post:
+      operationId: reactivateSubscription
+      summary: Reactivate cancelled subscription
+      description: |
+        Server Action: `reactivateSubscriptionAction`
+        If within current period, reactivates without new payment.
+      security:
+        - firebase: []
+      responses:
+        '200':
+          description: Subscription reactivated
+        '400':
+          description: Cannot reactivate (expired)
+
+  /subscription/payments:
+    get:
+      operationId: getSubscriptionPayments
+      summary: Get subscription payment history
+      security:
+        - firebase: []
+      responses:
+        '200':
+          description: Payment history
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  payments:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/SubscriptionPayment'
+
+  /pricing:
+    get:
+      operationId: getPricing
+      summary: Get pricing information
+      description: |
+        Public endpoint for landing page.
+      responses:
+        '200':
+          description: Pricing details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PricingInfo'
+
+  # Platform Admin endpoints
+  /admin/subscriptions:
+    get:
+      operationId: listAllSubscriptions
+      summary: List all subscriptions (platform admin)
+      description: |
+        Platform admin view of all tenant subscriptions.
+        Requires: platformAdmin role
+      security:
+        - firebase: []
+      parameters:
+        - name: status
+          in: query
+          schema:
+            $ref: '#/components/schemas/SubscriptionStatus'
+        - name: plan
+          in: query
+          schema:
+            $ref: '#/components/schemas/SubscriptionPlan'
+        - name: search
+          in: query
+          schema:
+            type: string
+          description: Search by tenant name or email
+      responses:
+        '200':
+          description: Subscription list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  subscriptions:
+                    type: array
+                    items:
+                      allOf:
+                        - $ref: '#/components/schemas/Subscription'
+                        - type: object
+                          properties:
+                            tenantName:
+                              type: string
+                            tenantEmail:
+                              type: string
+
+  /admin/subscriptions/pending-payments:
+    get:
+      operationId: getPendingPayments
+      summary: Get pending bank transfer payments
+      description: |
+        List subscription payments awaiting approval.
+        Requires: platformAdmin role
+      security:
+        - firebase: []
+      responses:
+        '200':
+          description: Pending payments
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  payments:
+                    type: array
+                    items:
+                      allOf:
+                        - $ref: '#/components/schemas/SubscriptionPayment'
+                        - type: object
+                          properties:
+                            tenantId:
+                              type: string
+                            tenantName:
+                              type: string
+                            tenantEmail:
+                              type: string
+
+  /admin/subscriptions/{tenantId}/approve-payment:
+    parameters:
+      - name: tenantId
+        in: path
+        required: true
+        schema:
+          type: string
+
+    post:
+      operationId: approveSubscriptionPayment
+      summary: Approve bank transfer payment
+      description: |
+        Server Action: `approveSubscriptionPaymentAction`
+        Activates subscription.
+        Requires: platformAdmin role
+      security:
+        - firebase: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - paymentId
+              properties:
+                paymentId:
+                  type: string
+      responses:
+        '200':
+          description: Payment approved, subscription activated
+
+  /admin/subscriptions/{tenantId}/reject-payment:
+    parameters:
+      - name: tenantId
+        in: path
+        required: true
+        schema:
+          type: string
+
+    post:
+      operationId: rejectSubscriptionPayment
+      summary: Reject bank transfer payment
+      description: |
+        Server Action: `rejectSubscriptionPaymentAction`
+        Requires: platformAdmin role
+      security:
+        - firebase: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - paymentId
+                - reason
+              properties:
+                paymentId:
+                  type: string
+                reason:
+                  type: string
+      responses:
+        '200':
+          description: Payment rejected, user notified
+
+  /admin/subscriptions/{tenantId}/extend-trial:
+    parameters:
+      - name: tenantId
+        in: path
+        required: true
+        schema:
+          type: string
+
+    post:
+      operationId: extendTrial
+      summary: Extend trial period
+      description: |
+        Server Action: `extendTrialAction`
+        Admin can extend trial for specific tenant.
+        Requires: platformAdmin role
+      security:
+        - firebase: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - days
+              properties:
+                days:
+                  type: integer
+                  minimum: 1
+                  maximum: 30
+                reason:
+                  type: string
+      responses:
+        '200':
+          description: Trial extended
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      newTrialEndsAt:
+                        type: string
+                        format: date-time
+
+  /admin/subscriptions/{tenantId}/suspend:
+    parameters:
+      - name: tenantId
+        in: path
+        required: true
+        schema:
+          type: string
+
+    post:
+      operationId: suspendTenant
+      summary: Suspend tenant access
+      description: |
+        Server Action: `suspendTenantAction`
+        Immediately revokes access.
+        Requires: platformAdmin role
+      security:
+        - firebase: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - reason
+              properties:
+                reason:
+                  type: string
+      responses:
+        '200':
+          description: Tenant suspended
