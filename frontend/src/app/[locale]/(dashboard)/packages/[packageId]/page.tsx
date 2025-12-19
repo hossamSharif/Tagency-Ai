@@ -6,12 +6,13 @@ import { adminDb } from '@/lib/firebase/admin';
 import { PackageDetails } from '@/components/features/packages/package-details';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Edit } from 'lucide-react';
+import type { PackageWithServices, Service } from '@/types/models/package';
 
 interface PackageDetailPageProps {
   params: Promise<{ locale: string; packageId: string }>;
 }
 
-async function getPackage(tenantId: string, packageId: string) {
+async function getPackage(tenantId: string, packageId: string): Promise<PackageWithServices | null> {
   const packageRef = adminDb
     .collection('tenants')
     .doc(tenantId)
@@ -35,13 +36,13 @@ async function getPackage(tenantId: string, packageId: string) {
   const services = servicesSnapshot.docs.map((doc) => ({
     id: doc.id,
     ...doc.data(),
-  }));
+  })) as Service[];
 
   return {
     id: packageDoc.id,
     ...packageData,
     services,
-  };
+  } as PackageWithServices;
 }
 
 export async function generateMetadata({ params }: PackageDetailPageProps) {

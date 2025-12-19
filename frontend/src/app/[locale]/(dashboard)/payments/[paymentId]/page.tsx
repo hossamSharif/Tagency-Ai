@@ -65,11 +65,12 @@ export default function PaymentDetailPage() {
       setLoading(true);
       const result = await getPaymentAction(tenant.id, paymentId);
 
-      if (result.success && result.data) {
-        setPayment(result.data);
-      } else {
+      if (!result.success) {
         setError(result.error || 'Payment not found');
+        setLoading(false);
+        return;
       }
+      setPayment(result.data);
       setLoading(false);
     }
 

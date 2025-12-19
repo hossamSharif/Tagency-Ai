@@ -8,8 +8,8 @@ import { passportDataSchema } from './customers';
 export const travelerSchema = z.object({
   firstName: z.string().min(1, 'First name is required'),
   lastName: z.string().min(1, 'Last name is required'),
-  passport: passportDataSchema.optional(),
   isPrimary: z.boolean().default(false),
+  passport: passportDataSchema.optional(),
 });
 
 // Required document schema for bookings

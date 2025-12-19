@@ -64,8 +64,8 @@ export async function createCustomerAction(
       tenantId,
       userId,
       action: 'create',
-      entityType: 'customer',
-      entityId: customer.id,
+      resource: 'customer',
+      resourceId: customer.id,
       description: `Created customer: ${customer.firstName} ${customer.lastName}`,
     });
 
@@ -138,8 +138,8 @@ export async function updateCustomerAction(
       tenantId,
       userId,
       action: 'update',
-      entityType: 'customer',
-      entityId: customerId,
+      resource: 'customer',
+      resourceId: customerId,
       description: `Updated customer: ${updatedCustomer.firstName} ${updatedCustomer.lastName}`,
       changes: Object.keys(validatedData).map((key) => ({
         field: key,
@@ -217,8 +217,8 @@ export async function updateCustomerPassportAction(
       tenantId,
       userId,
       action: 'update',
-      entityType: 'customer',
-      entityId: customerId,
+      resource: 'customer',
+      resourceId: customerId,
       description: `Updated passport for customer: ${existingCustomer.firstName} ${existingCustomer.lastName}`,
       changes: [
         {
@@ -289,8 +289,8 @@ export async function uploadCustomerDocumentAction(
       tenantId,
       userId,
       action: 'update',
-      entityType: 'customer',
-      entityId: customerId,
+      resource: 'customer',
+      resourceId: customerId,
       description: `Uploaded ${documentType} document for customer: ${existingCustomer.firstName} ${existingCustomer.lastName}`,
     });
 
@@ -348,14 +348,14 @@ export async function deleteCustomerDocumentAction(
       tenantId,
       userId,
       action: 'delete',
-      entityType: 'customer',
-      entityId: customerId,
+      resource: 'customer',
+      resourceId: customerId,
       description: `Deleted document from customer: ${existingCustomer.firstName} ${existingCustomer.lastName}`,
     });
 
     revalidatePath(`/[locale]/(dashboard)/customers/${customerId}`);
 
-    return { success: true };
+    return { success: true, data: undefined };
   } catch (error) {
     console.error('Error deleting customer document:', error);
     return {
@@ -439,14 +439,14 @@ export async function deleteCustomerAction(
       tenantId,
       userId,
       action: 'delete',
-      entityType: 'customer',
-      entityId: customerId,
+      resource: 'customer',
+      resourceId: customerId,
       description: `Deleted customer: ${customer.firstName} ${customer.lastName}`,
     });
 
     revalidatePath(`/[locale]/(dashboard)/customers`);
 
-    return { success: true };
+    return { success: true, data: undefined };
   } catch (error) {
     console.error('Error deleting customer:', error);
     return {

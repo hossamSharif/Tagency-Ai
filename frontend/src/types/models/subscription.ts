@@ -53,6 +53,15 @@ export interface Subscription {
   /** Pending bank transfer details */
   pendingBankTransfer?: PendingBankTransfer;
 
+  /** When subscription was cancelled */
+  cancelledAt?: Timestamp;
+  /** When access ends after cancellation */
+  accessUntil?: Timestamp;
+  /** Reason for cancellation */
+  cancellationReason?: string;
+  /** User feedback on cancellation */
+  cancellationFeedback?: string;
+
   /** When created */
   createdAt: Timestamp;
   /** When last updated */
@@ -141,3 +150,189 @@ export const SUBSCRIPTION_STATUS_INFO: Record<
   expired: { label: 'Expired', labelAr: 'منتهي', color: 'red' },
   pending_payment: { label: 'Pending Payment', labelAr: 'في انتظار الدفع', color: 'blue' },
 };
+
+/**
+ * Subscription payment method
+ */
+export type SubscriptionPaymentMethod = 'stripe' | 'bank_transfer';
+
+/**
+ * Subscription payment status
+ */
+export type SubscriptionPaymentStatus = 'pending' | 'completed' | 'failed' | 'rejected';
+
+/**
+ * Bank transfer details
+ */
+export interface BankTransferDetails {
+  transactionReference: string;
+  bankName?: string;
+  proofDocumentUrl?: string;
+  reviewedBy?: string;
+  reviewedAt?: Timestamp;
+  rejectionReason?: string;
+}
+
+/**
+ * Subscription payment record
+ * Collection: `subscriptions/{tenantId}/payments/{paymentId}`
+ */
+export interface SubscriptionPayment {
+  id: string;
+  subscriptionId: string;
+  tenantId: string;
+
+  /** Payment amount */
+  amount: number;
+  /** Currency code */
+  currency: string;
+
+  /** Payment method */
+  method: SubscriptionPaymentMethod;
+  /** Payment status */
+  status: SubscriptionPaymentStatus;
+
+  /** Stripe payment intent ID (for card payments) */
+  stripePaymentIntentId?: string;
+  /** Stripe invoice ID */
+  stripeInvoiceId?: string;
+
+  /** Bank transfer details (for manual payments) */
+  bankTransfer?: BankTransferDetails;
+
+  /** Billing period covered */
+  periodStart?: Timestamp;
+  periodEnd?: Timestamp;
+
+  /** When created */
+  createdAt: Timestamp;
+  /** When completed/failed */
+  completedAt?: Timestamp;
+}
+
+/**
+ * Subscription status check result for access control
+ */
+export interface SubscriptionStatusCheck {
+  /** Whether tenant has platform access */
+  hasAccess: boolean;
+  /** Current status */
+  status: SubscriptionStatus;
+  /** Current plan */
+  plan: SubscriptionPlan;
+  /** Days remaining in trial (if applicable) */
+  trialDaysRemaining?: number;
+  /** When access expires */
+  expiresAt?: Date;
+  /** User-facing message */
+  message?: string;
+}
+
+/**
+ * Subscription with tenant info (for admin views)
+ */
+export interface SubscriptionWithTenant extends Subscription {
+  tenantName: string;
+  tenantEmail: string;
+}
+
+/**
+ * Subscription payment with tenant info (for admin views)
+ */
+export interface SubscriptionPaymentWithTenant extends SubscriptionPayment {
+  tenantName: string;
+  tenantEmail: string;
+}
+
+/**
+ * Subscription payment status display info
+ */
+export const SUBSCRIPTION_PAYMENT_STATUS_INFO: Record<
+  SubscriptionPaymentStatus,
+  { label: string; labelAr: string; color: string }
+> = {
+  pending: { label: 'Pending', labelAr: 'قيد الانتظار', color: 'yellow' },
+  completed: { label: 'Completed', labelAr: 'مكتمل', color: 'green' },
+  failed: { label: 'Failed', labelAr: 'فشل', color: 'red' },
+  rejected: { label: 'Rejected', labelAr: 'مرفوض', color: 'red' },
+};
+
+/**
+ * Get subscription status check
+ */
+export function getSubscriptionStatusCheck(subscription: Subscription | null): SubscriptionStatusCheck {
+  if (!subscription) {
+    return {
+      hasAccess: false,
+      status: 'expired',
+      plan: 'trial',
+      message: 'No subscription found',
+    };
+  }
+
+  const { status, plan, trialEndsAt, currentPeriodEnd } = subscription;
+  const trialDaysRemaining = getTrialDaysRemaining(subscription);
+
+  // Active trial
+  if (plan === 'trial' && status === 'active' && trialDaysRemaining > 0) {
+    return {
+      hasAccess: true,
+      status,
+      plan,
+      trialDaysRemaining,
+      expiresAt: trialEndsAt?.toDate(),
+      message: `Trial: ${trialDaysRemaining} days remaining`,
+    };
+  }
+
+  // Expired trial
+  if (plan === 'trial' && trialDaysRemaining <= 0) {
+    return {
+      hasAccess: false,
+      status: 'expired',
+      plan,
+      trialDaysRemaining: 0,
+      message: 'Trial has expired',
+    };
+  }
+
+  // Active paid subscription
+  if (status === 'active' && plan === 'monthly') {
+    return {
+      hasAccess: true,
+      status,
+      plan,
+      expiresAt: currentPeriodEnd?.toDate(),
+      message: 'Subscription active',
+    };
+  }
+
+  // Past due - still has access but needs attention
+  if (status === 'past_due') {
+    return {
+      hasAccess: true,
+      status,
+      plan,
+      expiresAt: currentPeriodEnd?.toDate(),
+      message: 'Payment past due - please update payment method',
+    };
+  }
+
+  // Pending payment
+  if (status === 'pending_payment') {
+    return {
+      hasAccess: false,
+      status,
+      plan,
+      message: 'Awaiting payment confirmation',
+    };
+  }
+
+  // Cancelled or expired
+  return {
+    hasAccess: false,
+    status,
+    plan,
+    message: status === 'cancelled' ? 'Subscription cancelled' : 'Subscription expired',
+  };
+}

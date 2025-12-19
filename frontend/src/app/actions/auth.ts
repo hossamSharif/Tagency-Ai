@@ -124,7 +124,7 @@ export async function signupAction(
     const trialEndsAt = Timestamp.fromDate(calculateTrialEndDate(new Date()));
 
     // Create tenant document
-    const tenantData: Omit<Tenant, 'id'> = {
+    const tenantData = {
       name: officeName,
       slug: generateSlug(officeName),
       email,
@@ -141,7 +141,7 @@ export async function signupAction(
     await adminDb.collection('tenants').doc(tenantId).set(tenantData);
 
     // Create subscription document (root level)
-    const subscriptionData: Omit<Subscription, 'id'> = {
+    const subscriptionData = {
       tenantId,
       plan: 'trial',
       status: 'active',
@@ -154,7 +154,7 @@ export async function signupAction(
     await adminDb.collection('subscriptions').doc(tenantId).set(subscriptionData);
 
     // Create user document in tenant
-    const userData: Omit<User, 'id'> = {
+    const userData = {
       email,
       displayName: officeName,
       role: 'owner',

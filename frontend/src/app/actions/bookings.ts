@@ -209,8 +209,8 @@ export async function createBookingAction(
       tenantId,
       userId,
       action: 'create',
-      entityType: 'booking',
-      entityId: booking.id,
+      resource: 'booking',
+      resourceId: booking.id,
       description: `Created booking ${bookingNumber} for package: ${packageSnapshot.name}`,
     });
 
@@ -286,8 +286,8 @@ export async function updateBookingAction(
       tenantId,
       userId,
       action: 'update',
-      entityType: 'booking',
-      entityId: bookingId,
+      resource: 'booking',
+      resourceId: bookingId,
       description: `Updated booking ${existingBooking.bookingNumber}`,
     });
 
@@ -361,8 +361,8 @@ export async function updateBookingStatusAction(
       tenantId,
       userId,
       action: 'status_change',
-      entityType: 'booking',
-      entityId: bookingId,
+      resource: 'booking',
+      resourceId: bookingId,
       description: `Changed booking ${existingBooking.bookingNumber} status from ${existingBooking.status} to ${validatedData.status}`,
       changes: [
         {
@@ -435,8 +435,8 @@ export async function uploadBookingDocumentAction(
       tenantId,
       userId,
       action: 'update',
-      entityType: 'booking',
-      entityId: bookingId,
+      resource: 'booking',
+      resourceId: bookingId,
       description: `Uploaded ${documentType} document for booking ${existingBooking.bookingNumber}`,
     });
 
@@ -515,8 +515,8 @@ export async function updateTravelerPassportAction(
       tenantId,
       userId,
       action: 'update',
-      entityType: 'booking',
-      entityId: validatedData.bookingId,
+      resource: 'booking',
+      resourceId: validatedData.bookingId,
       description: `Updated passport for traveler ${validatedData.travelerIndex + 1} in booking ${existingBooking.bookingNumber}`,
     });
 

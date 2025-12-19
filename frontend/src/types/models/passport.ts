@@ -77,4 +77,5 @@ export interface PassportFormData {
   nationality: string;
   gender: 'M' | 'F';
   issuingCountry: string;
+  manuallyVerified?: boolean;
 }

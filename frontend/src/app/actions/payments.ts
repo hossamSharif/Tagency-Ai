@@ -159,8 +159,8 @@ export async function createPaymentAction(
       tenantId,
       userId,
       action: 'create',
-      entityType: 'payment',
-      entityId: payment.id,
+      resource: 'payment',
+      resourceId: payment.id,
       description: `Created cash payment ${paymentNumber} for ${validatedData.amount}`,
     });
 
@@ -332,8 +332,8 @@ export async function uploadBankTransferProofAction(
       tenantId,
       userId,
       action: 'create',
-      entityType: 'payment',
-      entityId: payment.id,
+      resource: 'payment',
+      resourceId: payment.id,
       description: `Submitted bank transfer proof for ${paymentNumber}`,
     });
 
@@ -436,8 +436,8 @@ export async function approveBankTransferAction(
       tenantId,
       userId,
       action: 'status_change',
-      entityType: 'payment',
-      entityId: payment.id,
+      resource: 'payment',
+      resourceId: payment.id,
       description: `Approved bank transfer ${payment.paymentNumber}`,
       changes: [{ field: 'status', oldValue: 'pending', newValue: 'completed' }],
     });
@@ -503,8 +503,8 @@ export async function rejectBankTransferAction(
       tenantId,
       userId,
       action: 'status_change',
-      entityType: 'payment',
-      entityId: payment.id,
+      resource: 'payment',
+      resourceId: payment.id,
       description: `Rejected bank transfer ${payment.paymentNumber}: ${validatedData.rejectionReason}`,
       changes: [{ field: 'status', oldValue: 'pending', newValue: 'failed' }],
     });

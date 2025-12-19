@@ -123,19 +123,19 @@ export default function BookingsPage() {
 
       {/* Booking List */}
       {bookings.length === 0 ? (
-        <EmptyState
-          icon={<Calendar className="h-12 w-12" />}
-          title={t('noBookings')}
-          description={t('noBookingsDescription')}
-          action={
-            <Button asChild>
-              <Link href={`/${locale}/bookings/new`}>
-                <Plus className="me-2 h-4 w-4" />
-                {t('createFirstBooking')}
-              </Link>
-            </Button>
-          }
-        />
+        <div className="flex flex-col items-center justify-center py-12 text-center">
+          <div className="rounded-full bg-muted p-4 mb-4">
+            <Calendar className="h-12 w-12 text-muted-foreground" />
+          </div>
+          <h3 className="font-semibold text-lg mb-1">{t('noBookings')}</h3>
+          <p className="text-muted-foreground max-w-sm mb-4">{t('noBookingsDescription')}</p>
+          <Button asChild>
+            <Link href={`/${locale}/bookings/new`}>
+              <Plus className="me-2 h-4 w-4" />
+              {t('createFirstBooking')}
+            </Link>
+          </Button>
+        </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {bookings.map((booking) => (

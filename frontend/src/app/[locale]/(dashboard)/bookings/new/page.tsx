@@ -46,12 +46,12 @@ export default function NewBookingPage() {
     try {
       const result = await createBookingAction(tenant.id, user.uid, data);
 
-      if (result.success && result.data) {
-        toast.success(t('bookingCreated'));
-        router.push(`/${locale}/bookings/${result.data.id}`);
-      } else {
+      if (!result.success) {
         toast.error(result.error || t('errors.createFailed'));
+        return;
       }
+      toast.success(t('bookingCreated'));
+      router.push(`/${locale}/bookings/${result.data.id}`);
     } catch (error) {
       console.error('Error creating booking:', error);
       toast.error(t('errors.createFailed'));

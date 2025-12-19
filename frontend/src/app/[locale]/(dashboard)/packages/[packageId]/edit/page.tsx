@@ -6,12 +6,13 @@ import { adminDb } from '@/lib/firebase/admin';
 import { PackageForm } from '@/components/forms/package-form';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
+import type { Package } from '@/types/models/package';
 
 interface EditPackagePageProps {
   params: Promise<{ locale: string; packageId: string }>;
 }
 
-async function getPackage(tenantId: string, packageId: string) {
+async function getPackage(tenantId: string, packageId: string): Promise<Package | null> {
   const packageDoc = await adminDb
     .collection('tenants')
     .doc(tenantId)
@@ -26,7 +27,7 @@ async function getPackage(tenantId: string, packageId: string) {
   return {
     id: packageDoc.id,
     ...packageDoc.data(),
-  };
+  } as Package;
 }
 
 export async function generateMetadata({ params }: EditPackagePageProps) {

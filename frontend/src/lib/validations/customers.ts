@@ -26,6 +26,7 @@ export const passportDataSchema = z.object({
   nationality: z.string().length(3, 'Nationality must be a 3-letter country code'),
   gender: z.enum(['M', 'F']),
   issuingCountry: z.string().length(3, 'Issuing country must be a 3-letter country code'),
+  manuallyVerified: z.boolean().default(false),
 });
 
 // Customer document schema

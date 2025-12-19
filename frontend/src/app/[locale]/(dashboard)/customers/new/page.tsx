@@ -43,18 +43,18 @@ export default function NewCustomerPage() {
     try {
       const result = await createCustomerAction(tenant.id, user.uid, data);
 
-      if (result.success && result.data) {
-        toast.success(t('customerCreated'));
-        setCreatedCustomerId(result.data.id);
-
-        // If we have passport data from scan, save it
-        if (scanResult && showPassportForm) {
-          setShowPassportForm(true);
-        } else {
-          router.push(`/${locale}/customers/${result.data.id}`);
-        }
-      } else {
+      if (!result.success) {
         toast.error(result.error || t('errors.createFailed'));
+        return;
+      }
+      toast.success(t('customerCreated'));
+      setCreatedCustomerId(result.data.id);
+
+      // If we have passport data from scan, save it
+      if (scanResult && showPassportForm) {
+        setShowPassportForm(true);
+      } else {
+        router.push(`/${locale}/customers/${result.data.id}`);
       }
     } catch (error) {
       console.error('Error creating customer:', error);

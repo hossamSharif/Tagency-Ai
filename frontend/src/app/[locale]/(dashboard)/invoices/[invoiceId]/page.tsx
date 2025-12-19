@@ -145,11 +145,11 @@ export default function InvoiceDetailPage() {
       cancelUrl
     );
 
-    if (result.success && result.data) {
-      window.location.href = result.data.checkoutUrl;
-    } else {
+    if (!result.success) {
       toast.error(result.error || tPayments('stripeError'));
+      return;
     }
+    window.location.href = result.data.checkoutUrl;
   };
 
   const handleApprovePayment = async (paymentId: string) => {

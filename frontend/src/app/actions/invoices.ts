@@ -204,8 +204,8 @@ export async function generateInvoiceAction(
       tenantId,
       userId,
       action: 'create',
-      entityType: 'invoice',
-      entityId: invoice.id,
+      resource: 'invoice',
+      resourceId: invoice.id,
       description: `Generated invoice ${invoiceNumber} for booking ${booking.bookingNumber}`,
     });
 
@@ -280,8 +280,8 @@ export async function updateInvoiceAction(
       tenantId,
       userId,
       action: 'update',
-      entityType: 'invoice',
-      entityId: invoiceId,
+      resource: 'invoice',
+      resourceId: invoiceId,
       description: `Updated invoice ${existingInvoice.invoiceNumber}`,
     });
 
@@ -332,8 +332,8 @@ export async function issueInvoiceAction(
       tenantId,
       userId,
       action: 'status_change',
-      entityType: 'invoice',
-      entityId: invoiceId,
+      resource: 'invoice',
+      resourceId: invoiceId,
       description: `Issued invoice ${invoice.invoiceNumber}`,
       changes: [{ field: 'status', oldValue: 'draft', newValue: 'issued' }],
     });
@@ -394,8 +394,8 @@ export async function cancelInvoiceAction(
       tenantId,
       userId,
       action: 'status_change',
-      entityType: 'invoice',
-      entityId: invoiceId,
+      resource: 'invoice',
+      resourceId: invoiceId,
       description: `Cancelled invoice ${invoice.invoiceNumber}: ${reason}`,
       changes: [{ field: 'status', oldValue: invoice.status, newValue: 'cancelled' }],
     });

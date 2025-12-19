@@ -80,37 +80,6 @@ export interface AuditUserContext {
 }
 
 /**
- * Create an audit log entry
- */
-export async function createAuditLog(
-  tenantId: string,
-  userContext: AuditUserContext,
-  action: AuditAction,
-  entityType: AuditEntityType,
-  entityId: string,
-  options?: {
-    changes?: AuditChange[];
-    description?: string;
-  }
-): Promise<string> {
-  const logEntry: AuditLogEntry = {
-    userId: userContext.userId,
-    userEmail: userContext.userEmail,
-    userRole: userContext.userRole,
-    action,
-    entityType,
-    entityId,
-    changes: options?.changes,
-    description: options?.description,
-    ipAddress: userContext.ipAddress,
-    userAgent: userContext.userAgent,
-    timestamp: serverTimestamp(),
-  };
-
-  return createDocument(tenantId, 'auditLogs', logEntry);
-}
-
-/**
  * Generate changes array by comparing two objects
  */
 export function generateChanges<T extends Record<string, unknown>>(
@@ -257,4 +226,79 @@ export function extractUserContext(
     ipAddress: headers.get('x-forwarded-for') || headers.get('x-real-ip') || undefined,
     userAgent: headers.get('user-agent') || undefined,
   };
+}
+
+/**
+ * Simplified audit log input for server actions
+ */
+export interface SimpleAuditLogInput {
+  tenantId: string;
+  userId: string;
+  action: AuditAction | 'duplicate';
+  resource: AuditEntityType;
+  resourceId: string;
+  description?: string;
+  details?: Record<string, unknown>;
+  changes?: AuditChange[];
+}
+
+/**
+ * Create an audit log entry (simplified version for server actions)
+ * This is an overload that works with server actions where full user context isn't needed
+ */
+export async function createAuditLog(input: SimpleAuditLogInput): Promise<string>;
+export async function createAuditLog(
+  tenantId: string,
+  userContext: AuditUserContext,
+  action: AuditAction,
+  entityType: AuditEntityType,
+  entityId: string,
+  options?: {
+    changes?: AuditChange[];
+    description?: string;
+  }
+): Promise<string>;
+export async function createAuditLog(
+  inputOrTenantId: SimpleAuditLogInput | string,
+  userContext?: AuditUserContext,
+  action?: AuditAction,
+  entityType?: AuditEntityType,
+  entityId?: string,
+  options?: {
+    changes?: AuditChange[];
+    description?: string;
+  }
+): Promise<string> {
+  // Handle simplified input
+  if (typeof inputOrTenantId === 'object') {
+    const input = inputOrTenantId;
+    const logEntry = {
+      userId: input.userId,
+      userEmail: 'system',
+      userRole: 'admin' as UserRole,
+      action: input.action === 'duplicate' ? 'create' as AuditAction : input.action as AuditAction,
+      entityType: input.resource,
+      entityId: input.resourceId,
+      description: input.description || (input.details ? JSON.stringify(input.details) : undefined),
+      timestamp: serverTimestamp(),
+    };
+    return createDocument(input.tenantId, 'auditLogs', logEntry);
+  }
+
+  // Handle full input
+  const logEntry: AuditLogEntry = {
+    userId: userContext!.userId,
+    userEmail: userContext!.userEmail,
+    userRole: userContext!.userRole,
+    action: action!,
+    entityType: entityType!,
+    entityId: entityId!,
+    changes: options?.changes,
+    description: options?.description,
+    ipAddress: userContext!.ipAddress,
+    userAgent: userContext!.userAgent,
+    timestamp: serverTimestamp(),
+  };
+
+  return createDocument(inputOrTenantId, 'auditLogs', logEntry);
 }
