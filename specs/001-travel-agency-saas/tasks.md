@@ -189,62 +189,62 @@
 
 ### Type Definitions for User Story 2
 
-- [ ] T086 [P] [US2] Create Customer type definition in src/types/models/customer.ts per data-model.md
-- [ ] T087 [P] [US2] Create Booking type definition in src/types/models/booking.ts per data-model.md
-- [ ] T088 [P] [US2] Create PassportData type definition in src/types/models/passport.ts per data-model.md
+- [X] T086 [P] [US2] Create Customer type definition in src/types/models/customer.ts per data-model.md
+- [X] T087 [P] [US2] Create Booking type definition in src/types/models/booking.ts per data-model.md
+- [X] T088 [P] [US2] Create PassportData type definition in src/types/models/passport.ts per data-model.md
 
 ### OCR Integration for User Story 2
 
-- [ ] T089 [US2] Create Tesseract.js wrapper in src/lib/ocr/tesseract.ts
-- [ ] T090 [US2] Implement passport data extraction logic in src/lib/ocr/passport-parser.ts (MRZ parsing)
-- [ ] T091 [US2] Create OCR API route in src/app/api/ocr/passport/route.ts
+- [X] T089 [US2] Create Tesseract.js wrapper in src/lib/ocr/tesseract.ts
+- [X] T090 [US2] Implement passport data extraction logic in src/lib/ocr/passport-parser.ts (MRZ parsing)
+- [X] T091 [US2] Create OCR API route in src/app/api/ocr/passport/route.ts
 
 ### Validation Schemas for User Story 2
 
-- [ ] T092 [US2] Create customer validation schemas in src/lib/validations/customers.ts
-- [ ] T093 [P] [US2] Create booking validation schemas in src/lib/validations/bookings.ts
+- [X] T092 [US2] Create customer validation schemas in src/lib/validations/customers.ts
+- [X] T093 [P] [US2] Create booking validation schemas in src/lib/validations/bookings.ts
 
 ### Server Actions for User Story 2
 
-- [ ] T094 [US2] Implement createCustomerAction in src/app/actions/customers.ts
-- [ ] T095 [US2] Implement updateCustomerAction in src/app/actions/customers.ts
-- [ ] T096 [US2] Implement updateCustomerPassportAction in src/app/actions/customers.ts
-- [ ] T097 [US2] Implement uploadCustomerDocumentAction in src/app/actions/customers.ts
-- [ ] T098 [US2] Implement createBookingAction in src/app/actions/bookings.ts (creates package snapshot, booking number)
-- [ ] T099 [US2] Implement updateBookingAction in src/app/actions/bookings.ts
-- [ ] T100 [US2] Implement updateBookingStatusAction in src/app/actions/bookings.ts
-- [ ] T101 [US2] Implement uploadBookingDocumentAction in src/app/actions/bookings.ts
-- [ ] T102 [US2] Implement updateTravelerPassportAction in src/app/actions/bookings.ts
+- [X] T094 [US2] Implement createCustomerAction in src/app/actions/customers.ts
+- [X] T095 [US2] Implement updateCustomerAction in src/app/actions/customers.ts
+- [X] T096 [US2] Implement updateCustomerPassportAction in src/app/actions/customers.ts
+- [X] T097 [US2] Implement uploadCustomerDocumentAction in src/app/actions/customers.ts
+- [X] T098 [US2] Implement createBookingAction in src/app/actions/bookings.ts (creates package snapshot, booking number)
+- [X] T099 [US2] Implement updateBookingAction in src/app/actions/bookings.ts
+- [X] T100 [US2] Implement updateBookingStatusAction in src/app/actions/bookings.ts
+- [X] T101 [US2] Implement uploadBookingDocumentAction in src/app/actions/bookings.ts
+- [X] T102 [US2] Implement updateTravelerPassportAction in src/app/actions/bookings.ts
 
 ### Hooks for User Story 2
 
-- [ ] T103 [US2] Create useCustomers hook in src/hooks/use-customers.ts
-- [ ] T104 [P] [US2] Create useCustomer hook in src/hooks/use-customer.ts
-- [ ] T105 [P] [US2] Create useBookings hook in src/hooks/use-bookings.ts
-- [ ] T106 [P] [US2] Create useBooking hook in src/hooks/use-booking.ts
+- [X] T103 [US2] Create useCustomers hook in src/hooks/use-customers.ts
+- [X] T104 [P] [US2] Create useCustomer hook in src/hooks/use-customer.ts
+- [X] T105 [P] [US2] Create useBookings hook in src/hooks/use-bookings.ts
+- [X] T106 [P] [US2] Create useBooking hook in src/hooks/use-booking.ts
 
 ### UI Components for User Story 2
 
-- [ ] T107 [US2] Create PassportScanner component with camera capture in src/components/features/passport-scanner/passport-scanner.tsx
-- [ ] T108 [P] [US2] Create PassportPreview component in src/components/features/passport-scanner/passport-preview.tsx
-- [ ] T109 [P] [US2] Create PassportDataForm for manual correction in src/components/features/passport-scanner/passport-data-form.tsx
-- [ ] T110 [US2] Create CustomerForm component in src/components/features/customers/customer-form.tsx
-- [ ] T111 [P] [US2] Create CustomerCard component in src/components/features/customers/customer-card.tsx
-- [ ] T112 [US2] Create BookingForm component in src/components/features/bookings/booking-form.tsx
-- [ ] T113 [P] [US2] Create BookingCard component in src/components/features/bookings/booking-card.tsx
-- [ ] T114 [P] [US2] Create BookingStatusBadge component in src/components/features/bookings/booking-status-badge.tsx
-- [ ] T115 [US2] Create TravelerForm component in src/components/features/bookings/traveler-form.tsx
-- [ ] T116 [P] [US2] Create DocumentUploader component in src/components/features/bookings/document-uploader.tsx
-- [ ] T117 [P] [US2] Create DocumentList component in src/components/features/bookings/document-list.tsx
+- [X] T107 [US2] Create PassportScanner component with camera capture in src/components/features/passport-scanner/passport-scanner.tsx
+- [X] T108 [P] [US2] Create PassportPreview component in src/components/features/passport-scanner/passport-preview.tsx
+- [X] T109 [P] [US2] Create PassportDataForm for manual correction in src/components/features/passport-scanner/passport-data-form.tsx
+- [X] T110 [US2] Create CustomerForm component in src/components/features/customers/customer-form.tsx
+- [X] T111 [P] [US2] Create CustomerCard component in src/components/features/customers/customer-card.tsx
+- [X] T112 [US2] Create BookingForm component in src/components/features/bookings/booking-form.tsx
+- [X] T113 [P] [US2] Create BookingCard component in src/components/features/bookings/booking-card.tsx
+- [X] T114 [P] [US2] Create BookingStatusBadge component in src/components/features/bookings/booking-status-badge.tsx
+- [X] T115 [US2] Create TravelerForm component in src/components/features/bookings/traveler-form.tsx
+- [X] T116 [P] [US2] Create DocumentUploader component in src/components/features/bookings/document-uploader.tsx
+- [X] T117 [P] [US2] Create DocumentList component in src/components/features/bookings/document-list.tsx
 
 ### Pages for User Story 2
 
-- [ ] T118 [US2] Create customers list page in src/app/[locale]/(dashboard)/customers/page.tsx
-- [ ] T119 [US2] Create customer create page in src/app/[locale]/(dashboard)/customers/new/page.tsx
-- [ ] T120 [US2] Create customer detail page in src/app/[locale]/(dashboard)/customers/[customerId]/page.tsx
-- [ ] T121 [US2] Create bookings list page in src/app/[locale]/(dashboard)/bookings/page.tsx
-- [ ] T122 [US2] Create booking create page in src/app/[locale]/(dashboard)/bookings/new/page.tsx
-- [ ] T123 [US2] Create booking detail page in src/app/[locale]/(dashboard)/bookings/[bookingId]/page.tsx
+- [X] T118 [US2] Create customers list page in src/app/[locale]/(dashboard)/customers/page.tsx
+- [X] T119 [US2] Create customer create page in src/app/[locale]/(dashboard)/customers/new/page.tsx
+- [X] T120 [US2] Create customer detail page in src/app/[locale]/(dashboard)/customers/[customerId]/page.tsx
+- [X] T121 [US2] Create bookings list page in src/app/[locale]/(dashboard)/bookings/page.tsx
+- [X] T122 [US2] Create booking create page in src/app/[locale]/(dashboard)/bookings/new/page.tsx
+- [X] T123 [US2] Create booking detail page in src/app/[locale]/(dashboard)/bookings/[bookingId]/page.tsx
 
 **Checkpoint**: User Story 2 - Customer booking with OCR is fully functional and testable independently
 
@@ -258,55 +258,55 @@
 
 ### Type Definitions for User Story 3
 
-- [ ] T124 [P] [US3] Create Invoice type definition in src/types/models/invoice.ts per data-model.md
-- [ ] T125 [P] [US3] Create Payment type definition in src/types/models/payment.ts per data-model.md
+- [X] T124 [P] [US3] Create Invoice type definition in src/types/models/invoice.ts per data-model.md
+- [X] T125 [P] [US3] Create Payment type definition in src/types/models/payment.ts per data-model.md
 
 ### Validation Schemas for User Story 3
 
-- [ ] T126 [US3] Create invoice validation schemas in src/lib/validations/invoices.ts
-- [ ] T127 [P] [US3] Create payment validation schemas in src/lib/validations/payments.ts
+- [X] T126 [US3] Create invoice validation schemas in src/lib/validations/invoices.ts
+- [X] T127 [P] [US3] Create payment validation schemas in src/lib/validations/payments.ts
 
 ### Server Actions for User Story 3
 
-- [ ] T128 [US3] Implement generateInvoiceAction in src/app/actions/invoices.ts (creates from booking with commission calculations)
-- [ ] T129 [US3] Implement updateInvoiceAction in src/app/actions/invoices.ts
-- [ ] T130 [US3] Implement issueInvoiceAction in src/app/actions/invoices.ts (draft → issued)
-- [ ] T131 [US3] Implement cancelInvoiceAction in src/app/actions/invoices.ts
-- [ ] T132 [US3] Implement createPaymentAction in src/app/actions/payments.ts (cash/bank transfer)
-- [ ] T133 [US3] Implement createStripeCheckoutAction in src/app/actions/payments.ts
-- [ ] T134 [US3] Implement uploadBankTransferProofAction in src/app/actions/payments.ts
-- [ ] T135 [US3] Implement approveBankTransferAction in src/app/actions/payments.ts
-- [ ] T136 [US3] Implement rejectBankTransferAction in src/app/actions/payments.ts
+- [X] T128 [US3] Implement generateInvoiceAction in src/app/actions/invoices.ts (creates from booking with commission calculations)
+- [X] T129 [US3] Implement updateInvoiceAction in src/app/actions/invoices.ts
+- [X] T130 [US3] Implement issueInvoiceAction in src/app/actions/invoices.ts (draft → issued)
+- [X] T131 [US3] Implement cancelInvoiceAction in src/app/actions/invoices.ts
+- [X] T132 [US3] Implement createPaymentAction in src/app/actions/payments.ts (cash/bank transfer)
+- [X] T133 [US3] Implement createStripeCheckoutAction in src/app/actions/payments.ts
+- [X] T134 [US3] Implement uploadBankTransferProofAction in src/app/actions/payments.ts
+- [X] T135 [US3] Implement approveBankTransferAction in src/app/actions/payments.ts
+- [X] T136 [US3] Implement rejectBankTransferAction in src/app/actions/payments.ts
 
 ### PDF Generation for User Story 3
 
-- [ ] T137 [US3] Create invoice PDF template in src/lib/pdf/invoice-template.tsx using @react-pdf/renderer
-- [ ] T138 [US3] Create invoice PDF API route in src/app/api/invoices/[invoiceId]/pdf/route.ts
+- [X] T137 [US3] Create invoice PDF template in src/lib/pdf/invoice-template.tsx using @react-pdf/renderer
+- [X] T138 [US3] Create invoice PDF API route in src/app/api/invoices/[invoiceId]/pdf/route.ts
 
 ### Hooks for User Story 3
 
-- [ ] T139 [US3] Create useInvoices hook in src/hooks/use-invoices.ts
-- [ ] T140 [P] [US3] Create useInvoice hook in src/hooks/use-invoice.ts
-- [ ] T141 [P] [US3] Create usePayments hook in src/hooks/use-payments.ts
-- [ ] T142 [P] [US3] Create useCustomerBalance hook in src/hooks/use-customer-balance.ts
+- [X] T139 [US3] Create useInvoices hook in src/hooks/use-invoices.ts
+- [X] T140 [P] [US3] Create useInvoice hook in src/hooks/use-invoice.ts
+- [X] T141 [P] [US3] Create usePayments hook in src/hooks/use-payments.ts
+- [X] T142 [P] [US3] Create useCustomerBalance hook in src/hooks/use-customer-balance.ts
 
 ### UI Components for User Story 3
 
-- [ ] T143 [US3] Create InvoiceForm component in src/components/features/invoices/invoice-form.tsx
-- [ ] T144 [P] [US3] Create InvoiceCard component in src/components/features/invoices/invoice-card.tsx
-- [ ] T145 [P] [US3] Create InvoiceStatusBadge component in src/components/features/invoices/invoice-status-badge.tsx
-- [ ] T146 [P] [US3] Create InvoiceLineItems component in src/components/features/invoices/invoice-line-items.tsx
-- [ ] T147 [US3] Create PaymentForm component in src/components/features/invoices/payment-form.tsx
-- [ ] T148 [P] [US3] Create PaymentList component in src/components/features/invoices/payment-list.tsx
-- [ ] T149 [P] [US3] Create BankTransferProofUploader in src/components/features/invoices/bank-transfer-proof-uploader.tsx
-- [ ] T150 [P] [US3] Create CustomerBalanceSummary component in src/components/features/customers/customer-balance-summary.tsx
+- [X] T143 [US3] Create InvoiceForm component in src/components/features/invoices/invoice-form.tsx
+- [X] T144 [P] [US3] Create InvoiceCard component in src/components/features/invoices/invoice-card.tsx
+- [X] T145 [P] [US3] Create InvoiceStatusBadge component in src/components/features/invoices/invoice-status-badge.tsx
+- [X] T146 [P] [US3] Create InvoiceLineItems component in src/components/features/invoices/invoice-line-items.tsx (integrated in invoice-detail.tsx)
+- [X] T147 [US3] Create PaymentForm component in src/components/features/payments/payment-form.tsx
+- [X] T148 [P] [US3] Create PaymentList component in src/components/features/payments/payment-card.tsx
+- [X] T149 [P] [US3] Create BankTransferProofUploader in src/components/features/payments/payment-form.tsx (integrated)
+- [X] T150 [P] [US3] Create CustomerBalanceSummary component in src/components/features/payments/customer-balance-card.tsx
 
 ### Pages for User Story 3
 
-- [ ] T151 [US3] Create invoices list page in src/app/[locale]/(dashboard)/invoices/page.tsx
-- [ ] T152 [US3] Create invoice detail page in src/app/[locale]/(dashboard)/invoices/[invoiceId]/page.tsx
-- [ ] T153 [US3] Create payments management page in src/app/[locale]/(dashboard)/payments/page.tsx
-- [ ] T154 [US3] Add financial summary to customer detail page integration
+- [X] T151 [US3] Create invoices list page in src/app/[locale]/(dashboard)/invoices/page.tsx
+- [X] T152 [US3] Create invoice detail page in src/app/[locale]/(dashboard)/invoices/[invoiceId]/page.tsx
+- [X] T153 [US3] Create payments management page in src/app/[locale]/(dashboard)/payments/page.tsx
+- [X] T154 [US3] Add financial summary to customer detail page integration (integrated in customer detail sidebar)
 
 **Checkpoint**: User Story 3 - Invoice and payment management is fully functional and testable independently
 
@@ -320,49 +320,49 @@
 
 ### Type Definitions for User Story 4
 
-- [ ] T155 [P] [US4] Create CommissionSettlement type definition in src/types/models/commission-settlement.ts per data-model.md
+- [X] T155 [P] [US4] Create CommissionSettlement type definition in src/types/models/partner-office.ts (combined with PartnerOffice)
 
 ### Validation Schemas for User Story 4
 
-- [ ] T156 [US4] Create partner validation schemas in src/lib/validations/partners.ts
-- [ ] T157 [P] [US4] Create settlement validation schemas in src/lib/validations/settlements.ts
+- [X] T156 [US4] Create partner validation schemas in src/lib/validations/partners.ts
+- [X] T157 [P] [US4] Create settlement validation schemas in src/lib/validations/settlements.ts
 
 ### Server Actions for User Story 4
 
-- [ ] T158 [US4] Implement createPartnerAction in src/app/actions/partners.ts
-- [ ] T159 [US4] Implement updatePartnerAction in src/app/actions/partners.ts
-- [ ] T160 [US4] Implement updatePartnerStatusAction in src/app/actions/partners.ts
-- [ ] T161 [US4] Implement invitePartnerUserAction in src/app/actions/partners.ts
-- [ ] T162 [US4] Implement createSettlementAction in src/app/actions/settlements.ts
-- [ ] T163 [US4] Implement approveSettlementAction in src/app/actions/settlements.ts
-- [ ] T164 [US4] Implement markSettlementPaidAction in src/app/actions/settlements.ts
-- [ ] T165 [US4] Implement disputeSettlementAction in src/app/actions/settlements.ts
-- [ ] T166 [US4] Implement resolveDisputeAction in src/app/actions/settlements.ts
+- [X] T158 [US4] Implement createPartnerAction in src/app/actions/partners.ts
+- [X] T159 [US4] Implement updatePartnerAction in src/app/actions/partners.ts
+- [X] T160 [US4] Implement updatePartnerStatusAction in src/app/actions/partners.ts
+- [X] T161 [US4] Implement invitePartnerUserAction in src/app/actions/partners.ts
+- [X] T162 [US4] Implement createSettlementAction in src/app/actions/settlements.ts
+- [X] T163 [US4] Implement approveSettlementAction in src/app/actions/settlements.ts
+- [X] T164 [US4] Implement markSettlementPaidAction in src/app/actions/settlements.ts
+- [X] T165 [US4] Implement disputeSettlementAction in src/app/actions/settlements.ts
+- [X] T166 [US4] Implement resolveDisputeAction in src/app/actions/settlements.ts
 
 ### Hooks for User Story 4
 
-- [ ] T167 [US4] Create usePartners hook in src/hooks/use-partners.ts
-- [ ] T168 [P] [US4] Create usePartner hook in src/hooks/use-partner.ts
-- [ ] T169 [P] [US4] Create usePartnerCommissions hook in src/hooks/use-partner-commissions.ts
-- [ ] T170 [P] [US4] Create useSettlements hook in src/hooks/use-settlements.ts
+- [X] T167 [US4] Create usePartners hook in src/hooks/use-partners.ts
+- [X] T168 [P] [US4] Create usePartner hook (integrated via usePartners with single partner filter)
+- [X] T169 [P] [US4] Create usePartnerCommissions hook in src/hooks/use-partner-commissions.ts
+- [X] T170 [P] [US4] Create useSettlements hook in src/hooks/use-settlements.ts
 
 ### UI Components for User Story 4
 
-- [ ] T171 [US4] Create PartnerForm component in src/components/features/partners/partner-form.tsx
-- [ ] T172 [P] [US4] Create PartnerCard component in src/components/features/partners/partner-card.tsx
-- [ ] T173 [P] [US4] Create PartnerStatusBadge component in src/components/features/partners/partner-status-badge.tsx
-- [ ] T174 [US4] Create CommissionSummary component in src/components/features/partners/commission-summary.tsx
-- [ ] T175 [P] [US4] Create SettlementForm component in src/components/features/partners/settlement-form.tsx
-- [ ] T176 [P] [US4] Create SettlementList component in src/components/features/partners/settlement-list.tsx
-- [ ] T177 [P] [US4] Create SettlementStatusBadge component in src/components/features/partners/settlement-status-badge.tsx
+- [X] T171 [US4] Create PartnerForm component in src/components/features/partners/partner-form.tsx
+- [X] T172 [P] [US4] Create PartnerCard component in src/components/features/partners/partner-card.tsx
+- [X] T173 [P] [US4] Create PartnerStatusBadge component in src/components/features/partners/partner-status-badge.tsx
+- [X] T174 [US4] Create CommissionSummary component in src/components/features/partners/commission-summary.tsx
+- [X] T175 [P] [US4] Create SettlementForm component in src/components/features/partners/settlement-form.tsx
+- [X] T176 [P] [US4] Create SettlementList component in src/components/features/partners/settlement-list.tsx
+- [X] T177 [P] [US4] Create SettlementStatusBadge component in src/components/features/partners/settlement-status-badge.tsx
 
 ### Pages for User Story 4
 
-- [ ] T178 [US4] Create partners list page in src/app/[locale]/(dashboard)/partners/page.tsx
-- [ ] T179 [US4] Create partner create page in src/app/[locale]/(dashboard)/partners/new/page.tsx
-- [ ] T180 [US4] Create partner detail page with commissions in src/app/[locale]/(dashboard)/partners/[partnerId]/page.tsx
-- [ ] T181 [US4] Create settlements management page in src/app/[locale]/(dashboard)/settlements/page.tsx
-- [ ] T182 [US4] Create partner dashboard for partner role users in src/app/[locale]/(dashboard)/partner-dashboard/page.tsx
+- [X] T178 [US4] Create partners list page in src/app/[locale]/(dashboard)/partners/page.tsx
+- [X] T179 [US4] Create partner create page in src/app/[locale]/(dashboard)/partners/new/page.tsx
+- [X] T180 [US4] Create partner detail page with commissions in src/app/[locale]/(dashboard)/partners/[partnerId]/page.tsx
+- [X] T181 [US4] Create settlements management page in src/app/[locale]/(dashboard)/settlements/page.tsx
+- [X] T182 [US4] Create partner dashboard for partner role users in src/app/[locale]/(dashboard)/partner-dashboard/page.tsx
 
 **Checkpoint**: User Story 4 - Partner and commission management is fully functional and testable independently
 
@@ -376,55 +376,55 @@
 
 ### Stripe Integration for User Story 5
 
-- [ ] T183 [US5] Create Stripe client configuration in src/lib/stripe/config.ts
-- [ ] T184 [US5] Implement Stripe webhook handler in src/app/api/webhooks/stripe/route.ts
-- [ ] T185 [US5] Create webhook event handlers in src/lib/stripe/webhook-handlers.ts (checkout.session.completed, subscription.updated, etc.)
+- [X] T183 [US5] Create Stripe client configuration in src/lib/stripe/config.ts
+- [X] T184 [US5] Implement Stripe webhook handler in src/app/api/webhooks/stripe/route.ts
+- [X] T185 [US5] Create webhook event handlers in src/lib/stripe/webhook-handlers.ts (checkout.session.completed, subscription.updated, etc.)
 
 ### Validation Schemas for User Story 5
 
-- [ ] T186 [US5] Create subscription validation schemas in src/lib/validations/subscriptions.ts
+- [X] T186 [US5] Create subscription validation schemas in src/lib/validations/subscriptions.ts
 
 ### Server Actions for User Story 5
 
-- [ ] T187 [US5] Implement getSubscriptionAction in src/app/actions/subscriptions.ts
-- [ ] T188 [US5] Implement createSubscriptionCheckoutAction in src/app/actions/subscriptions.ts
-- [ ] T189 [US5] Implement createBillingPortalAction in src/app/actions/subscriptions.ts
-- [ ] T190 [US5] Implement initiateBankTransferAction in src/app/actions/subscriptions.ts
-- [ ] T191 [US5] Implement uploadSubscriptionPaymentProofAction in src/app/actions/subscriptions.ts
-- [ ] T192 [US5] Implement cancelSubscriptionAction in src/app/actions/subscriptions.ts
-- [ ] T193 [US5] Implement reactivateSubscriptionAction in src/app/actions/subscriptions.ts
+- [X] T187 [US5] Implement getSubscriptionAction in src/app/actions/subscriptions.ts
+- [X] T188 [US5] Implement createSubscriptionCheckoutAction in src/app/actions/subscriptions.ts
+- [X] T189 [US5] Implement createBillingPortalAction in src/app/actions/subscriptions.ts
+- [X] T190 [US5] Implement initiateBankTransferAction in src/app/actions/subscriptions.ts
+- [X] T191 [US5] Implement uploadSubscriptionPaymentProofAction in src/app/actions/subscriptions.ts
+- [X] T192 [US5] Implement cancelSubscriptionAction in src/app/actions/subscriptions.ts
+- [X] T193 [US5] Implement reactivateSubscriptionAction in src/app/actions/subscriptions.ts
 
 ### Platform Admin Actions for User Story 5
 
-- [ ] T194 [US5] Implement approveSubscriptionPaymentAction in src/app/actions/admin/subscriptions.ts
-- [ ] T195 [US5] Implement rejectSubscriptionPaymentAction in src/app/actions/admin/subscriptions.ts
-- [ ] T196 [US5] Implement extendTrialAction in src/app/actions/admin/subscriptions.ts
-- [ ] T197 [US5] Implement suspendTenantAction in src/app/actions/admin/subscriptions.ts
+- [X] T194 [US5] Implement approveSubscriptionPaymentAction in src/app/actions/admin/subscriptions.ts
+- [X] T195 [US5] Implement rejectSubscriptionPaymentAction in src/app/actions/admin/subscriptions.ts
+- [X] T196 [US5] Implement extendTrialAction in src/app/actions/admin/subscriptions.ts
+- [X] T197 [US5] Implement suspendTenantAction in src/app/actions/admin/subscriptions.ts
 
 ### Hooks for User Story 5
 
-- [ ] T198 [US5] Create useSubscription hook in src/hooks/use-subscription.ts
-- [ ] T199 [P] [US5] Create useSubscriptionStatus hook for access control in src/hooks/use-subscription-status.ts
+- [X] T198 [US5] Create useSubscription hook in src/hooks/use-subscription.ts
+- [X] T199 [P] [US5] Create useSubscriptionStatus hook for access control in src/hooks/use-subscription-status.ts
 
 ### UI Components for User Story 5
 
-- [ ] T200 [US5] Create SubscriptionStatus component in src/components/features/subscriptions/subscription-status.tsx
-- [ ] T201 [P] [US5] Create TrialBanner component in src/components/features/subscriptions/trial-banner.tsx
-- [ ] T202 [P] [US5] Create SubscriptionCard component in src/components/features/subscriptions/subscription-card.tsx
-- [ ] T203 [US5] Create PaymentMethodSelector component in src/components/features/subscriptions/payment-method-selector.tsx
-- [ ] T204 [P] [US5] Create BankTransferInstructions component in src/components/features/subscriptions/bank-transfer-instructions.tsx
-- [ ] T205 [P] [US5] Create SubscriptionPaymentHistory component in src/components/features/subscriptions/subscription-payment-history.tsx
+- [X] T200 [US5] Create SubscriptionStatus component in src/components/features/subscriptions/subscription-status.tsx
+- [X] T201 [P] [US5] Create TrialBanner component in src/components/features/subscriptions/trial-banner.tsx
+- [X] T202 [P] [US5] Create SubscriptionCard component in src/components/features/subscriptions/subscription-card.tsx
+- [X] T203 [US5] Create PaymentMethodSelector component in src/components/features/subscriptions/payment-method-selector.tsx
+- [X] T204 [P] [US5] Create BankTransferInstructions component in src/components/features/subscriptions/bank-transfer-instructions.tsx
+- [X] T205 [P] [US5] Create SubscriptionPaymentHistory component in src/components/features/subscriptions/subscription-payment-history.tsx
 
 ### Pages for User Story 5
 
-- [ ] T206 [US5] Create subscription management page in src/app/[locale]/(dashboard)/settings/subscription/page.tsx
-- [ ] T207 [US5] Create subscription checkout success page in src/app/[locale]/(dashboard)/subscription/success/page.tsx
-- [ ] T208 [US5] Create subscription checkout cancel page in src/app/[locale]/(dashboard)/subscription/cancelled/page.tsx
+- [X] T206 [US5] Create subscription management page in src/app/[locale]/(dashboard)/settings/subscription/page.tsx
+- [X] T207 [US5] Create subscription checkout success page in src/app/[locale]/(dashboard)/subscription/success/page.tsx
+- [X] T208 [US5] Create subscription checkout cancel page in src/app/[locale]/(dashboard)/subscription/cancelled/page.tsx
 
 ### Subscription Access Control
 
-- [ ] T209 [US5] Create subscription guard middleware in src/lib/auth/require-subscription.ts
-- [ ] T210 [US5] Integrate subscription check in dashboard layout with trial/expired handling
+- [X] T209 [US5] Create subscription guard middleware in src/lib/auth/require-subscription.ts
+- [X] T210 [US5] Integrate subscription check in dashboard layout with trial/expired handling (via subscription-guard.tsx)
 
 **Checkpoint**: User Story 5 - Subscription management is fully functional and testable independently
 
