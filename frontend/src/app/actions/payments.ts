@@ -21,6 +21,11 @@ import {
 import { Payment, PaymentTransactionStatus } from '@/types/models/payment';
 import { Invoice } from '@/types/models/invoice';
 import { updateInvoicePaymentStatus } from './invoices';
+import {
+  triggerPaymentReceivedNotification,
+  triggerPaymentApprovedNotification,
+  triggerPaymentRejectedNotification,
+} from '@/lib/notifications/triggers';
 
 /**
  * Generate payment number (e.g., "PAY-2024-0001")
@@ -163,6 +168,20 @@ export async function createPaymentAction(
       resourceId: payment.id,
       description: `Created cash payment ${paymentNumber} for ${validatedData.amount}`,
     });
+
+    // Trigger payment received notification for the customer
+    try {
+      await triggerPaymentReceivedNotification(tenantId, invoice.customerId, {
+        paymentNumber,
+        amount: validatedData.amount,
+        currency: invoice.currency,
+        invoiceNumber: invoice.invoiceNumber,
+        invoiceId: invoice.id,
+      });
+    } catch (notificationError) {
+      console.error('Failed to send payment notification:', notificationError);
+      // Don't fail the action if notification fails
+    }
 
     revalidatePath(`/[locale]/(dashboard)/invoices/${invoice.id}`);
     revalidatePath(`/[locale]/(dashboard)/payments`);
@@ -442,6 +461,18 @@ export async function approveBankTransferAction(
       changes: [{ field: 'status', oldValue: 'pending', newValue: 'completed' }],
     });
 
+    // Trigger payment approved notification for the customer
+    try {
+      await triggerPaymentApprovedNotification(tenantId, payment.customerId, {
+        paymentNumber: payment.paymentNumber,
+        amount: payment.amount,
+        currency: payment.currency,
+        invoiceId: payment.invoiceId,
+      });
+    } catch (notificationError) {
+      console.error('Failed to send payment approved notification:', notificationError);
+    }
+
     revalidatePath(`/[locale]/(dashboard)/payments`);
     revalidatePath(`/[locale]/(dashboard)/invoices/${payment.invoiceId}`);
 
@@ -508,6 +539,19 @@ export async function rejectBankTransferAction(
       description: `Rejected bank transfer ${payment.paymentNumber}: ${validatedData.rejectionReason}`,
       changes: [{ field: 'status', oldValue: 'pending', newValue: 'failed' }],
     });
+
+    // Trigger payment rejected notification for the customer
+    try {
+      await triggerPaymentRejectedNotification(tenantId, payment.customerId, {
+        paymentNumber: payment.paymentNumber,
+        amount: payment.amount,
+        currency: payment.currency,
+        rejectionReason: validatedData.rejectionReason,
+        invoiceId: payment.invoiceId,
+      });
+    } catch (notificationError) {
+      console.error('Failed to send payment rejected notification:', notificationError);
+    }
 
     revalidatePath(`/[locale]/(dashboard)/payments`);
 

@@ -20,6 +20,10 @@ import {
 } from '@/lib/validations/bookings';
 import { Booking, BookingStatus, PackageSnapshot } from '@/types/models/booking';
 import { Package } from '@/types/models/package';
+import {
+  triggerBookingConfirmedNotification,
+  triggerBookingCancelledNotification,
+} from '@/lib/notifications/triggers';
 
 /**
  * Generate booking number (e.g., "BK-2024-0001")
@@ -372,6 +376,28 @@ export async function updateBookingStatusAction(
         },
       ],
     });
+
+    // Trigger notification based on status change
+    try {
+      if (validatedData.status === 'confirmed') {
+        await triggerBookingConfirmedNotification(tenantId, existingBooking.customerId, {
+          bookingNumber: existingBooking.bookingNumber,
+          packageName: existingBooking.packageSnapshot.name,
+          totalAmount: existingBooking.totalAmount,
+          currency: existingBooking.currency,
+          bookingId,
+        });
+      } else if (validatedData.status === 'cancelled') {
+        await triggerBookingCancelledNotification(tenantId, existingBooking.customerId, {
+          bookingNumber: existingBooking.bookingNumber,
+          packageName: existingBooking.packageSnapshot.name,
+          bookingId,
+          reason: validatedData.reason,
+        });
+      }
+    } catch (notificationError) {
+      console.error('Failed to send booking notification:', notificationError);
+    }
 
     revalidatePath(`/[locale]/(dashboard)/bookings`);
     revalidatePath(`/[locale]/(dashboard)/bookings/${bookingId}`);

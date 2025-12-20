@@ -410,17 +410,129 @@
   },
   "notifications": {
     "title": "Notifications",
+    "pageTitle": "Notifications",
+    "pageDescription": "View and manage all your notifications",
+    "openNotifications": "Open notifications",
     "markAllRead": "Mark All as Read",
     "noNotifications": "No notifications",
-    "preferences": "Notification Preferences",
-    "email": "Email Notifications"
+    "noNotificationsDescription": "New notifications will appear here when they arrive",
+    "noUnread": "No unread notifications",
+    "noUnreadDescription": "You've read all your notifications",
+    "preferences": "Settings",
+    "email": "Email Notifications",
+    "viewAll": "View all notifications",
+    "empty": "No new notifications",
+    "all": "All",
+    "unread": "Unread",
+    "clearRead": "Clear read",
+    "clearReadTitle": "Clear read notifications",
+    "clearReadDescription": "Are you sure you want to delete all read notifications? This action cannot be undone.",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "preferences": {
+      "title": "Notification Preferences",
+      "description": "Control how you receive notifications",
+      "inAppNotifications": "In-App Notifications",
+      "inAppDescription": "Receive notifications within the app",
+      "emailNotifications": "Email Notifications",
+      "emailDescription": "Receive notifications via email",
+      "emailTypes": "Email notification types",
+      "allDisabledWarning": "You have disabled all notifications. You may miss important updates.",
+      "save": "Save preferences",
+      "saving": "Saving...",
+      "saved": "Preferences saved",
+      "savedDescription": "Your notification preferences have been updated",
+      "error": "Error",
+      "errorDescription": "Failed to save preferences, please try again"
+    }
   },
   "reports": {
     "title": "Reports",
     "dashboard": "Dashboard",
     "sales": "Sales Report",
     "commissions": "Commissions Report",
-    "dateRange": "Date Range"
+    "dateRange": "Date Range",
+    "totalRevenue": "Total Revenue",
+    "totalBookings": "Total Bookings",
+    "totalCustomers": "Total Customers",
+    "activePackages": "Active Packages",
+    "pendingPayments": "Pending Payments",
+    "pendingCommissions": "Pending Commissions",
+    "revenueOverTime": "Revenue Over Time",
+    "revenueDescription": "Monthly revenue and bookings trend",
+    "revenue": "Revenue",
+    "bookings": "Bookings",
+    "topPackages": "Top Packages",
+    "topPackagesDescription": "Best performing packages by revenue",
+    "recentActivity": "Recent Activity",
+    "recentActivityDescription": "Latest bookings, payments, and invoices",
+    "noActivity": "No recent activity",
+    "totalSales": "Total Sales",
+    "totalInvoiced": "Total Invoiced",
+    "totalCollected": "Collected",
+    "outstanding": "Outstanding",
+    "salesByType": "Sales by Package Type",
+    "salesByTypeDescription": "Breakdown of sales by package category",
+    "topCustomers": "Top Customers",
+    "topCustomersDescription": "Customers with highest spending",
+    "recentInvoicesDescription": "Recent invoice activity",
+    "settlementProgress": "Settlement Progress",
+    "settlementProgressDescription": "Overall commission settlement status",
+    "commissionsByPartner": "Commissions by Partner",
+    "commissionsByPartnerDescription": "Commission breakdown by partner office",
+    "commissionsTrend": "Commissions Trend",
+    "commissionsTrendDescription": "Monthly commission totals and settlements",
+    "recentSettlementsDescription": "Recent settlement activity"
+  },
+  "audit": {
+    "title": "Audit Logs",
+    "logs": "Audit Logs",
+    "filters": "Filters",
+    "action": "Action",
+    "entity": "Entity",
+    "user": "User",
+    "description": "Description",
+    "timestamp": "Time",
+    "changes": "Changes",
+    "noLogs": "No audit logs found",
+    "loadMore": "Load More",
+    "refresh": "Refresh",
+    "retry": "Retry",
+    "error": "Error",
+    "viewDetails": "View Details",
+    "viewChanges": "View changes",
+    "noHistory": "No history available",
+    "entityId": "Entity ID",
+    "logId": "Log ID",
+    "requestInfo": "Request Information",
+    "actions": {
+      "create": "Create",
+      "update": "Update",
+      "delete": "Delete",
+      "statusChange": "Status Change",
+      "view": "View",
+      "export": "Export"
+    },
+    "entities": {
+      "package": "Package",
+      "booking": "Booking",
+      "customer": "Customer",
+      "invoice": "Invoice",
+      "payment": "Payment",
+      "partner": "Partner",
+      "settlement": "Settlement",
+      "user": "User",
+      "tenant": "Tenant"
+    },
+    "filterLabels": {
+      "action": "Filter by Action",
+      "entity": "Filter by Entity",
+      "user": "Filter by User",
+      "dateRange": "Date Range",
+      "startDate": "Start Date",
+      "endDate": "End Date",
+      "clearFilters": "Clear Filters"
+    }
   },
   "errors": {
     "general": "Something went wrong",
@@ -430,5 +542,140 @@
     "validationError": "Validation error",
     "serverError": "Server error",
     "tryAgain": "Try again"
+  },
+  "landing": {
+    "header": {
+      "brand": "Travel Agency",
+      "nav": {
+        "features": "Features",
+        "pricing": "Pricing",
+        "contact": "Contact"
+      },
+      "login": "Log In",
+      "signup": "Start Free"
+    },
+    "hero": {
+      "badge": "Complete SaaS Platform",
+      "headline": "Travel Agency Management",
+      "headlineHighlight": "Made Simple & Professional",
+      "description": "A complete platform for managing Hajj, Umrah, honeymoon, and custom travel packages. Manage your customers, bookings, and invoices from one place.",
+      "startTrial": "Start Free Trial",
+      "viewPricing": "View Pricing",
+      "trialNote": "7-day free trial - No credit card required"
+    },
+    "features": {
+      "title": "Everything You Need to Manage Your Agency",
+      "subtitle": "Integrated tools designed specifically for travel agencies in Saudi Arabia",
+      "packages": "Package Management",
+      "packagesDesc": "Create and manage Hajj, Umrah, honeymoon, and custom travel packages easily",
+      "customers": "Customer Management",
+      "customersDesc": "Comprehensive customer database with automatic passport scanning (OCR)",
+      "bookings": "Booking Management",
+      "bookingsDesc": "Track all bookings, travelers, and required documents",
+      "payments": "Multiple Payments",
+      "paymentsDesc": "Accept payments via cash, bank transfer, or credit cards via Stripe",
+      "partners": "Partner Management",
+      "partnersDesc": "Collaborate with partner offices and track commissions and settlements",
+      "bilingual": "Bilingual Support",
+      "bilingualDesc": "Complete Arabic and English interface with RTL support",
+      "security": "Security & Privacy",
+      "securityDesc": "Customer data protection with complete isolation for each office",
+      "reports": "Reports & Analytics",
+      "reportsDesc": "Detailed reports on sales, commissions, and performance"
+    },
+    "pricing": {
+      "title": "Simple, Transparent Pricing",
+      "subtitle": "Start for free and choose the plan that fits your business growth",
+      "plans": {
+        "trial": "Trial",
+        "trialDesc": "Try all features for free",
+        "monthly": "Monthly",
+        "monthlyDesc": "Full access to all features"
+      },
+      "period": {
+        "7days": "7 days",
+        "month": "month"
+      },
+      "badges": {
+        "free": "Free",
+        "popular": "Most Popular"
+      },
+      "features": {
+        "feature1": "Package and service management",
+        "feature2": "Customer and booking management",
+        "feature3": "Invoicing and payments",
+        "feature4": "Bilingual support",
+        "feature5": "Partner and commission management",
+        "feature6": "Reports and analytics",
+        "feature7": "Premium technical support"
+      },
+      "startTrial": "Start Free Trial",
+      "subscribe": "Subscribe Now",
+      "note": "All plans include free updates and email support"
+    },
+    "cta": {
+      "title": "Ready to Transform How You Manage Your Agency?",
+      "description": "Join hundreds of travel agencies using our platform to streamline their operations and increase productivity.",
+      "startNow": "Start Now",
+      "contactUs": "Contact Us"
+    },
+    "contact": {
+      "title": "Contact Us",
+      "subtitle": "We're here to answer your questions and help you",
+      "contactInfo": "Contact Information",
+      "contactInfoDesc": "You can reach us through any of the following channels",
+      "info": {
+        "email": "Email",
+        "phone": "Phone",
+        "address": "Address"
+      },
+      "workingHours": "Working Hours",
+      "hours": {
+        "weekdays": "Sunday - Thursday",
+        "friday": "Friday",
+        "saturday": "Saturday"
+      },
+      "formTitle": "Send Us a Message",
+      "formDescription": "We'll get back to you as soon as possible",
+      "form": {
+        "name": "Name",
+        "namePlaceholder": "Your full name",
+        "email": "Email",
+        "emailPlaceholder": "example@email.com",
+        "phone": "Phone",
+        "phonePlaceholder": "+966 50 123 4567",
+        "subject": "Subject",
+        "subjectPlaceholder": "Message subject",
+        "message": "Message",
+        "messagePlaceholder": "Write your message here...",
+        "send": "Send Message",
+        "sending": "Sending..."
+      },
+      "successTitle": "Message Sent",
+      "successMessage": "Thank you for contacting us. We'll get back to you soon.",
+      "errorTitle": "Error",
+      "errorMessage": "Failed to send message. Please try again."
+    },
+    "footer": {
+      "brand": "Travel Agency",
+      "description": "A complete platform for travel agency management - Hajj, Umrah, honeymoon, and custom trip packages.",
+      "sections": {
+        "product": "Product",
+        "company": "Company",
+        "legal": "Legal"
+      },
+      "links": {
+        "features": "Features",
+        "pricing": "Pricing",
+        "faq": "FAQ",
+        "about": "About Us",
+        "contact": "Contact",
+        "blog": "Blog",
+        "privacy": "Privacy Policy",
+        "terms": "Terms of Service",
+        "cookies": "Cookie Policy"
+      },
+      "copyright": "© {year} Travel Agency. All rights reserved."
+    }
   }
 }

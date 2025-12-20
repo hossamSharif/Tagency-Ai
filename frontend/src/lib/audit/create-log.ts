@@ -279,6 +279,7 @@ export async function createAuditLog(
       action: input.action === 'duplicate' ? 'create' as AuditAction : input.action as AuditAction,
       entityType: input.resource,
       entityId: input.resourceId,
+      changes: input.changes,
       description: input.description || (input.details ? JSON.stringify(input.details) : undefined),
       timestamp: serverTimestamp(),
     };
@@ -301,4 +302,105 @@ export async function createAuditLog(
   };
 
   return createDocument(inputOrTenantId, 'auditLogs', logEntry);
+}
+
+/**
+ * T277 [US12] Enhanced audit logging with before/after tracking
+ *
+ * Create audit log with automatic change detection
+ */
+export async function createAuditLogWithChanges<T extends Record<string, unknown>>(
+  tenantId: string,
+  userId: string,
+  action: AuditAction,
+  entityType: AuditEntityType,
+  entityId: string,
+  options: {
+    oldData?: T;
+    newData?: Partial<T>;
+    description?: string;
+    fieldsToTrack?: (keyof T)[];
+  }
+): Promise<string> {
+  let changes: AuditChange[] | undefined;
+
+  if (options.oldData && options.newData) {
+    changes = generateChanges(options.oldData, options.newData, options.fieldsToTrack);
+    // Don't create log if no actual changes detected
+    if (action === 'update' && changes.length === 0) {
+      return '';
+    }
+  }
+
+  return createAuditLog({
+    tenantId,
+    userId,
+    action,
+    resource: entityType,
+    resourceId: entityId,
+    description: options.description,
+    changes,
+  });
+}
+
+/**
+ * Serialize a value for display in audit logs
+ * Handles dates, complex objects, etc.
+ */
+export function serializeAuditValue(value: unknown): string {
+  if (value === null || value === undefined) {
+    return 'null';
+  }
+
+  if (value instanceof Timestamp) {
+    return value.toDate().toISOString();
+  }
+
+  if (value instanceof Date) {
+    return value.toISOString();
+  }
+
+  if (typeof value === 'object') {
+    try {
+      return JSON.stringify(value);
+    } catch {
+      return '[Complex Object]';
+    }
+  }
+
+  return String(value);
+}
+
+/**
+ * Format a change for human-readable display
+ */
+export function formatChange(change: AuditChange): string {
+  const oldVal = serializeAuditValue(change.oldValue);
+  const newVal = serializeAuditValue(change.newValue);
+
+  if (oldVal === 'null') {
+    return `Set ${change.field} to "${newVal}"`;
+  }
+
+  if (newVal === 'null') {
+    return `Cleared ${change.field} (was "${oldVal}")`;
+  }
+
+  return `Changed ${change.field} from "${oldVal}" to "${newVal}"`;
+}
+
+/**
+ * Get a summary of changes for description
+ */
+export function summarizeChanges(changes: AuditChange[]): string {
+  if (changes.length === 0) {
+    return 'No changes';
+  }
+
+  if (changes.length === 1) {
+    return formatChange(changes[0]);
+  }
+
+  const fields = changes.map(c => c.field);
+  return `Updated ${fields.length} fields: ${fields.join(', ')}`;
 }

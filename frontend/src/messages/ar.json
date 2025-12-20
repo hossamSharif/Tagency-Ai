@@ -410,17 +410,129 @@
   },
   "notifications": {
     "title": "الإشعارات",
+    "pageTitle": "الإشعارات",
+    "pageDescription": "عرض وإدارة جميع الإشعارات",
+    "openNotifications": "فتح الإشعارات",
     "markAllRead": "تحديد الكل كمقروء",
     "noNotifications": "لا توجد إشعارات",
-    "preferences": "تفضيلات الإشعارات",
-    "email": "إشعارات البريد الإلكتروني"
+    "noNotificationsDescription": "ستظهر هنا الإشعارات الجديدة عند وصولها",
+    "noUnread": "لا توجد إشعارات غير مقروءة",
+    "noUnreadDescription": "لقد قرأت جميع إشعاراتك",
+    "preferences": "الإعدادات",
+    "email": "إشعارات البريد الإلكتروني",
+    "viewAll": "عرض جميع الإشعارات",
+    "empty": "لا توجد إشعارات جديدة",
+    "all": "الكل",
+    "unread": "غير المقروءة",
+    "clearRead": "حذف المقروءة",
+    "clearReadTitle": "حذف الإشعارات المقروءة",
+    "clearReadDescription": "هل أنت متأكد من حذف جميع الإشعارات المقروءة؟ لا يمكن التراجع عن هذا الإجراء.",
+    "cancel": "إلغاء",
+    "confirm": "تأكيد",
+    "preferences": {
+      "title": "تفضيلات الإشعارات",
+      "description": "تحكم في كيفية تلقي الإشعارات",
+      "inAppNotifications": "الإشعارات داخل التطبيق",
+      "inAppDescription": "تلقي الإشعارات داخل التطبيق",
+      "emailNotifications": "إشعارات البريد الإلكتروني",
+      "emailDescription": "تلقي الإشعارات عبر البريد الإلكتروني",
+      "emailTypes": "أنواع الإشعارات البريدية",
+      "allDisabledWarning": "لقد قمت بتعطيل جميع الإشعارات. قد تفوتك تحديثات مهمة.",
+      "save": "حفظ التفضيلات",
+      "saving": "جاري الحفظ...",
+      "saved": "تم حفظ التفضيلات",
+      "savedDescription": "تم تحديث تفضيلات الإشعارات بنجاح",
+      "error": "خطأ",
+      "errorDescription": "فشل حفظ التفضيلات، يرجى المحاولة مرة أخرى"
+    }
   },
   "reports": {
     "title": "التقارير",
     "dashboard": "لوحة المعلومات",
     "sales": "تقرير المبيعات",
     "commissions": "تقرير العمولات",
-    "dateRange": "الفترة الزمنية"
+    "dateRange": "الفترة الزمنية",
+    "totalRevenue": "إجمالي الإيرادات",
+    "totalBookings": "إجمالي الحجوزات",
+    "totalCustomers": "إجمالي العملاء",
+    "activePackages": "الباقات النشطة",
+    "pendingPayments": "المدفوعات المعلقة",
+    "pendingCommissions": "العمولات المعلقة",
+    "revenueOverTime": "الإيرادات عبر الزمن",
+    "revenueDescription": "اتجاه الإيرادات والحجوزات الشهرية",
+    "revenue": "الإيرادات",
+    "bookings": "الحجوزات",
+    "topPackages": "أفضل الباقات",
+    "topPackagesDescription": "الباقات الأفضل أداءً حسب الإيرادات",
+    "recentActivity": "النشاط الأخير",
+    "recentActivityDescription": "أحدث الحجوزات والمدفوعات والفواتير",
+    "noActivity": "لا يوجد نشاط حديث",
+    "totalSales": "إجمالي المبيعات",
+    "totalInvoiced": "إجمالي الفواتير",
+    "totalCollected": "المحصل",
+    "outstanding": "المستحق",
+    "salesByType": "المبيعات حسب النوع",
+    "salesByTypeDescription": "توزيع المبيعات حسب نوع الباقة",
+    "topCustomers": "أفضل العملاء",
+    "topCustomersDescription": "العملاء الأكثر إنفاقاً",
+    "recentInvoicesDescription": "نشاط الفواتير الأخير",
+    "settlementProgress": "تقدم التسوية",
+    "settlementProgressDescription": "حالة تسوية العمولات الإجمالية",
+    "commissionsByPartner": "العمولات حسب الشريك",
+    "commissionsByPartnerDescription": "توزيع العمولات حسب مكتب الشريك",
+    "commissionsTrend": "اتجاه العمولات",
+    "commissionsTrendDescription": "إجمالي العمولات والتسويات الشهرية",
+    "recentSettlementsDescription": "نشاط التسويات الأخير"
+  },
+  "audit": {
+    "title": "سجلات المراجعة",
+    "logs": "سجلات المراجعة",
+    "filters": "التصفية",
+    "action": "الإجراء",
+    "entity": "الكيان",
+    "user": "المستخدم",
+    "description": "الوصف",
+    "timestamp": "الوقت",
+    "changes": "التغييرات",
+    "noLogs": "لا توجد سجلات مراجعة",
+    "loadMore": "تحميل المزيد",
+    "refresh": "تحديث",
+    "retry": "إعادة المحاولة",
+    "error": "خطأ",
+    "viewDetails": "عرض التفاصيل",
+    "viewChanges": "عرض التغييرات",
+    "noHistory": "لا يوجد سجل متاح",
+    "entityId": "معرف الكيان",
+    "logId": "معرف السجل",
+    "requestInfo": "معلومات الطلب",
+    "actions": {
+      "create": "إنشاء",
+      "update": "تحديث",
+      "delete": "حذف",
+      "statusChange": "تغيير الحالة",
+      "view": "عرض",
+      "export": "تصدير"
+    },
+    "entities": {
+      "package": "باقة",
+      "booking": "حجز",
+      "customer": "عميل",
+      "invoice": "فاتورة",
+      "payment": "دفعة",
+      "partner": "شريك",
+      "settlement": "تسوية",
+      "user": "مستخدم",
+      "tenant": "مستأجر"
+    },
+    "filterLabels": {
+      "action": "تصفية حسب الإجراء",
+      "entity": "تصفية حسب الكيان",
+      "user": "تصفية حسب المستخدم",
+      "dateRange": "الفترة الزمنية",
+      "startDate": "تاريخ البداية",
+      "endDate": "تاريخ النهاية",
+      "clearFilters": "مسح التصفية"
+    }
   },
   "errors": {
     "general": "حدث خطأ ما",
@@ -430,5 +542,140 @@
     "validationError": "خطأ في البيانات المدخلة",
     "serverError": "خطأ في الخادم",
     "tryAgain": "حاول مرة أخرى"
+  },
+  "landing": {
+    "header": {
+      "brand": "وكالة السفر",
+      "nav": {
+        "features": "المميزات",
+        "pricing": "الأسعار",
+        "contact": "تواصل معنا"
+      },
+      "login": "تسجيل الدخول",
+      "signup": "ابدأ مجاناً"
+    },
+    "hero": {
+      "badge": "منصة SaaS متكاملة",
+      "headline": "إدارة وكالة السفر",
+      "headlineHighlight": "بكل سهولة واحترافية",
+      "description": "منصة متكاملة لإدارة باقات الحج والعمرة وشهر العسل والرحلات المخصصة. أدر عملاءك وحجوزاتك وفواتيرك من مكان واحد.",
+      "startTrial": "ابدأ تجربة مجانية",
+      "viewPricing": "عرض الأسعار",
+      "trialNote": "تجربة مجانية لمدة 7 أيام - لا حاجة لبطاقة ائتمان"
+    },
+    "features": {
+      "title": "كل ما تحتاجه لإدارة وكالتك",
+      "subtitle": "أدوات متكاملة صُممت خصيصاً لوكالات السفر في المملكة العربية السعودية",
+      "packages": "إدارة الباقات",
+      "packagesDesc": "أنشئ وأدر باقات الحج والعمرة وشهر العسل والرحلات المخصصة بسهولة",
+      "customers": "إدارة العملاء",
+      "customersDesc": "قاعدة بيانات شاملة للعملاء مع مسح جواز السفر التلقائي (OCR)",
+      "bookings": "إدارة الحجوزات",
+      "bookingsDesc": "تتبع جميع الحجوزات والمسافرين والمستندات المطلوبة",
+      "payments": "المدفوعات المتعددة",
+      "paymentsDesc": "قبول المدفوعات نقداً أو بالتحويل البنكي أو ببطاقات الائتمان عبر Stripe",
+      "partners": "إدارة الشركاء",
+      "partnersDesc": "تعاون مع المكاتب الشريكة وتتبع العمولات والتسويات",
+      "bilingual": "دعم ثنائي اللغة",
+      "bilingualDesc": "واجهة كاملة بالعربية والإنجليزية مع دعم RTL",
+      "security": "أمان وخصوصية",
+      "securityDesc": "حماية بيانات العملاء مع عزل كامل لكل مكتب",
+      "reports": "التقارير والإحصائيات",
+      "reportsDesc": "تقارير مفصلة عن المبيعات والعمولات والأداء"
+    },
+    "pricing": {
+      "title": "خطط أسعار بسيطة وشفافة",
+      "subtitle": "ابدأ مجاناً واختر الخطة المناسبة لنمو أعمالك",
+      "plans": {
+        "trial": "تجريبي",
+        "trialDesc": "جرب جميع المميزات مجاناً",
+        "monthly": "شهري",
+        "monthlyDesc": "الوصول الكامل لجميع المميزات"
+      },
+      "period": {
+        "7days": "7 أيام",
+        "month": "شهر"
+      },
+      "badges": {
+        "free": "مجاني",
+        "popular": "الأكثر شعبية"
+      },
+      "features": {
+        "feature1": "إدارة الباقات والخدمات",
+        "feature2": "إدارة العملاء والحجوزات",
+        "feature3": "الفوترة والمدفوعات",
+        "feature4": "دعم ثنائي اللغة",
+        "feature5": "إدارة الشركاء والعمولات",
+        "feature6": "التقارير والإحصائيات",
+        "feature7": "الدعم الفني المميز"
+      },
+      "startTrial": "ابدأ التجربة المجانية",
+      "subscribe": "اشترك الآن",
+      "note": "جميع الخطط تشمل تحديثات مجانية ودعم فني عبر البريد الإلكتروني"
+    },
+    "cta": {
+      "title": "جاهز لتحويل طريقة إدارة وكالتك؟",
+      "description": "انضم لمئات وكالات السفر التي تستخدم منصتنا لتبسيط عملياتها وزيادة إنتاجيتها.",
+      "startNow": "ابدأ الآن",
+      "contactUs": "تواصل معنا"
+    },
+    "contact": {
+      "title": "تواصل معنا",
+      "subtitle": "نحن هنا للإجابة على استفساراتك ومساعدتك",
+      "contactInfo": "معلومات التواصل",
+      "contactInfoDesc": "يمكنك التواصل معنا عبر أي من القنوات التالية",
+      "info": {
+        "email": "البريد الإلكتروني",
+        "phone": "رقم الهاتف",
+        "address": "العنوان"
+      },
+      "workingHours": "ساعات العمل",
+      "hours": {
+        "weekdays": "الأحد - الخميس",
+        "friday": "الجمعة",
+        "saturday": "السبت"
+      },
+      "formTitle": "أرسل لنا رسالة",
+      "formDescription": "سنرد عليك في أقرب وقت ممكن",
+      "form": {
+        "name": "الاسم",
+        "namePlaceholder": "اسمك الكامل",
+        "email": "البريد الإلكتروني",
+        "emailPlaceholder": "example@email.com",
+        "phone": "رقم الهاتف",
+        "phonePlaceholder": "+966 50 123 4567",
+        "subject": "الموضوع",
+        "subjectPlaceholder": "موضوع الرسالة",
+        "message": "الرسالة",
+        "messagePlaceholder": "اكتب رسالتك هنا...",
+        "send": "إرسال الرسالة",
+        "sending": "جاري الإرسال..."
+      },
+      "successTitle": "تم إرسال الرسالة",
+      "successMessage": "شكراً لتواصلك معنا. سنرد عليك في أقرب وقت.",
+      "errorTitle": "خطأ",
+      "errorMessage": "فشل إرسال الرسالة. يرجى المحاولة مرة أخرى."
+    },
+    "footer": {
+      "brand": "وكالة السفر",
+      "description": "منصة متكاملة لإدارة وكالات السفر - باقات الحج والعمرة وشهر العسل والرحلات المخصصة.",
+      "sections": {
+        "product": "المنتج",
+        "company": "الشركة",
+        "legal": "قانوني"
+      },
+      "links": {
+        "features": "المميزات",
+        "pricing": "الأسعار",
+        "faq": "الأسئلة الشائعة",
+        "about": "من نحن",
+        "contact": "تواصل معنا",
+        "blog": "المدونة",
+        "privacy": "سياسة الخصوصية",
+        "terms": "الشروط والأحكام",
+        "cookies": "سياسة الكوكيز"
+      },
+      "copyright": "© {year} وكالة السفر. جميع الحقوق محفوظة."
+    }
   }
 }
