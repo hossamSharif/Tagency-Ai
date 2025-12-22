@@ -1,5 +1,5 @@
-// Invoice PDF template using @react-pdf/renderer
-// T137 [US3] Create invoice PDF template
+// Service-Based Invoice PDF template using @react-pdf/renderer
+// T044 [US1] Create invoice PDF generation for service-based invoices
 
 import React from 'react';
 import {
@@ -8,15 +8,8 @@ import {
   Text,
   View,
   StyleSheet,
-  Font,
 } from '@react-pdf/renderer';
 import { Invoice } from '@/types/models/invoice';
-
-// Register fonts for Arabic support (optional - uses default if not available)
-// Font.register({
-//   family: 'Noto Sans Arabic',
-//   src: '/fonts/NotoSansArabic-Regular.ttf',
-// });
 
 const styles = StyleSheet.create({
   page: {
@@ -98,41 +91,55 @@ const styles = StyleSheet.create({
   tableHeaderCell: {
     fontSize: 9,
     fontWeight: 'bold',
-    color: '#374151',
+    color: '#333',
   },
   tableRow: {
     flexDirection: 'row',
     padding: 8,
     borderBottomWidth: 1,
-    borderBottomColor: '#f3f4f6',
+    borderBottomColor: '#f3f3f3',
+    minHeight: 30,
   },
   tableRowAlt: {
     backgroundColor: '#fafafa',
   },
   tableCell: {
     fontSize: 9,
-    color: '#374151',
+    color: '#333',
   },
-  col1: { width: '40%' },
-  col2: { width: '15%', textAlign: 'center' },
-  col3: { width: '20%', textAlign: 'right' },
-  col4: { width: '25%', textAlign: 'right' },
+  col1: {
+    flex: 3,
+  },
+  col2: {
+    flex: 1,
+    textAlign: 'right',
+  },
+  col3: {
+    flex: 1.5,
+    textAlign: 'right',
+  },
+  col4: {
+    flex: 1.5,
+    textAlign: 'right',
+  },
+  serviceDetails: {
+    fontSize: 8,
+    color: '#666',
+    marginTop: 2,
+  },
   totalsSection: {
-    marginTop: 20,
+    marginTop: 10,
     alignItems: 'flex-end',
   },
   totalsTable: {
-    width: 250,
+    width: '50%',
+    minWidth: 200,
   },
   totalsRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     paddingVertical: 4,
     paddingHorizontal: 8,
-  },
-  totalsRowBorder: {
-    borderTopWidth: 1,
-    borderTopColor: '#e5e5e5',
   },
   totalsLabel: {
     fontSize: 10,
@@ -189,6 +196,27 @@ const styles = StyleSheet.create({
   paidValue: {
     color: '#16a34a',
   },
+  commissionSection: {
+    marginTop: 15,
+    paddingTop: 15,
+    borderTopWidth: 1,
+    borderTopColor: '#e5e5e5',
+  },
+  commissionRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    backgroundColor: '#fef3c7',
+  },
+  commissionLabel: {
+    fontSize: 9,
+    color: '#92400e',
+  },
+  commissionValue: {
+    fontSize: 9,
+    color: '#92400e',
+  },
   notesSection: {
     marginTop: 30,
     padding: 12,
@@ -205,12 +233,6 @@ const styles = StyleSheet.create({
     fontSize: 9,
     color: '#666',
     lineHeight: 1.4,
-  },
-  termsSection: {
-    marginTop: 15,
-    paddingTop: 15,
-    borderTopWidth: 1,
-    borderTopColor: '#e5e5e5',
   },
   footer: {
     position: 'absolute',
@@ -253,10 +275,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#fee2e2',
     color: '#dc2626',
   },
-  statusOverdue: {
-    backgroundColor: '#fee2e2',
-    color: '#dc2626',
-  },
   dateRow: {
     flexDirection: 'row',
     marginBottom: 4,
@@ -280,19 +298,32 @@ interface InvoicePDFProps {
   companyEmail?: string;
 }
 
-function formatCurrency(amount: number, currency: string): string {
+function formatCurrency(amount: number): string {
   return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: currency,
+    style: 'decimal',
     minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
   }).format(amount);
 }
 
-function formatDate(timestamp: { seconds: number; nanoseconds: number } | Date): string {
-  const date = timestamp instanceof Date
-    ? timestamp
-    : new Date(timestamp.seconds * 1000);
-  return date.toLocaleDateString('en-US', {
+function formatDate(date: string | Date | any): string {
+  if (!date) return '';
+
+  let dateObj: Date;
+
+  if (typeof date === 'string') {
+    dateObj = new Date(date);
+  } else if (date instanceof Date) {
+    dateObj = date;
+  } else if (date && typeof date === 'object' && 'seconds' in date) {
+    dateObj = new Date(date.seconds * 1000);
+  } else if (date && typeof date === 'object' && 'toDate' in date) {
+    dateObj = date.toDate();
+  } else {
+    return '';
+  }
+
+  return dateObj.toLocaleDateString('en-US', {
     year: 'numeric',
     month: 'long',
     day: 'numeric',
@@ -311,8 +342,6 @@ function getStatusStyle(status: string) {
       return styles.statusPartial;
     case 'cancelled':
       return styles.statusCancelled;
-    case 'overdue':
-      return styles.statusOverdue;
     default:
       return styles.statusDraft;
   }
@@ -350,17 +379,19 @@ export function InvoicePDF({
         {/* Dates */}
         <View style={styles.section}>
           <View style={styles.dateRow}>
-            <Text style={styles.dateLabel}>Issue Date:</Text>
-            <Text style={styles.dateValue}>{formatDate(invoice.issueDate)}</Text>
+            <Text style={styles.dateLabel}>Invoice Date:</Text>
+            <Text style={styles.dateValue}>{formatDate(invoice.invoiceDate)}</Text>
           </View>
-          <View style={styles.dateRow}>
-            <Text style={styles.dateLabel}>Due Date:</Text>
-            <Text style={styles.dateValue}>{formatDate(invoice.dueDate)}</Text>
-          </View>
-          {invoice.paidDate && (
+          {invoice.dueDate && (
             <View style={styles.dateRow}>
-              <Text style={styles.dateLabel}>Paid Date:</Text>
-              <Text style={styles.dateValue}>{formatDate(invoice.paidDate)}</Text>
+              <Text style={styles.dateLabel}>Due Date:</Text>
+              <Text style={styles.dateValue}>{formatDate(invoice.dueDate)}</Text>
+            </View>
+          )}
+          {invoice.issuedAt && (
+            <View style={styles.dateRow}>
+              <Text style={styles.dateLabel}>Issued:</Text>
+              <Text style={styles.dateValue}>{formatDate(invoice.issuedAt)}</Text>
             </View>
           )}
         </View>
@@ -371,32 +402,49 @@ export function InvoicePDF({
           <View style={styles.customerInfo}>
             <Text style={styles.customerName}>{invoice.customerName}</Text>
             <Text style={styles.customerDetail}>{invoice.customerEmail}</Text>
-            <Text style={styles.customerDetail}>{invoice.customerPhone}</Text>
+            {invoice.customerPhone && (
+              <Text style={styles.customerDetail}>{invoice.customerPhone}</Text>
+            )}
           </View>
         </View>
 
-        {/* Line Items */}
+        {/* Line Items - Services */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Services</Text>
           <View style={styles.table}>
             <View style={styles.tableHeader}>
-              <Text style={[styles.tableHeaderCell, styles.col1]}>Description</Text>
+              <Text style={[styles.tableHeaderCell, styles.col1]}>Service</Text>
               <Text style={[styles.tableHeaderCell, styles.col2]}>Qty</Text>
               <Text style={[styles.tableHeaderCell, styles.col3]}>Unit Price</Text>
               <Text style={[styles.tableHeaderCell, styles.col4]}>Total</Text>
             </View>
-            {invoice.lineItems.map((item, index) => (
+            {invoice.lineItems && invoice.lineItems.map((item: any, index: number) => (
               <View
-                key={item.id}
+                key={item.id || index}
                 style={[styles.tableRow, index % 2 === 1 && styles.tableRowAlt]}
               >
-                <Text style={[styles.tableCell, styles.col1]}>{item.description}</Text>
+                <View style={styles.col1}>
+                  <Text style={styles.tableCell}>{item.serviceName}</Text>
+                  {item.beneficiary && item.beneficiary.name && (
+                    <Text style={styles.serviceDetails}>
+                      Passenger: {item.beneficiary.name}
+                    </Text>
+                  )}
+                  {item.isOutsourced && item.partnerName && (
+                    <Text style={styles.serviceDetails}>
+                      Provider: {item.partnerName}
+                    </Text>
+                  )}
+                  {item.comments && (
+                    <Text style={styles.serviceDetails}>{item.comments}</Text>
+                  )}
+                </View>
                 <Text style={[styles.tableCell, styles.col2]}>{item.quantity}</Text>
                 <Text style={[styles.tableCell, styles.col3]}>
-                  {formatCurrency(item.unitPrice, invoice.currency)}
+                  {formatCurrency(item.unitPrice)}
                 </Text>
                 <Text style={[styles.tableCell, styles.col4]}>
-                  {formatCurrency(item.total, invoice.currency)}
+                  {formatCurrency(item.total)}
                 </Text>
               </View>
             ))}
@@ -409,67 +457,72 @@ export function InvoicePDF({
             <View style={styles.totalsRow}>
               <Text style={styles.totalsLabel}>Subtotal</Text>
               <Text style={styles.totalsValue}>
-                {formatCurrency(invoice.subtotal, invoice.currency)}
+                {formatCurrency(invoice.subtotal)}
               </Text>
             </View>
             {invoice.discount > 0 && (
               <View style={styles.totalsRow}>
-                <Text style={styles.totalsLabel}>
-                  Discount {invoice.discountPercentage && `(${invoice.discountPercentage}%)`}
-                </Text>
+                <Text style={styles.totalsLabel}>Discount</Text>
                 <Text style={styles.totalsValue}>
-                  -{formatCurrency(invoice.discount, invoice.currency)}
-                </Text>
-              </View>
-            )}
-            {invoice.tax > 0 && (
-              <View style={styles.totalsRow}>
-                <Text style={styles.totalsLabel}>
-                  Tax {invoice.taxPercentage && `(${invoice.taxPercentage}%)`}
-                </Text>
-                <Text style={styles.totalsValue}>
-                  {formatCurrency(invoice.tax, invoice.currency)}
+                  -{formatCurrency(invoice.discount)}
                 </Text>
               </View>
             )}
             <View style={styles.totalRow}>
               <Text style={styles.totalLabel}>Total</Text>
               <Text style={styles.totalValue}>
-                {formatCurrency(invoice.total, invoice.currency)}
+                {formatCurrency(invoice.total)}
               </Text>
             </View>
-            {invoice.paidAmount > 0 && (
-              <View style={[styles.balanceRow, styles.paidRow]}>
-                <Text style={[styles.balanceLabel, styles.paidLabel]}>Paid</Text>
-                <Text style={[styles.balanceValue, styles.paidValue]}>
-                  {formatCurrency(invoice.paidAmount, invoice.currency)}
-                </Text>
-              </View>
-            )}
-            {invoice.balance > 0 && (
-              <View style={styles.balanceRow}>
-                <Text style={styles.balanceLabel}>Balance Due</Text>
-                <Text style={styles.balanceValue}>
-                  {formatCurrency(invoice.balance, invoice.currency)}
-                </Text>
-              </View>
+            {invoice.status !== 'draft' && invoice.status !== 'cancelled' && (
+              <>
+                {invoice.paidAmount > 0 && (
+                  <View style={[styles.balanceRow, styles.paidRow]}>
+                    <Text style={[styles.balanceLabel, styles.paidLabel]}>Paid</Text>
+                    <Text style={[styles.balanceValue, styles.paidValue]}>
+                      {formatCurrency(invoice.paidAmount || 0)}
+                    </Text>
+                  </View>
+                )}
+                {invoice.balance > 0 && (
+                  <View style={styles.balanceRow}>
+                    <Text style={styles.balanceLabel}>Balance Due</Text>
+                    <Text style={styles.balanceValue}>
+                      {formatCurrency(invoice.balance)}
+                    </Text>
+                  </View>
+                )}
+              </>
             )}
           </View>
         </View>
+
+        {/* Partner Commissions */}
+        {invoice.totalCommissions > 0 && invoice.commissionsByPartner && (
+          <View style={styles.commissionSection}>
+            <Text style={styles.sectionTitle}>Partner Commissions</Text>
+            {invoice.commissionsByPartner.map((comm: any) => (
+              <View key={comm.partnerId} style={styles.commissionRow}>
+                <Text style={styles.commissionLabel}>{comm.partnerName}</Text>
+                <Text style={styles.commissionValue}>
+                  {formatCurrency(comm.amount)}
+                </Text>
+              </View>
+            ))}
+            <View style={styles.totalsRow}>
+              <Text style={styles.totalsLabel}>Total Commissions</Text>
+              <Text style={styles.totalsValue}>
+                {formatCurrency(invoice.totalCommissions)}
+              </Text>
+            </View>
+          </View>
+        )}
 
         {/* Notes */}
         {invoice.notes && (
           <View style={styles.notesSection}>
             <Text style={styles.notesTitle}>Notes</Text>
             <Text style={styles.notesText}>{invoice.notes}</Text>
-          </View>
-        )}
-
-        {/* Terms */}
-        {invoice.terms && (
-          <View style={styles.termsSection}>
-            <Text style={styles.notesTitle}>Payment Terms</Text>
-            <Text style={styles.notesText}>{invoice.terms}</Text>
           </View>
         )}
 

@@ -471,3 +471,377 @@ export async function updateInvoicePaymentStatus(
     updatedAt: Timestamp.now(),
   });
 }
+
+// ==========================================
+// T039-T040 [US1] Service-Based Invoice Actions
+// ==========================================
+
+import { getSessionUser } from '@/lib/auth/require-role';
+import { createJournalEntry } from '@/lib/accounting/journal-entries';
+import { FieldValue } from 'firebase-admin/firestore';
+
+/**
+ * T039 [US1] Create a service-based invoice (draft status)
+ */
+export async function createServiceInvoice(data: any): Promise<ActionResult<Invoice>> {
+  try {
+    const user = await getSessionUser();
+    if (!user?.tenantId) {
+      return { success: false, error: 'Unauthorized' };
+    }
+
+    const tenantId = user.tenantId;
+
+    // Get customer details
+    const customerDoc = await adminDb
+      .doc(`tenants/${tenantId}/customers/${data.customerId}`)
+      .get();
+
+    if (!customerDoc.exists) {
+      return { success: false, error: 'Customer not found' };
+    }
+
+    const customer = customerDoc.data() as Customer;
+
+    // Generate invoice number
+    const invoiceNumber = await generateInvoiceNumber(tenantId);
+
+    // Get tenant currency
+    const tenantDoc = await adminDb.doc(`tenants/${tenantId}`).get();
+    const currency = tenantDoc.data()?.currency || 'SAR';
+
+    // Create invoice
+    const invoiceRef = adminDb.doc(`tenants/${tenantId}/invoices/${adminDb.collection('dummy').doc().id}`);
+    const now = new Date();
+
+    const invoice: Invoice = {
+      id: invoiceRef.id,
+      invoiceNumber,
+      customerId: customer.id!,
+      customerName: `${customer.firstName} ${customer.lastName}`,
+      customerEmail: customer.email,
+      customerPhone: customer.phone || '',
+      lineItems: data.lineItems.map((item: any, index: number) => ({
+        ...item,
+        id: `${invoiceRef.id}-${index}`,
+        displayOrder: index
+      })),
+      subtotal: data.subtotal,
+      discount: data.discount,
+      discountPercentage: data.discountPercentage || 0,
+      total: data.total,
+      currency,
+      totalCommissions: data.totalCommissions,
+      commissionsByPartner: data.commissionsByPartner || [],
+      status: 'draft',
+      paidAmount: 0,
+      balance: data.total,
+      invoiceDate: data.invoiceDate ? new Date(data.invoiceDate) : now,
+      dueDate: data.dueDate ? new Date(data.dueDate) : undefined,
+      notes: data.notes || '',
+      attachments: data.attachments || [],
+      version: 1,
+      createdBy: user.uid,
+      createdAt: now,
+      updatedAt: now
+    } as any;
+
+    await invoiceRef.set(invoice);
+
+    // Create audit log
+    await createAuditLog({
+      tenantId,
+      userId: user.uid,
+      action: 'create',
+      resource: 'invoice',
+      resourceId: invoice.id,
+      details: { invoiceNumber: invoice.invoiceNumber, status: 'draft' }
+    });
+
+    revalidatePath('/[locale]/(dashboard)/invoices');
+
+    return { success: true, data: invoice };
+  } catch (error) {
+    console.error('Error creating service invoice:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to create invoice'
+    };
+  }
+}
+
+/**
+ * T039 [US1] Update a service-based invoice (draft only)
+ */
+export async function updateServiceInvoice(
+  invoiceId: string,
+  data: any
+): Promise<ActionResult<Invoice>> {
+  try {
+    const user = await getSessionUser();
+    if (!user?.tenantId) {
+      return { success: false, error: 'Unauthorized' };
+    }
+
+    const tenantId = user.tenantId;
+    const invoiceRef = adminDb.doc(`tenants/${tenantId}/invoices/${invoiceId}`);
+    const invoiceDoc = await invoiceRef.get();
+
+    if (!invoiceDoc.exists) {
+      return { success: false, error: 'Invoice not found' };
+    }
+
+    const invoice = invoiceDoc.data() as Invoice;
+
+    // Only allow updates to draft invoices
+    if (invoice.status !== 'draft') {
+      return { success: false, error: 'Only draft invoices can be updated' };
+    }
+
+    // Check version for optimistic locking
+    if (data.version !== invoice.version) {
+      return {
+        success: false,
+        error: 'VERSION_CONFLICT',
+        data: { message: 'Invoice was modified by another user. Please reload.' }
+      };
+    }
+
+    // Update invoice
+    const updatedInvoice = {
+      ...invoice,
+      lineItems: data.lineItems,
+      subtotal: data.subtotal,
+      discount: data.discount,
+      discountPercentage: data.discountPercentage || 0,
+      total: data.total,
+      balance: data.total,
+      totalCommissions: data.totalCommissions,
+      commissionsByPartner: data.commissionsByPartner || [],
+      invoiceDate: data.invoiceDate ? new Date(data.invoiceDate) : invoice.invoiceDate,
+      dueDate: data.dueDate ? new Date(data.dueDate) : invoice.dueDate,
+      notes: data.notes || '',
+      attachments: data.attachments || [],
+      version: invoice.version + 1,
+      updatedAt: new Date()
+    };
+
+    await invoiceRef.update(updatedInvoice);
+
+    revalidatePath('/[locale]/(dashboard)/invoices');
+    revalidatePath(`/[locale]/(dashboard)/invoices/${invoiceId}`);
+
+    return { success: true, data: updatedInvoice as Invoice };
+  } catch (error) {
+    console.error('Error updating service invoice:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to update invoice'
+    };
+  }
+}
+
+/**
+ * T040 [US1] Issue a service invoice (creates journal entries)
+ */
+export async function issueServiceInvoice(invoiceId: string): Promise<ActionResult<Invoice>> {
+  try {
+    const user = await getSessionUser();
+    if (!user?.tenantId) {
+      return { success: false, error: 'Unauthorized' };
+    }
+
+    const tenantId = user.tenantId;
+    const invoiceRef = adminDb.doc(`tenants/${tenantId}/invoices/${invoiceId}`);
+    const invoiceDoc = await invoiceRef.get();
+
+    if (!invoiceDoc.exists) {
+      return { success: false, error: 'Invoice not found' };
+    }
+
+    const invoice = invoiceDoc.data() as Invoice;
+
+    // Only draft invoices can be issued
+    if (invoice.status !== 'draft') {
+      return { success: false, error: 'Only draft invoices can be issued' };
+    }
+
+    // T040 - Create journal entry for double-entry accounting
+    // Debit: Customer Account (Receivable) - increases asset
+    // Credit: Service Revenue - increases income
+
+    // Get customer account
+    const customerAccountQuery = await adminDb
+      .collection(`tenants/${tenantId}/accounts`)
+      .where('linkedEntityType', '==', 'customer')
+      .where('linkedEntityId', '==', invoice.customerId)
+      .limit(1)
+      .get();
+
+    if (customerAccountQuery.empty) {
+      return { success: false, error: 'Customer account not found in chart of accounts' };
+    }
+
+    const customerAccount = customerAccountQuery.docs[0].data();
+
+    // Get revenue account
+    const revenueAccountQuery = await adminDb
+      .collection(`tenants/${tenantId}/accounts`)
+      .where('code', '==', '4001')
+      .where('isSystem', '==', true)
+      .limit(1)
+      .get();
+
+    if (revenueAccountQuery.empty) {
+      return { success: false, error: 'Revenue account not found. Please initialize default accounts.' };
+    }
+
+    const revenueAccount = revenueAccountQuery.docs[0].data();
+
+    // Create journal entry
+    const journalEntry = await createJournalEntry(
+      tenantId,
+      {
+        description: `Invoice ${invoice.invoiceNumber} issued to ${invoice.customerName}`,
+        type: 'invoice_created',
+        lines: [
+          {
+            accountId: customerAccount.id,
+            accountName: customerAccount.name,
+            accountCode: customerAccount.code,
+            debit: invoice.total,
+            credit: 0
+          },
+          {
+            accountId: revenueAccount.id,
+            accountName: revenueAccount.name,
+            accountCode: revenueAccount.code,
+            debit: 0,
+            credit: invoice.total
+          }
+        ],
+        sourceType: 'invoice',
+        sourceId: invoice.id
+      },
+      user.uid
+    );
+
+    // Update invoice status
+    await invoiceRef.update({
+      status: 'issued',
+      journalEntryId: journalEntry.id,
+      updatedAt: new Date(),
+      version: (invoice.version || 1) + 1
+    });
+
+    // Create audit log
+    await createAuditLog({
+      tenantId,
+      userId: user.uid,
+      action: 'update',
+      resource: 'invoice',
+      resourceId: invoice.id,
+      details: { invoiceNumber: invoice.invoiceNumber, action: 'issued' }
+    });
+
+    revalidatePath('/[locale]/(dashboard)/invoices');
+    revalidatePath(`/[locale]/(dashboard)/invoices/${invoiceId}`);
+
+    return {
+      success: true,
+      data: { ...invoice, status: 'issued', journalEntryId: journalEntry.id } as Invoice
+    };
+  } catch (error) {
+    console.error('Error issuing service invoice:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to issue invoice'
+    };
+  }
+}
+
+/**
+ * T042 - Cancel service-based invoice
+ * Cancels an invoice and updates status with reason
+ */
+export async function cancelServiceInvoice(
+  invoiceId: string,
+  reason: string
+): Promise<ActionResult<Invoice>> {
+  try {
+    const user = await getSessionUser();
+    if (!user) {
+      return {
+        success: false,
+        error: 'Unauthenticated'
+      };
+    }
+
+    const tenantId = user.tenantId;
+
+    const invoiceRef = adminDb.doc(`tenants/${tenantId}/invoices/${invoiceId}`);
+    const invoiceDoc = await invoiceRef.get();
+
+    if (!invoiceDoc.exists) {
+      return {
+        success: false,
+        error: 'Invoice not found'
+      };
+    }
+
+    const invoice = invoiceDoc.data() as Invoice;
+
+    // Can only cancel draft or issued invoices
+    if (['paid', 'cancelled'].includes(invoice.status)) {
+      return {
+        success: false,
+        error: 'Cannot cancel a paid or already cancelled invoice'
+      };
+    }
+
+    // Update invoice
+    await invoiceRef.update({
+      status: 'cancelled',
+      cancelledAt: new Date(),
+      cancelReason: reason,
+      notes: invoice.notes
+        ? `${invoice.notes}\n\nCancellation reason: ${reason}`
+        : `Cancellation reason: ${reason}`,
+      updatedAt: new Date(),
+      version: (invoice.version || 1) + 1
+    });
+
+    // Create audit log
+    await createAuditLog({
+      tenantId,
+      userId: user.uid,
+      action: 'update',
+      resource: 'invoice',
+      resourceId: invoice.id,
+      details: {
+        invoiceNumber: invoice.invoiceNumber,
+        action: 'cancelled',
+        reason
+      }
+    });
+
+    revalidatePath('/[locale]/(dashboard)/invoices');
+    revalidatePath(`/[locale]/(dashboard)/invoices/${invoiceId}`);
+
+    return {
+      success: true,
+      data: {
+        ...invoice,
+        status: 'cancelled',
+        cancelledAt: new Date().toISOString(),
+        cancelReason: reason
+      } as Invoice
+    };
+  } catch (error) {
+    console.error('Error cancelling service invoice:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to cancel invoice'
+    };
+  }
+}

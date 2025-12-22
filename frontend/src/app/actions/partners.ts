@@ -28,6 +28,7 @@ import {
 } from '@/lib/validations/partners';
 import { createAuditLog } from '@/lib/audit/create-log';
 import type { PartnerOfficeStatus } from '@/types/models/partner-office';
+import { createPartnerAccount } from '@/lib/accounting/default-accounts';
 
 // ==========================================
 // Helper Functions
@@ -155,6 +156,19 @@ export async function createPartnerAction(
       .doc(user.tenantId)
       .collection('partnerOffices')
       .add(partnerData);
+
+    // T031 [US6] Create partner account in chart of accounts
+    try {
+      await createPartnerAccount(
+        user.tenantId,
+        partnerRef.id,
+        data.name
+      );
+    } catch (accountError) {
+      console.error('Error creating partner account:', accountError);
+      // Don't fail the partner creation if account creation fails
+      // Account can be created manually later if needed
+    }
 
     // Create audit log
     await createAuditLog({
@@ -555,6 +569,58 @@ export async function deletePartnerAction(
   } catch (err) {
     console.error('Delete partner error:', err);
     return error('Failed to delete partner', ErrorCodes.INTERNAL_ERROR);
+  }
+}
+
+/**
+ * List all partner offices for the tenant
+ */
+export async function listPartnersAction(options?: {
+  status?: PartnerOfficeStatus;
+  search?: string;
+  limit?: number;
+}): Promise<ActionResult<any[]>> {
+  try {
+    const user = await requireAuthenticatedUser();
+
+    if (!canManagePartners(user.role)) {
+      return error('You do not have permission to view partners', ErrorCodes.UNAUTHORIZED);
+    }
+
+    const { status: statusFilter, search, limit: limitCount = 100 } = options || {};
+
+    let queryRef = adminDb
+      .collection(`tenants/${user.tenantId}/partnerOffices`)
+      .orderBy('createdAt', 'desc')
+      .limit(limitCount);
+
+    // Add status filter if provided
+    if (statusFilter) {
+      queryRef = queryRef.where('status', '==', statusFilter) as any;
+    }
+
+    const snapshot = await queryRef.get();
+
+    let partners = snapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    }));
+
+    // Client-side search filtering
+    if (search) {
+      const searchLower = search.toLowerCase();
+      partners = partners.filter(
+        (partner: any) =>
+          partner.name.toLowerCase().includes(searchLower) ||
+          partner.code.toLowerCase().includes(searchLower) ||
+          partner.email.toLowerCase().includes(searchLower)
+      );
+    }
+
+    return success(partners);
+  } catch (err) {
+    console.error('List partners error:', err);
+    return error('Failed to list partners', ErrorCodes.INTERNAL_ERROR);
   }
 }
 

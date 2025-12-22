@@ -1,187 +1,163 @@
 'use client';
 
-// InvoiceCard component
-// T144 [US3] Create InvoiceCard component
-
-import { useTranslations } from 'next-intl';
-import Link from 'next/link';
-import { format } from 'date-fns';
-import { ar, enUS } from 'date-fns/locale';
-import {
-  Calendar,
-  User,
-  DollarSign,
-  MoreVertical,
-  Eye,
-  Download,
-  Send,
-  XCircle,
-  CreditCard,
-} from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Invoice, InvoiceStatus } from '@/types/models/invoice';
+import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { InvoiceStatusBadge } from './invoice-status-badge';
-import { Invoice } from '@/types/models/invoice';
-import { Timestamp } from 'firebase/firestore';
+import { useTranslations, useLocale } from 'next-intl';
+import { FileText, Eye, Edit, Download, Calendar, User } from 'lucide-react';
+import Link from 'next/link';
 
 interface InvoiceCardProps {
   invoice: Invoice;
-  locale?: 'ar' | 'en';
-  onDownloadPDF?: () => void;
-  onIssue?: () => void;
-  onCancel?: () => void;
-  onAddPayment?: () => void;
+  onView?: () => void;
+  onEdit?: () => void;
+  onDownload?: () => void;
 }
 
-export function InvoiceCard({
-  invoice,
-  locale = 'ar',
-  onDownloadPDF,
-  onIssue,
-  onCancel,
-  onAddPayment,
-}: InvoiceCardProps) {
-  const t = useTranslations('invoices');
-  const dateLocale = locale === 'ar' ? ar : enUS;
+function getStatusColor(status: InvoiceStatus): string {
+  switch (status) {
+    case 'draft':
+      return 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200';
+    case 'issued':
+      return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200';
+    case 'partial':
+      return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200';
+    case 'paid':
+      return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
+    case 'cancelled':
+      return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200';
+    default:
+      return 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200';
+  }
+}
 
-  const formatDate = (timestamp: Timestamp) => {
-    const date = timestamp.toDate();
-    return format(date, 'dd MMM yyyy', { locale: dateLocale });
-  };
+function formatCurrency(amount: number, locale: string = 'en'): string {
+  return new Intl.NumberFormat(locale === 'ar' ? 'ar-SA' : 'en-US', {
+    style: 'decimal',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  }).format(amount);
+}
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat(locale === 'ar' ? 'ar-SA' : 'en-US', {
-      style: 'currency',
-      currency: invoice.currency,
-    }).format(amount);
-  };
+function formatDate(date: string | Date, locale: string = 'en'): string {
+  const d = typeof date === 'string' ? new Date(date) : date;
+  return new Intl.DateTimeFormat(locale === 'ar' ? 'ar-SA' : 'en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric'
+  }).format(d);
+}
 
-  const isOverdue = () => {
-    if (['paid', 'cancelled'].includes(invoice.status)) return false;
-    const dueDate = invoice.dueDate.toDate();
-    return dueDate < new Date() && invoice.balance > 0;
-  };
+export function InvoiceCard({ invoice, onView, onEdit, onDownload }: InvoiceCardProps) {
+  const t = useTranslations();
+  const locale = useLocale();
 
   return (
-    <Card className="hover:shadow-md transition-shadow">
-      <CardHeader className="flex flex-row items-start justify-between pb-2">
-        <div>
-          <div className="flex items-center gap-2 mb-1">
-            <CardTitle className="text-lg font-mono">
-              {invoice.invoiceNumber}
-            </CardTitle>
-            <InvoiceStatusBadge status={isOverdue() ? 'overdue' : invoice.status} />
+    <Card className="hover:shadow-lg transition-shadow">
+      <CardHeader className="pb-3">
+        <div className="flex items-start justify-between">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <FileText className="h-4 w-4 text-muted-foreground" />
+              <h3 className="font-semibold">{invoice.invoiceNumber}</h3>
+            </div>
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <User className="h-3 w-3" />
+              <span>{invoice.customerName}</span>
+            </div>
           </div>
-          <p className="text-sm text-muted-foreground">
-            {t('booking')}: {invoice.bookingId.slice(0, 8)}...
-          </p>
+          <Badge className={getStatusColor(invoice.status)}>
+            {t(`invoices.statuses.${invoice.status}`)}
+          </Badge>
         </div>
-
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon">
-              <MoreVertical className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem asChild>
-              <Link href={`/${locale}/invoices/${invoice.id}`}>
-                <Eye className="me-2 h-4 w-4" />
-                {t('view')}
-              </Link>
-            </DropdownMenuItem>
-            {onDownloadPDF && (
-              <DropdownMenuItem onClick={onDownloadPDF}>
-                <Download className="me-2 h-4 w-4" />
-                {t('downloadPDF')}
-              </DropdownMenuItem>
-            )}
-            {onIssue && invoice.status === 'draft' && (
-              <DropdownMenuItem onClick={onIssue}>
-                <Send className="me-2 h-4 w-4" />
-                {t('issue')}
-              </DropdownMenuItem>
-            )}
-            {onAddPayment && !['paid', 'cancelled', 'draft'].includes(invoice.status) && (
-              <DropdownMenuItem onClick={onAddPayment}>
-                <CreditCard className="me-2 h-4 w-4" />
-                {t('addPayment')}
-              </DropdownMenuItem>
-            )}
-            <DropdownMenuSeparator />
-            {onCancel && !['paid', 'cancelled'].includes(invoice.status) && (
-              <DropdownMenuItem
-                onClick={onCancel}
-                className="text-destructive focus:text-destructive"
-              >
-                <XCircle className="me-2 h-4 w-4" />
-                {t('cancel')}
-              </DropdownMenuItem>
-            )}
-          </DropdownMenuContent>
-        </DropdownMenu>
       </CardHeader>
 
       <CardContent className="space-y-3">
+        {/* Date */}
         <div className="flex items-center gap-2 text-sm">
-          <User className="h-4 w-4 text-muted-foreground" />
-          <span>{invoice.customerName}</span>
+          <Calendar className="h-4 w-4 text-muted-foreground" />
+          <span className="text-muted-foreground">{t('invoices.invoiceDate')}:</span>
+          <span className="font-medium">{formatDate(invoice.invoiceDate, locale)}</span>
         </div>
 
-        <div className="flex items-center gap-4 text-sm">
-          <div className="flex items-center gap-2">
-            <Calendar className="h-4 w-4 text-muted-foreground" />
-            <span>{formatDate(invoice.issueDate)}</span>
-          </div>
-          <div className="text-muted-foreground">
-            {t('due')}: {formatDate(invoice.dueDate)}
-          </div>
+        {/* Line Items Count */}
+        <div className="text-sm">
+          <span className="text-muted-foreground">{t('invoices.services')}:</span>
+          <span className="ml-2 font-medium">
+            {invoice.lineItems.length} {invoice.lineItems.length === 1 ? t('invoices.service') : t('invoices.services')}
+          </span>
         </div>
 
-        <div className="flex items-center justify-between pt-2 border-t">
-          <div className="flex items-center gap-2">
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
-            <div className="text-sm">
-              <span className="font-medium text-lg">{formatCurrency(invoice.total)}</span>
-            </div>
+        {/* Amount Details */}
+        <div className="space-y-1 pt-2 border-t">
+          <div className="flex justify-between text-sm">
+            <span className="text-muted-foreground">{t('invoices.total')}:</span>
+            <span className="font-semibold">{formatCurrency(invoice.total, locale)}</span>
           </div>
-
-          <div className="text-end">
-            {invoice.paidAmount > 0 && invoice.balance > 0 && (
-              <div className="text-sm">
-                <span className="text-muted-foreground">{t('paid')}: </span>
-                <span className="text-green-600">{formatCurrency(invoice.paidAmount)}</span>
+          {invoice.status !== 'draft' && invoice.status !== 'cancelled' && (
+            <>
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">{t('invoices.paid')}:</span>
+                <span className="text-green-600 dark:text-green-400">
+                  {formatCurrency(invoice.paidAmount || 0, locale)}
+                </span>
               </div>
-            )}
-            {invoice.balance > 0 && (
-              <p className="text-sm font-medium text-destructive">
-                {t('balance')}: {formatCurrency(invoice.balance)}
-              </p>
-            )}
-            {invoice.status === 'paid' && (
-              <p className="text-sm font-medium text-green-600">
-                {t('fullyPaid')}
-              </p>
-            )}
-          </div>
+              <div className="flex justify-between text-sm font-medium">
+                <span className="text-muted-foreground">{t('invoices.balance')}:</span>
+                <span className={invoice.balance > 0 ? 'text-orange-600 dark:text-orange-400' : ''}>
+                  {formatCurrency(invoice.balance, locale)}
+                </span>
+              </div>
+            </>
+          )}
         </div>
 
+        {/* Commission Summary (if applicable) */}
         {invoice.totalCommissions > 0 && (
-          <div className="text-xs text-muted-foreground border-t pt-2">
-            {t('commissions')}: {formatCurrency(invoice.totalCommissions)}
-            <span className="ms-2">
-              ({invoice.commissionsByPartner.length} {t('partners')})
-            </span>
+          <div className="text-xs text-muted-foreground pt-1 border-t">
+            {t('invoices.partnerCommissions')}: {formatCurrency(invoice.totalCommissions, locale)}
           </div>
         )}
       </CardContent>
+
+      <CardFooter className="pt-3 border-t">
+        <div className="flex gap-2 w-full">
+          {onView && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onView}
+              className="flex-1"
+            >
+              <Eye className="h-4 w-4 mr-1" />
+              {t('common.view')}
+            </Button>
+          )}
+          {onEdit && invoice.status === 'draft' && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onEdit}
+              className="flex-1"
+            >
+              <Edit className="h-4 w-4 mr-1" />
+              {t('common.edit')}
+            </Button>
+          )}
+          {onDownload && invoice.status !== 'draft' && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onDownload}
+              className="flex-1"
+            >
+              <Download className="h-4 w-4 mr-1" />
+              {t('common.download')}
+            </Button>
+          )}
+        </div>
+      </CardFooter>
     </Card>
   );
 }
