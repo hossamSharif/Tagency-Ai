@@ -1,7 +1,7 @@
 'use client';
 
 // PaymentCard component
-// T148 [US3] Create PaymentCard component
+// T047 [P] [US3] Payment card component - updated for service-based invoices
 
 import { useTranslations } from 'next-intl';
 import Link from 'next/link';
@@ -16,9 +16,13 @@ import {
   CreditCard,
   Banknote,
   Building2,
+  User,
+  ArrowDownRight,
+  ArrowUpRight,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -35,11 +39,14 @@ interface PaymentCardProps {
   locale?: 'ar' | 'en';
   onApprove?: () => void;
   onReject?: () => void;
+  onClick?: () => void;
+  showDetails?: boolean;
 }
 
 const methodIcons: Record<PaymentMethod, React.ReactNode> = {
   stripe: <CreditCard className="h-4 w-4" />,
   cash: <Banknote className="h-4 w-4" />,
+  bank: <Building2 className="h-4 w-4" />,
   bank_transfer: <Building2 className="h-4 w-4" />,
 };
 
@@ -48,9 +55,12 @@ export function PaymentCard({
   locale = 'ar',
   onApprove,
   onReject,
+  onClick,
+  showDetails = true,
 }: PaymentCardProps) {
   const t = useTranslations('payments');
   const dateLocale = locale === 'ar' ? ar : enUS;
+  const isCustomerReceipt = payment.paymentType === 'customer_receipt';
 
   const formatDate = (timestamp: Timestamp) => {
     const date = timestamp.toDate();
@@ -68,19 +78,34 @@ export function PaymentCard({
     payment.method === 'bank_transfer' && payment.status === 'pending';
 
   return (
-    <Card className="hover:shadow-md transition-shadow">
+    <Card
+      className={`hover:shadow-md transition-shadow ${onClick ? 'cursor-pointer' : ''}`}
+      onClick={onClick}
+    >
       <CardHeader className="flex flex-row items-start justify-between pb-2">
-        <div>
-          <div className="flex items-center gap-2 mb-1">
-            <CardTitle className="text-lg font-mono">
-              {payment.paymentNumber}
-            </CardTitle>
-            <PaymentStatusBadge status={payment.status} />
+        <div className="flex items-start gap-3">
+          <div className={`p-2 rounded-full ${isCustomerReceipt ? 'bg-green-100 text-green-600' : 'bg-blue-100 text-blue-600'}`}>
+            {isCustomerReceipt ? (
+              <ArrowDownRight className="h-4 w-4" />
+            ) : (
+              <ArrowUpRight className="h-4 w-4" />
+            )}
           </div>
-          <p className="text-sm text-muted-foreground flex items-center gap-1">
-            {methodIcons[payment.method]}
-            <span>{t(`method.${payment.method}`)}</span>
-          </p>
+          <div>
+            <div className="flex items-center gap-2 mb-1">
+              <CardTitle className="text-lg font-mono">
+                {payment.paymentNumber}
+              </CardTitle>
+              <PaymentStatusBadge status={payment.status} />
+            </div>
+            <p className="text-sm text-muted-foreground">
+              {isCustomerReceipt ? t('types.customerReceipt') : t('types.partnerPayment')}
+            </p>
+            <p className="text-sm text-muted-foreground flex items-center gap-1 mt-1">
+              {methodIcons[payment.method]}
+              <span>{t(`method.${payment.method}`)}</span>
+            </p>
+          </div>
         </div>
 
         <DropdownMenu>
@@ -119,6 +144,16 @@ export function PaymentCard({
       </CardHeader>
 
       <CardContent className="space-y-3">
+        {/* Party (Customer or Partner) */}
+        {showDetails && (
+          <div className="flex items-center gap-2">
+            <User className="h-4 w-4 text-muted-foreground" />
+            <span className="text-sm font-medium">
+              {isCustomerReceipt ? payment.customerName : payment.partnerName}
+            </span>
+          </div>
+        )}
+
         <div className="flex items-center gap-2 text-sm">
           <Calendar className="h-4 w-4 text-muted-foreground" />
           <span>{formatDate(payment.paymentDate)}</span>
@@ -127,6 +162,7 @@ export function PaymentCard({
         <div className="flex items-center justify-between pt-2 border-t">
           <div>
             <p className="text-2xl font-bold">{formatCurrency(payment.amount)}</p>
+            <p className="text-xs text-muted-foreground">{payment.accountName}</p>
           </div>
 
           {payment.processedAt && (
@@ -136,6 +172,16 @@ export function PaymentCard({
             </div>
           )}
         </div>
+
+        {/* Commission (for partner payments) */}
+        {showDetails && !isCustomerReceipt && payment.commissionAmount && (
+          <div className="flex items-center justify-between pt-2 border-t text-sm">
+            <span className="text-muted-foreground">{t('commission')}</span>
+            <span className="font-medium">
+              {formatCurrency(payment.commissionAmount)}
+            </span>
+          </div>
+        )}
 
         {payment.bankTransfer && (
           <div className="text-sm bg-muted/50 p-2 rounded">

@@ -590,3 +590,234 @@ export async function getPaymentAction(
     };
   }
 }
+
+/**
+ * T048 [US3] Record customer payment (service-based invoices)
+ * Records a payment received from a customer against an invoice or account balance
+ * Creates journal entry and updates invoice status
+ */
+export async function recordCustomerPaymentAction(
+  tenantId: string,
+  userId: string,
+  data: {
+    customerId: string;
+    customerName: string;
+    invoiceId?: string;
+    amount: number;
+    method: 'cash' | 'bank';
+    accountId: string;
+    accountName: string;
+    paymentDate?: Date;
+    transactionReference?: string;
+    notes?: string;
+  }
+): Promise<ActionResult<Payment>> {
+  try {
+    const { createJournalEntry, createSimpleEntry } = await import('@/lib/accounting/journal-entries');
+    const { CurrencyCode } = await import('@/types/models/tenant');
+
+    // Get tenant currency (simplified - in production, fetch from tenant settings)
+    const tenantDoc = await adminDb.doc(`tenants/${tenantId}`).get();
+    const currency = tenantDoc.data()?.currency || 'SAR';
+
+    // Validate invoice if provided
+    let invoice = null;
+    if (data.invoiceId) {
+      const invoiceDoc = await adminDb
+        .doc(`tenants/${tenantId}/invoices/${data.invoiceId}`)
+        .get();
+
+      if (!invoiceDoc.exists) {
+        return { success: false, error: 'Invoice not found' };
+      }
+
+      invoice = invoiceDoc.data();
+
+      if (['paid', 'cancelled'].includes(invoice.status)) {
+        return { success: false, error: 'Cannot add payment to a paid or cancelled invoice' };
+      }
+
+      // Validate payment amount doesn't exceed balance
+      const balance = invoice.balance || 0;
+      if (data.amount > balance) {
+        return { success: false, error: `Payment amount exceeds invoice balance of ${balance}` };
+      }
+    }
+
+    // Get payment account
+    const paymentAccountDoc = await adminDb
+      .doc(`tenants/${tenantId}/accounts/${data.accountId}`)
+      .get();
+
+    if (!paymentAccountDoc.exists) {
+      return { success: false, error: 'Payment account not found' };
+    }
+
+    const paymentAccount = paymentAccountDoc.data();
+
+    // Get customer receivable account
+    const customerAccountsQuery = await adminDb
+      .collection(`tenants/${tenantId}/accounts`)
+      .where('linkedEntityType', '==', 'customer')
+      .where('linkedEntityId', '==', data.customerId)
+      .limit(1)
+      .get();
+
+    if (customerAccountsQuery.empty) {
+      return { success: false, error: 'Customer account not found' };
+    }
+
+    const customerAccount = customerAccountsQuery.docs[0].data();
+
+    // Generate payment number
+    const paymentNumber = await generatePaymentNumber(tenantId);
+
+    // Create payment record
+    const paymentRef = adminDb.collection(`tenants/${tenantId}/payments`).doc();
+    const now = Timestamp.now();
+    const paymentDate = data.paymentDate ? Timestamp.fromDate(data.paymentDate) : now;
+
+    const payment: Payment = {
+      id: paymentRef.id,
+      paymentNumber,
+      paymentType: 'customer_receipt',
+      customerId: data.customerId,
+      customerName: data.customerName,
+      invoiceId: data.invoiceId,
+      amount: data.amount,
+      currency: currency as CurrencyCode,
+      method: data.method,
+      accountId: data.accountId,
+      accountName: data.accountName,
+      transactionReference: data.transactionReference,
+      status: 'completed',
+      paymentDate,
+      processedAt: now,
+      notes: data.notes,
+      createdBy: userId,
+      createdAt: now,
+      updatedAt: now,
+    };
+
+    // T049 [US3] Create journal entry for customer payment
+    // Debit: Cash/Bank account (increase asset)
+    // Credit: Customer Receivable account (decrease asset)
+    const journalLines = createSimpleEntry(
+      {
+        id: paymentAccount.id,
+        name: paymentAccount.name,
+        code: paymentAccount.code,
+      },
+      {
+        id: customerAccount.id,
+        name: customerAccount.name,
+        code: customerAccount.code,
+      },
+      data.amount
+    );
+
+    const journalEntry = await createJournalEntry({
+      tenantId,
+      description: `Customer payment ${paymentNumber} from ${data.customerName}${data.invoiceId ? ` for invoice ${data.invoiceId}` : ''}`,
+      type: 'customer_payment',
+      lines: journalLines,
+      sourceType: 'payment',
+      sourceId: paymentRef.id,
+      createdBy: userId,
+      date: data.paymentDate,
+    });
+
+    // Link journal entry to payment
+    payment.journalEntryId = journalEntry.id;
+
+    // Save payment
+    await paymentRef.set(payment);
+
+    // T050 [US3] Update invoice status if invoice payment
+    if (data.invoiceId && invoice) {
+      const newPaidAmount = (invoice.paidAmount || 0) + data.amount;
+      const newBalance = invoice.total - newPaidAmount;
+
+      let newStatus: 'issued' | 'partial' | 'paid' = 'issued';
+      if (newBalance <= 0) {
+        newStatus = 'paid';
+      } else if (newPaidAmount > 0) {
+        newStatus = 'partial';
+      }
+
+      await adminDb.doc(`tenants/${tenantId}/invoices/${data.invoiceId}`).update({
+        paidAmount: newPaidAmount,
+        balance: newBalance,
+        status: newStatus,
+        paidDate: newStatus === 'paid' ? now : null,
+        updatedAt: now,
+      });
+    }
+
+    // Create audit log
+    await createAuditLog({
+      tenantId,
+      userId,
+      action: 'create',
+      resource: 'payment',
+      resourceId: payment.id,
+      description: `Recorded customer payment ${paymentNumber} for ${data.amount} ${currency}`,
+    });
+
+    revalidatePath(`/[locale]/(dashboard)/payments`);
+    if (data.invoiceId) {
+      revalidatePath(`/[locale]/(dashboard)/invoices/${data.invoiceId}`);
+    }
+    revalidatePath(`/[locale]/(dashboard)/customers/${data.customerId}`);
+
+    return { success: true, data: payment };
+  } catch (error) {
+    console.error('Error recording customer payment:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to record payment',
+    };
+  }
+}
+
+/**
+ * T048 [US3] Get customer balance from account
+ */
+export async function getCustomerBalanceAction(
+  tenantId: string,
+  customerId: string
+): Promise<ActionResult<{ balance: number; currency: string }>> {
+  try {
+    // Get customer account
+    const accountsQuery = await adminDb
+      .collection(`tenants/${tenantId}/accounts`)
+      .where('linkedEntityType', '==', 'customer')
+      .where('linkedEntityId', '==', customerId)
+      .limit(1)
+      .get();
+
+    if (accountsQuery.empty) {
+      return { success: false, error: 'Customer account not found' };
+    }
+
+    const account = accountsQuery.docs[0].data();
+
+    // Get tenant currency
+    const tenantDoc = await adminDb.doc(`tenants/${tenantId}`).get();
+    const currency = tenantDoc.data()?.currency || 'SAR';
+
+    return {
+      success: true,
+      data: {
+        balance: account.balance || 0,
+        currency,
+      },
+    };
+  } catch (error) {
+    console.error('Error getting customer balance:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to get balance',
+    };
+  }
+}
