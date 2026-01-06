@@ -161,7 +161,7 @@ export function CustomerPaymentForm({
                 name="customerName"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>{t('payments.customer')}</FormLabel>
+                    <FormLabel>{t('payments.customer.customer')}</FormLabel>
                     <FormControl>
                       <Input {...field} disabled />
                     </FormControl>
@@ -218,7 +218,7 @@ export function CustomerPaymentForm({
               name="method"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>{t('payments.method')}</FormLabel>
+                  <FormLabel>{t('payments.paymentMethod')}</FormLabel>
                   <Select onValueChange={field.onChange} defaultValue={field.value}>
                     <FormControl>
                       <SelectTrigger>
