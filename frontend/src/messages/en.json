@@ -63,6 +63,7 @@
       "label": "Actions",
       "create": "Create",
       "edit": "Edit",
+      "update": "Update",
       "delete": "Delete",
       "cancel": "Cancel",
       "save": "Save",
