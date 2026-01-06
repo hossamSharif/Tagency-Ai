@@ -751,14 +751,18 @@ export async function issueServiceInvoice(invoiceId: string): Promise<ActionResu
     // T040 [US1] Update partner commission totals when invoice is issued
     if (invoice.commissionsByPartner && invoice.commissionsByPartner.length > 0) {
       for (const commission of invoice.commissionsByPartner) {
-        if (commission.partnerOfficeId && commission.totalAmount > 0) {
+        // Support both new (partnerId/amount) and legacy (partnerOfficeId/totalAmount) field names
+        const partnerId = commission.partnerId || commission.partnerOfficeId;
+        const commissionAmount = commission.amount || commission.totalAmount || 0;
+
+        if (partnerId && commissionAmount > 0) {
           const partnerRef = adminDb.doc(
-            `tenants/${tenantId}/partnerOffices/${commission.partnerOfficeId}`
+            `tenants/${tenantId}/partnerOffices/${partnerId}`
           );
 
           await partnerRef.update({
-            pendingCommissions: FieldValue.increment(commission.totalAmount),
-            totalCommissionsEarned: FieldValue.increment(commission.totalAmount),
+            pendingCommissions: FieldValue.increment(commissionAmount),
+            totalCommissionsEarned: FieldValue.increment(commissionAmount),
             updatedAt: new Date()
           });
         }

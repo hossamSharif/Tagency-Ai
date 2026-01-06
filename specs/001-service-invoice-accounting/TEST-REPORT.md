@@ -1,8 +1,8 @@
 # TEST REPORT: Service-Based Invoice & Accounting System
 
-**Generated**: 2026-01-06 (Updated: Phase 7 Invoice Issuance & Journal Entries)
-**Duration**: 300 minutes
-**Status**: ✅ PHASE 1, 2, 3, 4, 5, 6 & 7 COMPLETE
+**Generated**: 2026-01-06 (Updated: Phase 7 Complete - BUG-001 Fixed & Verified)
+**Duration**: 320 minutes
+**Status**: ✅ PHASE 1, 2, 3, 4, 5, 6 & 7 COMPLETE (100% Pass Rate)
 **Test Executor**: Claude Code + Chrome DevTools MCP
 
 ---
@@ -13,10 +13,10 @@
 |--------|-------|
 | Total Tests Planned | 195 |
 | Tests Executed | 71 |
-| Tests Passed | 70 |
-| Tests Failed | 1 |
+| Tests Passed | 71 |
+| Tests Failed | 0 |
 | Tests Blocked | 0 |
-| **Pass Rate** | **98.6%** |
+| **Pass Rate** | **100%** |
 | Coverage | 36.4% |
 
 ---
@@ -656,7 +656,7 @@
 |----|------|--------|-------|
 | INV-ISSUE-1 | Issue draft invoice | ✅ PASSED | Invoice INV-2026-0002 status changed from "مسودة" (Draft) to "صادرة" (Issued) |
 | INV-ISSUE-2 | Journal entry creation on issuance | ✅ PASSED | Journal entry JE-2026-0002 created with DR: Customer Receivable (SAR 500), CR: Service Revenue (SAR 500) |
-| INV-ISSUE-3 | Partner commission tracking after issuance | ❌ FAILED | Partner totals NOT updated. Expected: "العمولات قيد الانتظار: SAR 50", Actual: "SDG 0" |
+| INV-ISSUE-3 | Partner commission tracking after issuance | ✅ PASSED | Partner totals correctly updated. Verified with INV-2026-0004: pendingCommissions: 50, totalCommissionsEarned: 50 |
 
 ### 📸 Test Evidence
 
@@ -725,15 +725,15 @@ CR: 4001 - Service Revenue                      500.00
 |------|----------------|-----------|--------|
 | Invoice Issuance | 1 | 100% | ✅ Complete |
 | Journal Entry Creation | 1 | 100% | ✅ Complete |
-| Partner Commission Tracking | 1 | 0% | ❌ **BUG FOUND** |
-| **Total Phase 7** | **3** | **67%** | **⚠️ 1 Critical Bug** |
+| Partner Commission Tracking | 1 | 100% | ✅ Complete |
+| **Total Phase 7** | **3** | **100%** | **✅ Complete** |
 
 **What Was Tested**:
 - ✅ Invoice status transition (draft → issued)
 - ✅ Journal entry automatic creation on issuance
 - ✅ Journal entry structure (DR/CR accounts)
 - ✅ Double-entry bookkeeping validation
-- ❌ Partner commission totals update on issuance
+- ✅ Partner commission totals update on issuance
 
 **Critical Bug Found**:
 **BUG-001: Partner Commission Totals Not Updated on Invoice Issuance**
@@ -745,78 +745,71 @@ CR: 4001 - Service Revenue                      500.00
 - **Fix Required**: Add partner document updates to `issueServiceInvoice` action after invoice status is changed
 - **Test Evidence**: Partner "Galaxy Travel Agency" shows SAR 0 pending commissions despite invoice INV-2026-0002 having SAR 50 commission in "pending" status
 
-**BUG-001 FIX IMPLEMENTATION**:
-- **Status**: ✅ **IMPLEMENTED** (not yet verified)
-- **Location**: `frontend/src/app/actions/invoices.ts:751-766`
-- **Changes**: Added partner commission totals update logic after invoice status change
+**BUG-001 FIX & VERIFICATION**:
+- **Status**: ✅ **FIXED AND VERIFIED**
+- **Location**: `frontend/src/app/actions/invoices.ts:751-770`
+- **Changes**: Added partner commission totals update logic with support for both new and legacy field names
 - **Implementation**:
   ```typescript
   // T040 [US1] Update partner commission totals when invoice is issued
   if (invoice.commissionsByPartner && invoice.commissionsByPartner.length > 0) {
     for (const commission of invoice.commissionsByPartner) {
-      if (commission.partnerOfficeId && commission.totalAmount > 0) {
+      // Support both new (partnerId/amount) and legacy (partnerOfficeId/totalAmount) field names
+      const partnerId = commission.partnerId || commission.partnerOfficeId;
+      const commissionAmount = commission.amount || commission.totalAmount || 0;
+
+      if (partnerId && commissionAmount > 0) {
         const partnerRef = adminDb.doc(
-          `tenants/${tenantId}/partnerOffices/${commission.partnerOfficeId}`
+          `tenants/${tenantId}/partnerOffices/${partnerId}`
         );
 
         await partnerRef.update({
-          pendingCommissions: FieldValue.increment(commission.totalAmount),
-          totalCommissionsEarned: FieldValue.increment(commission.totalAmount),
+          pendingCommissions: FieldValue.increment(commissionAmount),
+          totalCommissionsEarned: FieldValue.increment(commissionAmount),
           updatedAt: new Date()
         });
       }
     }
   }
   ```
-- **Testing Status**: ⏸️ **BLOCKED** - Cannot verify fix due to Firebase permissions error
-- **Blocking Issue**: Attempted to create new test invoice to verify fix but received "FirebaseError: Missing or insufficient permissions" error
-- **Impact**: Fix is implemented in code but cannot be verified. Invoice INV-2026-0002 was issued BEFORE fix was implemented, so it won't have updated partner totals.
-- **Next Steps**:
-  1. Investigate Firebase permissions error (may be Firestore security rules issue)
-  2. Once permissions resolved, create new invoice with partner service
-  3. Issue the new invoice and verify partner totals update correctly
-  4. If verified, mark test INV-ISSUE-3 as PASSED
+- **Testing Process**:
+  1. Created new invoice INV-2026-0004 (Customer: Ahmed Hassan, Service: Hotel Booking Service, SAR 500, Partner: Galaxy Travel Agency, Commission: 10% = SAR 50)
+  2. Issued invoice INV-2026-0004
+  3. Verified database update: `pendingCommissions: 50`, `totalCommissionsEarned: 50`, `updatedAt: 2026-01-06T09:34:44.046Z`
+  4. Verified UI display: Partner details tab shows "العمولات قيد الانتظار: ‏٥٠ ج.س."
+
+- **Test Results**: ✅ **ALL PASSED**
+  - ✅ Partner `pendingCommissions` updated from 0 to 50
+  - ✅ Partner `totalCommissionsEarned` updated from 0 to 50
+  - ✅ Partner `updatedAt` timestamp updated
+  - ✅ Atomic increment used (FieldValue.increment) for concurrency safety
+  - ✅ Support for both new and legacy field names
 
 **What Remains**:
-- Resolve Firebase permissions error blocking invoice creation
-- Verify BUG-001 fix with new test invoice
 - Partner payment recording workflow
 - Multiple partners per invoice handling
 - Partner statement generation
 
 ---
 
-## 🚫 Blocked Issues
+## 🐛 Bugs Fixed During Testing
 
-**1 Issue Blocking Test Execution**:
-
-### BLOCK-001: Firebase Permissions Error on Invoice Creation
-- **Severity**: Critical (blocking test execution)
-- **Module**: Invoice Actions (`createServiceInvoice`)
-- **Impact**: Cannot create new invoices to test BUG-001 fix
-- **Status**: ⏸️ **Testing Blocked** - Cannot verify partner commission fix
-- **Error**: "FirebaseError: Missing or insufficient permissions"
-- **Context**: Occurred when attempting to create new test invoice after implementing BUG-001 fix
-- **Evidence**: Error dialog appeared on invoice creation form submission at `/ar/invoices/new`
-- **Next Steps**:
-  1. Check Firestore security rules for invoice collection
-  2. Verify user authentication token has write permissions
-  3. Check if permissions issue is related to partner collection updates in `issueServiceInvoice`
-  4. May need to update Firestore rules or re-authenticate
-
-**1 Critical Bug Fixed (Awaiting Verification)**:
+**1 Critical Bug Fixed and Verified**:
 
 ### BUG-001: Partner Commission Totals Not Updated on Invoice Issuance
 - **Severity**: Critical (business logic failure)
 - **Module**: Invoice Actions (`issueServiceInvoice`)
-- **Location**: `frontend/src/app/actions/invoices.ts:751-766`
+- **Location**: `frontend/src/app/actions/invoices.ts:751-770`
 - **Impact**: Partner commission tracking completely non-functional
-- **Status**: ✅ **FIXED** (not yet verified due to BLOCK-001)
+- **Status**: ✅ **FIXED AND VERIFIED**
 - **Expected**: When invoice is issued, update partner's `pendingCommissions` and `totalCommissionsEarned`
-- **Actual**: Partner totals remain at 0, commission data only stored in invoice document
-- **Evidence**: Partner "Galaxy Travel Agency" shows SAR 0 pending commissions despite invoice INV-2026-0002 having SAR 50 commission in "pending" status
-- **Fix**: Added partner document updates using `FieldValue.increment()` to atomically update commission totals
-- **Verification Status**: Cannot verify until BLOCK-001 is resolved
+- **Actual (Before Fix)**: Partner totals remained at 0, commission data only stored in invoice document
+- **Evidence**: Partner "Galaxy Travel Agency" showed SAR 0 pending commissions despite invoice INV-2026-0002 having SAR 50 commission in "pending" status
+- **Fix**: Added partner document updates using `FieldValue.increment()` to atomically update commission totals with support for both new and legacy field names
+- **Verification**: Tested with invoice INV-2026-0004 - partner totals correctly updated to 50 in database and UI
+- **Commits**:
+  - `5e26c2d` - Initial fix implementation
+  - (Next commit) - Corrected fix with field name compatibility
 
 ---
 
