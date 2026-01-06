@@ -12,13 +12,13 @@
 | Metric | Count |
 |--------|-------|
 | Total Tests Planned | 195 |
-| Tests Executed | 172 |
-| Tests Passed | 167 |
+| Tests Executed | 173 |
+| Tests Passed | 168 |
 | Tests Failed | 5 |
-| Tests Blocked | 18 |
-| **Pass Rate** | **97.1%** (167/172 executed) |
+| Tests Blocked | 17 |
+| **Pass Rate** | **97.1%** (168/173 executed) |
 | **Bugs Found** | **10 total** (7 fixed, 3 active: 2 critical + 1 high) |
-| Coverage | 88.2% |
+| Coverage | 88.7% |
 
 ---
 
@@ -213,7 +213,7 @@
 
 ---
 
-### ✅ User Story 3/4: Payment Detail Page (/payments/[paymentId]) - 100% Complete (5/5 tests)
+### ✅ User Story 3/4: Payment Detail Page (/payments/[paymentId]) - 100% Complete (6/6 tests)
 
 #### UI Tests (2/2 passed)
 | ID | Test | Status | Notes |
@@ -232,7 +232,12 @@
 |----|------|--------|-------|
 | PAY-DTL-CRUD-1 | View payment detail | ✅ PASSED | Payment PAY-2026-0001 displays all data: SDG 100.00, Cash, Completed, dates, links |
 
-**Status**: ✅ ALL TESTS PASSED (5/5)
+#### Mobile Tests (1/1 passed)
+| ID | Test | Status | Notes |
+|----|------|--------|-------|
+| PAY-DTL-MOB-1 | Mobile layout | ✅ PASSED | Responsive on 375x812 viewport, all content visible, no horizontal scroll |
+
+**Status**: ✅ ALL TESTS PASSED (6/6)
 
 **Bug Fixes Applied**:
 - ✅ BUG-002: Fixed Firestore Timestamp serialization (commit `71cca74`)
