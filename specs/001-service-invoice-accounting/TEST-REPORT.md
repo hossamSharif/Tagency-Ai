@@ -1,8 +1,8 @@
 # TEST REPORT: Service-Based Invoice & Accounting System
 
-**Generated**: 2026-01-06 (Updated: Phase 6 Partner-Invoice Integration)
-**Duration**: 270 minutes
-**Status**: ✅ PHASE 1, 2, 3, 4, 5 & 6 COMPLETE
+**Generated**: 2026-01-06 (Updated: Phase 7 Invoice Issuance & Journal Entries)
+**Duration**: 300 minutes
+**Status**: ✅ PHASE 1, 2, 3, 4, 5, 6 & 7 COMPLETE
 **Test Executor**: Claude Code + Chrome DevTools MCP
 
 ---
@@ -12,12 +12,12 @@
 | Metric | Count |
 |--------|-------|
 | Total Tests Planned | 195 |
-| Tests Executed | 68 |
-| Tests Passed | 68 |
-| Tests Failed | 0 |
+| Tests Executed | 71 |
+| Tests Passed | 70 |
+| Tests Failed | 1 |
 | Tests Blocked | 0 |
-| **Pass Rate** | **100%** |
-| Coverage | 34.9% |
+| **Pass Rate** | **98.6%** |
+| Coverage | 36.4% |
 
 ---
 
@@ -639,8 +639,116 @@
 3. **Translation Fix**: Added missing translations `commissionSummary` and `commissionPercentage` to both Arabic and English
 
 **What Remains**:
-- Partner commission tracking after invoice issuance
+- Partner commission tracking after invoice issuance (now tested in Phase 7)
 - Partner payment recording
+- Multiple partners per invoice handling
+- Partner statement generation
+
+---
+
+## 🎯 Phase 7: Invoice Issuance & Journal Entries (3 additional tests)
+
+**Objective**: Test invoice issuance workflow, journal entry creation, and partner commission tracking after issuance
+
+### ✅ Invoice Issuance Tests (3 tests)
+
+| ID | Test | Status | Notes |
+|----|------|--------|-------|
+| INV-ISSUE-1 | Issue draft invoice | ✅ PASSED | Invoice INV-2026-0002 status changed from "مسودة" (Draft) to "صادرة" (Issued) |
+| INV-ISSUE-2 | Journal entry creation on issuance | ✅ PASSED | Journal entry JE-2026-0002 created with DR: Customer Receivable (SAR 500), CR: Service Revenue (SAR 500) |
+| INV-ISSUE-3 | Partner commission tracking after issuance | ❌ FAILED | Partner totals NOT updated. Expected: "العمولات قيد الانتظار: SAR 50", Actual: "SDG 0" |
+
+### 📸 Test Evidence
+
+#### Invoice Issuance
+- **Invoice**: INV-2026-0002
+- **Initial Status**: مسودة (Draft)
+- **Final Status**: صادرة (Issued)
+- **Customer**: Ahmed Hassan
+- **Total**: SAR 500.00
+- **Line Item**: Hotel Booking Service (Partner: Galaxy Travel Agency, Commission: SAR 50)
+- **URL**: `/ar/invoices/3rTbvjcsX8MY5TWHkOnB`
+
+**Status Change Verification**:
+- ✅ Status badge changed from "مسودة" to "صادرة"
+- ✅ "Issue Invoice" button removed from detail page
+- ✅ "Record Payment" and "Download" buttons now available
+
+#### Journal Entry Created
+- **Entry Number**: JE-2026-0002
+- **Date**: ٦ يناير ٢٠٢٦ (2026-01-06)
+- **Type**: إنشاء فاتورة (Invoice Created)
+- **Description**: Invoice INV-2026-0002 issued to Ahmed Hassan
+- **URL**: `/ar/accounting/journal`
+
+**Journal Entry Lines**:
+```
+DR: 2001 - Accounts Receivable - Ahmed Hassan  500.00
+CR: 4001 - Service Revenue                      500.00
+     Total                                      500.00  500.00
+```
+
+**Double-Entry Validation**:
+- ✅ Debit and credit amounts balanced
+- ✅ Customer receivable account correctly debited
+- ✅ Revenue account correctly credited
+- ✅ Journal entry linked to invoice (sourceType: invoice, sourceId: invoice ID)
+
+#### Partner Commission Tracking - BUG DISCOVERED
+
+**Expected Behavior** (after invoice issuance):
+- Partner's `pendingCommissions` should update to SAR 50
+- Partner's `totalCommissionsEarned` should update to SAR 50
+- Commissions tab should show invoice INV-2026-0002 with SAR 50 pending
+
+**Actual Behavior**:
+- Partner detail page shows: "العمولات قيد الانتظار: SDG 0"
+- Partner detail page shows: "إجمالي العمولات المكتسبة: SDG 0"
+- Commissions tab shows: "لا توجد عمولات غير مسددة" (no unsettled commissions)
+
+**Investigation**:
+- Invoice commission data is correct: `commissionsByPartner: [{ partnerOfficeId, totalAmount: 50, status: 'pending' }]`
+- Invoice status correctly changed to "issued" in database
+- Journal entry correctly created
+- **Root Cause**: `issueServiceInvoice` action (frontend/src/app/actions/invoices.ts:647-775) does NOT update partner totals when invoice is issued
+
+**Bug Details**:
+- **Location**: `frontend/src/app/actions/invoices.ts`, function `issueServiceInvoice` (line 647)
+- **Missing Logic**: When invoice is issued, system should iterate through `invoice.commissionsByPartner` and update each partner's:
+  - `pendingCommissions` (add commission amount)
+  - `totalCommissionsEarned` (add commission amount)
+- **Impact**: Partner commission tracking is non-functional - partners show $0 commissions even though invoices contain commission data
+
+### 📊 Phase 7 Summary
+
+| Area | Tests Executed | Pass Rate | Status |
+|------|----------------|-----------|--------|
+| Invoice Issuance | 1 | 100% | ✅ Complete |
+| Journal Entry Creation | 1 | 100% | ✅ Complete |
+| Partner Commission Tracking | 1 | 0% | ❌ **BUG FOUND** |
+| **Total Phase 7** | **3** | **67%** | **⚠️ 1 Critical Bug** |
+
+**What Was Tested**:
+- ✅ Invoice status transition (draft → issued)
+- ✅ Journal entry automatic creation on issuance
+- ✅ Journal entry structure (DR/CR accounts)
+- ✅ Double-entry bookkeeping validation
+- ❌ Partner commission totals update on issuance
+
+**Critical Bug Found**:
+**BUG-001: Partner Commission Totals Not Updated on Invoice Issuance**
+- **Severity**: Critical (business logic failure)
+- **Module**: Invoice Actions (`issueServiceInvoice`)
+- **Impact**: Partner commission tracking completely non-functional
+- **Expected**: When invoice is issued, update partner's `pendingCommissions` and `totalCommissionsEarned`
+- **Actual**: Partner totals remain at 0, commission data only stored in invoice document
+- **Fix Required**: Add partner document updates to `issueServiceInvoice` action after invoice status is changed
+- **Test Evidence**: Partner "Galaxy Travel Agency" shows SAR 0 pending commissions despite invoice INV-2026-0002 having SAR 50 commission in "pending" status
+
+**What Remains**:
+- Fix BUG-001 (partner commission totals update)
+- Re-test partner commission tracking after fix
+- Partner payment recording workflow
 - Multiple partners per invoice handling
 - Partner statement generation
 
@@ -648,7 +756,18 @@
 
 ## 🚫 Blocked Issues
 
-**None** - All 68 executed tests passed successfully.
+**1 Critical Bug Found in Phase 7**:
+
+### BUG-001: Partner Commission Totals Not Updated on Invoice Issuance
+- **Severity**: Critical (business logic failure)
+- **Module**: Invoice Actions (`issueServiceInvoice`)
+- **Location**: `frontend/src/app/actions/invoices.ts:647-775`
+- **Impact**: Partner commission tracking completely non-functional
+- **Status**: ⏸️ **Testing Paused** - Fix required before proceeding with partner payment tests
+- **Expected**: When invoice is issued, update partner's `pendingCommissions` and `totalCommissionsEarned`
+- **Actual**: Partner totals remain at 0, commission data only stored in invoice document
+- **Evidence**: Partner "Galaxy Travel Agency" shows SAR 0 pending commissions despite invoice INV-2026-0002 having SAR 50 commission in "pending" status
+- **Next Steps**: Add partner document updates to `issueServiceInvoice` action after line 749 (after invoice status update)
 
 ---
 
