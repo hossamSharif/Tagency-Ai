@@ -12,15 +12,15 @@
 | Metric | Count |
 |--------|-------|
 | Total Tests Planned | 195 |
-| Tests Executed | 184 |
-| Tests Passed | 175 |
+| Tests Executed | 185 |
+| Tests Passed | 176 |
 | Tests Failed | 7 |
-| Tests Blocked | 8 |
-| **Pass Rate** | **95.1%** (175/184 executed) |
+| Tests Blocked | 7 |
+| **Pass Rate** | **95.1%** (176/185 executed) |
 | **Bugs Found** | **12 total** (7 fixed, 5 active: 3 critical + 2 high) |
 | **CRITICAL BUGS** | **BUG-010: Payments don't create journal entries** |
 | **RECENT BUGS** | **BUG-011: Journal entries missing required fields** |
-| Coverage | 94.4% |
+| Coverage | 94.9% |
 
 ---
 
@@ -148,7 +148,7 @@
 
 ---
 
-### ✅ User Story 1: Invoice Create Page (/invoices/new) - 31% Complete (5/16 tests)
+### ✅ User Story 1: Invoice Create Page (/invoices/new) - 38% Complete (6/16 tests)
 
 #### UI Tests (3/3 passed)
 | ID | Test | Status | Notes |
@@ -163,13 +163,21 @@
 | INV-NEW-i18n-1 | Arabic translations | ✅ PASSED | "لم يتم العثور على عملاء" message correct |
 | INV-NEW-i18n-2 | English translations | ✅ PASSED | All labels translated: "Create Invoice", "Customer Information", "Services", quick-add buttons, no translation keys visible |
 
+#### CRUD Tests (1/7 tested)
+| ID | Test | Status | Notes |
+|----|------|--------|-------|
+| INV-NEW-CRUD-1-6 | Create invoice tests | ⏸️ BLOCKED | Browser unavailable - requires UI interaction |
+| INV-NEW-CRUD-7 | Journal entry on issue | ✅ PASSED | All 4 issued invoices have journal entries with correct structure: DR: Customer AR (code 2001), CR: Service Revenue (code 4001). Verified INV-2026-0001 through INV-2026-0004 - verified via Firebase Admin SDK |
+
 #### Validation Tests (0/5 tested)
 | ID | Test | Status | Notes |
 |----|------|--------|-------|
 | INV-NEW-VAL-1 | Customer required | ✅ PASSED | System prevents invoice without customer |
 | INV-NEW-VAL-2-5 | Other validations | ⏭️ SKIPPED | Requires test data setup |
 
-**Status**: ✅ ALL EXECUTED TESTS PASSED (4/4)
+**Status**: ✅ ALL EXECUTED TESTS PASSED (5/5)
+
+**Data Quality Note**: ⚠️ All 4 invoices missing `services` array and `issueDate` field in database (schema validation issue)
 
 ---
 
