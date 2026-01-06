@@ -1,9 +1,9 @@
 # TEST REPORT: Service-Based Invoice & Accounting System
 
-**Generated**: 2026-01-06 (Updated: Session Ended - Browser Timeout Issue)
-**Duration**: 620 minutes
-**Status**: ✅ UI/i18n/Mobile COMPLETE + Payment Detail COMPLETE | CRUD TESTS BLOCKED (Browser Timeout)
-**Test Executor**: Claude Code + Chrome DevTools MCP
+**Generated**: 2026-01-06 (Updated: Critical Accounting Bug Discovered - BUG-010)
+**Duration**: 640 minutes
+**Status**: ✅ UI/i18n/Mobile COMPLETE | 🚨 CRITICAL: Payment Journal Entries Not Created
+**Test Executor**: Claude Code + Chrome DevTools MCP + Firebase Admin SDK
 
 ---
 
@@ -12,13 +12,14 @@
 | Metric | Count |
 |--------|-------|
 | Total Tests Planned | 195 |
-| Tests Executed | 174 |
+| Tests Executed | 175 |
 | Tests Passed | 169 |
-| Tests Failed | 5 |
-| Tests Blocked | 16 |
-| **Pass Rate** | **97.1%** (169/174 executed) |
-| **Bugs Found** | **10 total** (7 fixed, 3 active: 2 critical + 1 high) |
-| Coverage | 89.2% |
+| Tests Failed | 6 |
+| Tests Blocked | 15 |
+| **Pass Rate** | **96.6%** (169/175 executed) |
+| **Bugs Found** | **11 total** (7 fixed, 4 active: 3 critical + 1 high) |
+| **CRITICAL NEW BUG** | **BUG-010: Payments don't create journal entries** |
+| Coverage | 89.7% |
 
 ---
 
@@ -209,13 +210,14 @@
 | PAY-i18n-1 | Arabic translations | ✅ PASSED | "المدفوعات", tab labels correct |
 | PAY-i18n-2 | RTL layout | ✅ PASSED | Correct RTL alignment |
 
-#### CRUD Tests - Customer Payments (1/9 tested)
+#### CRUD Tests - Customer Payments (2/9 tested)
 | ID | Test | Status | Notes |
 |----|------|--------|-------|
 | PAY-CUST-CRUD-1 | List payments | ✅ PASSED | Payment PAY-2026-0001 displayed in customer payments tab with correct data (Ahmed Hassan, SDG 100.00, Cash, Completed) |
-| PAY-CUST-CRUD-2-9 | Additional CRUD tests | ⏸️ BLOCKED | Browser timeout issue prevented further testing |
+| PAY-CUST-CRUD-2-8 | CRUD tests 2-8 | ⏸️ BLOCKED | Browser timeout - requires UI interaction |
+| PAY-CUST-CRUD-9 | Journal entry verification | ❌ FAILED | **BUG-010 DISCOVERED**: No journal entry created for payment PAY-2026-0001 (verified via Firebase Admin SDK) |
 
-**Status**: ✅ ALL EXECUTED TESTS PASSED (6/6) | ⏸️ REMAINING BLOCKED BY BROWSER TIMEOUT
+**Status**: 1 PASS, 1 FAIL (BUG-010 discovered), 7 BLOCKED BY BROWSER
 
 **Session End Note**: Browser DevTools MCP experienced severe timeout issues preventing navigation and script execution. Further payment CRUD testing (PAY-CUST-CRUD-2 through PAY-CUST-CRUD-9, all partner payment tests) requires browser restart/recovery.
 
@@ -2018,7 +2020,7 @@ The following mobile tests were not performed:
 
 ## 🚫 Blocked Issues (Active Bugs - Require Fixes)
 
-**3 Active Bugs (2 Critical, 1 High)**:
+**4 Active Bugs (3 Critical, 1 High)**:
 
 ### BUG-002: Payment Detail Page Fails to Load (Firestore Timestamp Serialization) ✅ FIXED
 - **Severity**: **Critical**
@@ -2167,6 +2169,35 @@ The following mobile tests were not performed:
   - English page now shows proper translations: "Back to Payments", "Payment Details", "Customer"
   - All 5 PAY-DTL tests passed
 - **Commit**: `71cca74` - fix(i18n): resolve payment detail page translation keys
+
+### BUG-010: Missing Journal Entry for Customer Payment ❌ ACTIVE
+- **Severity**: **Critical** (Accounting system broken - double-entry bookkeeping not functioning)
+- **Module**: Customer Payment Recording (`recordCustomerPaymentAction` in `payments.ts`)
+- **Status**: ❌ **BLOCKING** - Accounting integrity compromised
+- **Discovered**: Autonomous Testing Session (2026-01-06) via Firebase Admin SDK verification
+- **Test**: PAY-CUST-CRUD-9 (Journal Entry verification)
+- **Impact**: Customer payments do not create journal entries, breaking double-entry accounting system
+- **Test Evidence**:
+  - Payment PAY-2026-0001 exists in database (100 SDG, Cash method, Completed status)
+  - Queried journal entries collection for `sourceDocumentId == '0BVkOBSeOocWIVRU0IPp'` and `sourceType == 'payment'`
+  - **Result**: No journal entry found
+  - **Expected**: Journal entry with DR: Cash (1001)/Bank (1002), CR: Customer Receivable Account
+- **Root Cause**: Payment recording action does not create corresponding journal entry
+- **Impact on Accounting**:
+  - Cash/Bank account balances not updated correctly
+  - Customer receivable accounts not credited
+  - Account statements will be incorrect
+  - Financial reports will show wrong balances
+  - Violates double-entry accounting principles
+- **Verification Method**: Firebase Admin SDK direct database query (browser-independent)
+- **Fix Required**:
+  1. Analyze `recordCustomerPaymentAction` in `frontend/src/app/actions/payments.ts`
+  2. Implement journal entry creation logic:
+     - DR: Cash Account (1001) or Bank Account (1002) - based on payment method
+     - CR: Customer Receivable Account (account type 1200 + customer ID)
+  3. Ensure journal entry is created in same transaction as payment record
+  4. Add proper error handling if journal entry creation fails
+  5. Re-test with new payment to verify journal entry creation
 
 ---
 
