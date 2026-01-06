@@ -1,8 +1,8 @@
 # TEST REPORT: Service-Based Invoice & Accounting System
 
-**Generated**: 2026-01-06 (Updated: Phase 5 Partner Management)
-**Duration**: 210 minutes
-**Status**: ✅ PHASE 1, 2, 3, 4 & 5 COMPLETE
+**Generated**: 2026-01-06 (Updated: Phase 6 Partner-Invoice Integration)
+**Duration**: 270 minutes
+**Status**: ✅ PHASE 1, 2, 3, 4, 5 & 6 COMPLETE
 **Test Executor**: Claude Code + Chrome DevTools MCP
 
 ---
@@ -12,12 +12,12 @@
 | Metric | Count |
 |--------|-------|
 | Total Tests Planned | 195 |
-| Tests Executed | 64 |
-| Tests Passed | 64 |
+| Tests Executed | 68 |
+| Tests Passed | 68 |
 | Tests Failed | 0 |
 | Tests Blocked | 0 |
 | **Pass Rate** | **100%** |
-| Coverage | 32.8% |
+| Coverage | 34.9% |
 
 ---
 
@@ -559,19 +559,96 @@
 - ✅ Partner detail page with commission tracking structure
 - ✅ Basic partner data validation
 
-**What Remains for Complete Partner Testing** (estimated 27 tests):
-- Partner service linkage and commission calculation
-- Invoice creation with partner-provided services
-- Partner commission recording and tracking
+**What Remains for Complete Partner Testing** (estimated 23 tests):
+- Partner commission recording on issued invoices
 - Partner payment recording workflow
 - Partner statements and settlement generation
 - Partner account integration with chart of accounts
 
 ---
 
+## 🎯 Phase 6: Partner-Invoice Integration (4 additional tests)
+
+**Objective**: Test service-partner linkage, invoice creation with partner services, and commission calculation
+
+### ✅ Partner-Invoice Integration Tests (4 tests)
+
+| ID | Test | Status | Notes |
+|----|------|--------|-------|
+| PART-SVC-1 | Create service with partner provider | ✅ PASSED | Created "Hotel Booking Service" (SAR 500, 15% commission, Partner provider) |
+| PART-INV-1 | Create invoice with partner service | ✅ PASSED | Invoice INV-2026-0002 created with partner service |
+| PART-INV-2 | Commission calculation on invoice | ✅ PASSED | Commission calculated: 10% of SAR 500 = SAR 50 (using partner's default rate) |
+| PART-INV-3 | Commission display on invoice detail | ✅ PASSED | Invoice shows partner commission: "Galaxy Travel Agency (10% = 50.00)", status: pending |
+
+### 📸 Test Evidence
+
+#### Service with Partner Provider
+- **Service**: Hotel Booking Service
+- **Price**: SAR 500.00
+- **Provider Type**: Partner
+- **Commission**: 15% (service default, overridden by partner default on invoice)
+- **URL**: `/ar/services` - service visible in catalog
+
+#### Invoice with Partner Commission
+- **Invoice**: INV-2026-0002
+- **Customer**: Ahmed Hassan
+- **Status**: Draft
+- **Line Item**: Hotel Booking Service (1 × SAR 500.00)
+- **Partner**: Galaxy Travel Agency
+- **Commission**: SAR 50.00 (10% - partner's default commission rate)
+- **Commission Status**: Pending (appears after invoice creation)
+- **URL**: `/ar/invoices/3rTbvjcsX8MY5TWHkOnB`
+
+**Commission Section on Invoice**:
+```
+مقدم من قبل: Galaxy Travel Agency (10% = 50.00)
+
+عمولات الشركاء:
+- Galaxy Travel Agency: 50.00 (قيد الانتظار)
+- إجمالي العمولات: 50.00
+```
+
+#### Partner Commission Tracking
+- **Partner**: Galaxy Travel Agency (Status: Active)
+- **Default Commission**: 10%
+- **Total Commissions Earned**: SDG 0 (draft invoices not counted)
+- **Pending Commissions**: SDG 0 (commissions appear after invoice issuance)
+- **Settled Commissions**: SDG 0
+- **Note**: Commission tracking updates when invoice is issued (not in draft status)
+
+### 📊 Phase 6 Summary
+
+| Area | Tests Executed | Pass Rate | Status |
+|------|----------------|-----------|--------|
+| Partner-Service Linkage | 1 | 100% | ✅ Complete |
+| Invoice with Partner Service | 1 | 100% | ✅ Complete |
+| Commission Calculation | 1 | 100% | ✅ Complete |
+| Commission Display | 1 | 100% | ✅ Complete |
+| **Total Phase 6** | **4** | **100%** | **✅ Complete** |
+
+**What Was Tested**:
+- ✅ Service creation with partner provider type
+- ✅ Partner selection in invoice line items
+- ✅ Automatic commission calculation (partner's default rate used)
+- ✅ Commission display on invoice detail page
+- ✅ Commission summary section on invoice
+
+**Key Findings**:
+1. **Commission Rate Priority**: Partner's default commission (10%) overrides service commission (15%) when creating invoice
+2. **Commission Tracking**: Commissions appear as "pending" on draft invoices but don't update partner totals until invoice is issued
+3. **Translation Fix**: Added missing translations `commissionSummary` and `commissionPercentage` to both Arabic and English
+
+**What Remains**:
+- Partner commission tracking after invoice issuance
+- Partner payment recording
+- Multiple partners per invoice handling
+- Partner statement generation
+
+---
+
 ## 🚫 Blocked Issues
 
-**None** - All 64 executed tests passed successfully.
+**None** - All 68 executed tests passed successfully.
 
 ---
 
