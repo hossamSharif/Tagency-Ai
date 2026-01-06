@@ -40,6 +40,7 @@ import { useState, useEffect } from 'react';
 const methodIcons: Record<PaymentMethod, React.ReactNode> = {
   stripe: <CreditCard className="h-5 w-5" />,
   cash: <Banknote className="h-5 w-5" />,
+  bank: <Building2 className="h-5 w-5" />,
   bank_transfer: <Building2 className="h-5 w-5" />,
 };
 
@@ -77,8 +78,11 @@ export default function PaymentDetailPage() {
     loadPayment();
   }, [tenant?.id, paymentId]);
 
-  const formatDate = (timestamp: Timestamp) => {
-    const date = timestamp.toDate();
+  const formatDate = (timestamp: Timestamp | string) => {
+    // Handle both Timestamp objects and ISO date strings
+    const date = typeof timestamp === 'string'
+      ? new Date(timestamp)
+      : timestamp.toDate();
     return format(date, 'dd MMMM yyyy HH:mm', { locale: dateLocale });
   };
 
@@ -224,29 +228,33 @@ export default function PaymentDetailPage() {
 
               <Separator />
 
-              <div className="flex items-center gap-2 text-sm">
-                <FileText className="h-4 w-4 text-muted-foreground" />
-                <span className="text-muted-foreground">{t('invoice')}:</span>
-                <Link
-                  href={`/${locale}/invoices/${payment.invoiceId}`}
-                  className="text-primary hover:underline flex items-center gap-1"
-                >
-                  {payment.invoiceId.slice(0, 8)}...
-                  <ExternalLink className="h-3 w-3" />
-                </Link>
-              </div>
+              {payment.invoiceId && (
+                <div className="flex items-center gap-2 text-sm">
+                  <FileText className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-muted-foreground">{t('invoice')}:</span>
+                  <Link
+                    href={`/${locale}/invoices/${payment.invoiceId}`}
+                    className="text-primary hover:underline flex items-center gap-1"
+                  >
+                    {payment.invoiceId.slice(0, 8)}...
+                    <ExternalLink className="h-3 w-3" />
+                  </Link>
+                </div>
+              )}
 
-              <div className="flex items-center gap-2 text-sm">
-                <User className="h-4 w-4 text-muted-foreground" />
-                <span className="text-muted-foreground">{t('customer')}:</span>
-                <Link
-                  href={`/${locale}/customers/${payment.customerId}`}
-                  className="text-primary hover:underline flex items-center gap-1"
-                >
-                  {payment.customerId.slice(0, 8)}...
-                  <ExternalLink className="h-3 w-3" />
-                </Link>
-              </div>
+              {payment.customerId && (
+                <div className="flex items-center gap-2 text-sm">
+                  <User className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-muted-foreground">{t('customer')}:</span>
+                  <Link
+                    href={`/${locale}/customers/${payment.customerId}`}
+                    className="text-primary hover:underline flex items-center gap-1"
+                  >
+                    {payment.customerId.slice(0, 8)}...
+                    <ExternalLink className="h-3 w-3" />
+                  </Link>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>

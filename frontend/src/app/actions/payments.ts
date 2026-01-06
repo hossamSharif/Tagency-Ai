@@ -679,6 +679,50 @@ export async function rejectBankTransferAction(
 }
 
 /**
+ * Serialize Payment object for client component consumption
+ * Converts Firestore Timestamps to ISO strings
+ */
+function serializePayment(data: any): Payment {
+  const payment = { ...data };
+
+  // Convert Timestamp objects to ISO strings
+  if (payment.paymentDate?._seconds !== undefined) {
+    payment.paymentDate = new Date(payment.paymentDate._seconds * 1000 + payment.paymentDate._nanoseconds / 1000000).toISOString();
+  } else if (payment.paymentDate?.toDate) {
+    payment.paymentDate = payment.paymentDate.toDate().toISOString();
+  }
+
+  if (payment.processedAt?._seconds !== undefined) {
+    payment.processedAt = new Date(payment.processedAt._seconds * 1000 + payment.processedAt._nanoseconds / 1000000).toISOString();
+  } else if (payment.processedAt?.toDate) {
+    payment.processedAt = payment.processedAt.toDate().toISOString();
+  }
+
+  if (payment.createdAt?._seconds !== undefined) {
+    payment.createdAt = new Date(payment.createdAt._seconds * 1000 + payment.createdAt._nanoseconds / 1000000).toISOString();
+  } else if (payment.createdAt?.toDate) {
+    payment.createdAt = payment.createdAt.toDate().toISOString();
+  }
+
+  if (payment.updatedAt?._seconds !== undefined) {
+    payment.updatedAt = new Date(payment.updatedAt._seconds * 1000 + payment.updatedAt._nanoseconds / 1000000).toISOString();
+  } else if (payment.updatedAt?.toDate) {
+    payment.updatedAt = payment.updatedAt.toDate().toISOString();
+  }
+
+  // Handle nested bankTransfer.reviewedAt
+  if (payment.bankTransfer?.reviewedAt) {
+    if (payment.bankTransfer.reviewedAt._seconds !== undefined) {
+      payment.bankTransfer.reviewedAt = new Date(payment.bankTransfer.reviewedAt._seconds * 1000 + payment.bankTransfer.reviewedAt._nanoseconds / 1000000).toISOString();
+    } else if (payment.bankTransfer.reviewedAt.toDate) {
+      payment.bankTransfer.reviewedAt = payment.bankTransfer.reviewedAt.toDate().toISOString();
+    }
+  }
+
+  return payment as Payment;
+}
+
+/**
  * Get payment by ID
  */
 export async function getPaymentAction(
@@ -694,7 +738,10 @@ export async function getPaymentAction(
       return { success: false, error: 'Payment not found' };
     }
 
-    return { success: true, data: paymentDoc.data() as Payment };
+    const paymentData = paymentDoc.data();
+    const serializedPayment = serializePayment(paymentData);
+
+    return { success: true, data: serializedPayment };
   } catch (error) {
     console.error('Error getting payment:', error);
     return {
