@@ -245,7 +245,7 @@ export default function PaymentDetailPage() {
               {payment.customerId && (
                 <div className="flex items-center gap-2 text-sm">
                   <User className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-muted-foreground">{t('customer')}:</span>
+                  <span className="text-muted-foreground">{t('customer.customer')}:</span>
                   <Link
                     href={`/${locale}/customers/${payment.customerId}`}
                     className="text-primary hover:underline flex items-center gap-1"

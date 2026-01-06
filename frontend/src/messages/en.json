@@ -820,6 +820,11 @@
       "cash": "Cash",
       "bank": "Bank Transfer"
     },
+    "backToPayments": "Back to Payments",
+    "paymentDetails": "Payment Details",
+    "createdBy": "Created By",
+    "createdAt": "Created At",
+    "updatedAt": "Updated At",
     "processedAt": "Processed At",
     "view": "View Details",
     "commission": "Commission",

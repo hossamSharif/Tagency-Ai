@@ -739,6 +739,11 @@
       "cash": "نقدًا",
       "bank": "تحويل بنكي"
     },
+    "backToPayments": "العودة إلى المدفوعات",
+    "paymentDetails": "تفاصيل الدفعة",
+    "createdBy": "أنشئ بواسطة",
+    "createdAt": "تاريخ الإنشاء",
+    "updatedAt": "تاريخ التحديث",
     "processedAt": "تم المعالجة في",
     "view": "عرض التفاصيل",
     "commission": "العمولة",
