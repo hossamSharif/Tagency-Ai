@@ -12,14 +12,15 @@
 | Metric | Count |
 |--------|-------|
 | Total Tests Planned | 195 |
-| Tests Executed | 178 |
-| Tests Passed | 172 |
-| Tests Failed | 6 |
-| Tests Blocked | 13 |
-| **Pass Rate** | **96.6%** (172/178 executed) |
-| **Bugs Found** | **11 total** (7 fixed, 4 active: 3 critical + 1 high) |
-| **CRITICAL NEW BUG** | **BUG-010: Payments don't create journal entries** |
-| Coverage | 91.3% |
+| Tests Executed | 181 |
+| Tests Passed | 173 |
+| Tests Failed | 7 |
+| Tests Blocked | 10 |
+| **Pass Rate** | **95.6%** (173/181 executed) |
+| **Bugs Found** | **12 total** (7 fixed, 5 active: 3 critical + 2 high) |
+| **CRITICAL BUGS** | **BUG-010: Payments don't create journal entries** |
+| **NEW BUG** | **BUG-011: Journal entries missing required fields** |
+| Coverage | 92.8% |
 
 ---
 
@@ -285,7 +286,7 @@
 
 ---
 
-### ✅ User Story 7: Journal Entries (/accounting/journal) - 17% Complete (3/18 tests)
+### ✅ User Story 7: Journal Entries (/accounting/journal) - 33% Complete (6/18 tests)
 
 #### UI Tests (2/2 passed)
 | ID | Test | Status | Notes |
@@ -298,7 +299,15 @@
 |----|------|--------|-------|
 | JRN-i18n-1 | Arabic translations | ✅ PASSED | "القيود اليومية" visible |
 
-**Status**: ✅ ALL EXECUTED TESTS PASSED (3/3)
+#### CRUD Tests (3/6 tested)
+| ID | Test | Status | Notes |
+|----|------|--------|-------|
+| JNL-CRUD-1 | List entries | ❌ FAILED | **BUG-011 DISCOVERED**: Journal entries missing required fields (entryType, sourceDocumentId). 5 entries found but all missing these fields - verified via Firebase Admin SDK |
+| JNL-CRUD-2-4 | Filter tests | ⏸️ BLOCKED | Browser unavailable - requires UI interaction |
+| JNL-CRUD-5 | Entry detail | ✅ PASSED | Entry JE-2026-0005 displays with all details and journal lines (DR: General Expenses 500, CR: Cash 500). ⚠️ However, linked document ID missing |
+| JNL-CRUD-6 | Audit trail | ⚠️ PARTIAL | Audit coverage 83.3% (5/6 transactions): All invoices (4/4) ✅, All expenses (1/1) ✅, Payments missing (0/1) due to BUG-010 ❌ - verified via Firebase Admin SDK |
+
+**Status**: 1 PASS, 1 FAIL (BUG-011), 1 PARTIAL, 3 BLOCKED
 
 ---
 
@@ -2211,6 +2220,39 @@ The following mobile tests were not performed:
   3. Ensure journal entry is created in same transaction as payment record
   4. Add proper error handling if journal entry creation fails
   5. Re-test with new payment to verify journal entry creation
+
+### BUG-011: Journal Entries Missing Required Fields ❌ ACTIVE
+- **Severity**: **High** (Data integrity issue - journal entries incomplete)
+- **Module**: Journal Entry Creation (Invoice/Expense actions)
+- **Status**: ❌ **ACTIVE** - All existing journal entries affected
+- **Discovered**: Autonomous Testing Session (2026-01-07) via Firebase Admin SDK verification
+- **Test**: JNL-CRUD-1 (List Journal Entries)
+- **Impact**: All 5 existing journal entries missing critical tracking fields
+- **Test Evidence**:
+  - Total journal entries found: 5 (4 invoices, 1 expense)
+  - All 5 entries missing fields: `entryType` and `sourceDocumentId`
+  - Entries have valid journal lines and are balanced
+  - Entry numbers generated correctly (JE-2026-0001 through JE-2026-0005)
+  - Without sourceDocumentId, cannot link entry back to source transaction
+- **Root Cause**: Journal entry creation functions not setting all required fields
+- **Impact on System**:
+  - Cannot trace journal entry back to source document
+  - Audit trail incomplete
+  - Cannot verify which invoice/expense created which entry
+  - Reporting and reconciliation difficult
+  - Entry type classification missing
+- **Affected Records**:
+  - JE-2026-0001: Invoice entry (missing entryType, sourceDocumentId)
+  - JE-2026-0002: Invoice entry (missing entryType, sourceDocumentId)
+  - JE-2026-0003: Invoice entry (missing entryType, sourceDocumentId)
+  - JE-2026-0004: Invoice entry (missing entryType, sourceDocumentId)
+  - JE-2026-0005: Expense entry (missing entryType, sourceDocumentId)
+- **Verification Method**: Firebase Admin SDK direct database query
+- **Fix Required**:
+  1. Update invoice issuance action to set `entryType` and `sourceDocumentId`
+  2. Update expense recording action to set `entryType` and `sourceDocumentId`
+  3. Add data migration script to fix existing 5 journal entries
+  4. Re-test journal entry creation for new invoices/expenses
 
 ---
 
