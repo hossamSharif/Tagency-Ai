@@ -4,10 +4,11 @@
 // T132-T136 [US3] Payment actions
 
 import { revalidatePath } from 'next/cache';
-import { Timestamp } from 'firebase/firestore';
+import { Timestamp } from 'firebase-admin/firestore';
 import { adminDb } from '@/lib/firebase/admin';
 import { ActionResult } from '@/lib/actions/types';
 import { createAuditLog } from '@/lib/audit/create-log';
+import { getSessionUser } from '@/lib/auth/require-role';
 import {
   createCashPaymentSchema,
   createBankTransferPaymentSchema,
@@ -67,6 +68,28 @@ async function getTotalPaidAmount(tenantId: string, invoiceId: string): Promise<
 }
 
 /**
+ * Create customer payment (wrapper that gets user from session)
+ */
+export async function createCustomerPayment(
+  input: CreateCashPaymentInput
+): Promise<ActionResult<Payment>> {
+  try {
+    const user = await getSessionUser();
+    if (!user || !user.tenantId) {
+      return { success: false, error: 'Unauthorized' };
+    }
+
+    return await createPaymentAction(user.tenantId, user.uid, input);
+  } catch (error) {
+    console.error('Error creating customer payment:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to create payment',
+    };
+  }
+}
+
+/**
  * T132 [US3] Create cash payment
  */
 export async function createPaymentAction(
@@ -103,6 +126,21 @@ export async function createPaymentAction(
     // Generate payment number
     const paymentNumber = await generatePaymentNumber(tenantId);
 
+    // Get account information
+    const accountId = (validatedData as any).accountId || 'cash-default';
+    let accountName = (validatedData as any).accountName || 'Cash';
+
+    // If account ID provided, verify it exists
+    if ((validatedData as any).accountId) {
+      const accountDoc = await adminDb
+        .doc(`tenants/${tenantId}/accounts/${(validatedData as any).accountId}`)
+        .get();
+
+      if (accountDoc.exists) {
+        accountName = accountDoc.data()?.name || accountName;
+      }
+    }
+
     // Create payment
     const paymentRef = adminDb.collection(`tenants/${tenantId}/payments`).doc();
     const now = Timestamp.now();
@@ -110,15 +148,19 @@ export async function createPaymentAction(
     const payment: Payment = {
       id: paymentRef.id,
       paymentNumber,
+      paymentType: 'customer_receipt',
       invoiceId: invoice.id,
       customerId: invoice.customerId,
+      customerName: invoice.customerName,
       amount: validatedData.amount,
       currency: invoice.currency,
-      method: 'cash',
+      method: (validatedData as any).method || 'cash',
+      accountId,
+      accountName,
       status: 'completed',
       paymentDate: now,
       processedAt: now,
-      notes: validatedData.notes,
+      ...(validatedData.notes && { notes: validatedData.notes }),
       createdBy: userId,
       createdAt: now,
       updatedAt: now,
@@ -141,23 +183,25 @@ export async function createPaymentAction(
       });
     }
 
-    // Update booking payment status
-    const bookingRef = adminDb.doc(`tenants/${tenantId}/bookings/${invoice.bookingId}`);
-    const bookingDoc = await bookingRef.get();
-    if (bookingDoc.exists) {
-      const booking = bookingDoc.data();
-      const bookingPaidAmount = (booking?.paidAmount || 0) + validatedData.amount;
-      const bookingBalance = (booking?.totalAmount || 0) - bookingPaidAmount;
-      let paymentStatus: 'unpaid' | 'partial' | 'paid' = 'unpaid';
-      if (bookingBalance <= 0) paymentStatus = 'paid';
-      else if (bookingPaidAmount > 0) paymentStatus = 'partial';
+    // Update booking payment status (only if invoice has a booking)
+    if (invoice.bookingId) {
+      const bookingRef = adminDb.doc(`tenants/${tenantId}/bookings/${invoice.bookingId}`);
+      const bookingDoc = await bookingRef.get();
+      if (bookingDoc.exists) {
+        const booking = bookingDoc.data();
+        const bookingPaidAmount = (booking?.paidAmount || 0) + validatedData.amount;
+        const bookingBalance = (booking?.totalAmount || 0) - bookingPaidAmount;
+        let paymentStatus: 'unpaid' | 'partial' | 'paid' = 'unpaid';
+        if (bookingBalance <= 0) paymentStatus = 'paid';
+        else if (bookingPaidAmount > 0) paymentStatus = 'partial';
 
-      await bookingRef.update({
-        paidAmount: bookingPaidAmount,
-        balance: bookingBalance,
-        paymentStatus,
-        updatedAt: now,
-      });
+        await bookingRef.update({
+          paidAmount: bookingPaidAmount,
+          balance: bookingBalance,
+          paymentStatus,
+          updatedAt: now,
+        });
+      }
     }
 
     await createAuditLog({
@@ -339,7 +383,7 @@ export async function uploadBankTransferProofAction(
         bankName: validatedData.bankName,
       },
       paymentDate: now,
-      notes: validatedData.notes,
+      ...(validatedData.notes && { notes: validatedData.notes }),
       createdBy: userId,
       createdAt: now,
       updatedAt: now,
@@ -689,11 +733,11 @@ export async function recordCustomerPaymentAction(
       method: data.method,
       accountId: data.accountId,
       accountName: data.accountName,
-      transactionReference: data.transactionReference,
+      ...(data.transactionReference && { transactionReference: data.transactionReference }),
       status: 'completed',
       paymentDate,
       processedAt: now,
-      notes: data.notes,
+      ...(data.notes && { notes: data.notes }),
       createdBy: userId,
       createdAt: now,
       updatedAt: now,
@@ -818,6 +862,304 @@ export async function getCustomerBalanceAction(
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Failed to get balance',
+    };
+  }
+}
+
+/**
+ * T055 [US4] Record partner payment with commission deduction
+ */
+export async function recordPartnerPaymentAction(
+  tenantId: string,
+  userId: string,
+  data: {
+    partnerId: string;
+    partnerName: string;
+    invoiceIds?: string[];
+    grossAmount: number;
+    commissionAmount: number;
+    netAmount: number;
+    method: 'cash' | 'bank';
+    accountId: string;
+    accountName: string;
+    paymentDate?: Date;
+    transactionReference?: string;
+    notes?: string;
+  }
+): Promise<ActionResult<Payment>> {
+  try {
+    const { createJournalEntry } = await import('@/lib/accounting/journal-entries');
+    const { CurrencyCode } = await import('@/types/models/tenant');
+
+    // Get tenant currency
+    const tenantDoc = await adminDb.doc(`tenants/${tenantId}`).get();
+    const currency = tenantDoc.data()?.currency || 'SAR';
+
+    // Validate invoices if provided
+    if (data.invoiceIds && data.invoiceIds.length > 0) {
+      for (const invoiceId of data.invoiceIds) {
+        const invoiceDoc = await adminDb
+          .doc(`tenants/${tenantId}/invoices/${invoiceId}`)
+          .get();
+
+        if (!invoiceDoc.exists) {
+          return { success: false, error: `Invoice ${invoiceId} not found` };
+        }
+
+        const invoice = invoiceDoc.data();
+        if (invoice?.status === 'cancelled') {
+          return { success: false, error: `Cannot settle cancelled invoice ${invoiceId}` };
+        }
+      }
+    }
+
+    // Get payment account (cash or bank)
+    const paymentAccountDoc = await adminDb
+      .doc(`tenants/${tenantId}/accounts/${data.accountId}`)
+      .get();
+
+    if (!paymentAccountDoc.exists) {
+      return { success: false, error: 'Payment account not found' };
+    }
+
+    const paymentAccount = paymentAccountDoc.data();
+
+    // Get partner payable account
+    const partnerAccountsQuery = await adminDb
+      .collection(`tenants/${tenantId}/accounts`)
+      .where('linkedEntityType', '==', 'partner')
+      .where('linkedEntityId', '==', data.partnerId)
+      .limit(1)
+      .get();
+
+    if (partnerAccountsQuery.empty) {
+      return { success: false, error: 'Partner account not found' };
+    }
+
+    const partnerAccount = partnerAccountsQuery.docs[0].data();
+
+    // Generate payment number
+    const paymentNumber = await generatePaymentNumber(tenantId);
+
+    // Create payment record
+    const paymentRef = adminDb.collection(`tenants/${tenantId}/payments`).doc();
+    const now = Timestamp.now();
+    const paymentDate = data.paymentDate ? Timestamp.fromDate(data.paymentDate) : now;
+
+    const payment: Payment = {
+      id: paymentRef.id,
+      paymentNumber,
+      paymentType: 'partner_payment',
+      partnerId: data.partnerId,
+      partnerName: data.partnerName,
+      invoiceIds: data.invoiceIds,
+      amount: data.netAmount, // The actual amount paid out
+      grossAmount: data.grossAmount,
+      commissionAmount: data.commissionAmount,
+      netAmount: data.netAmount,
+      currency: currency as CurrencyCode,
+      method: data.method,
+      accountId: data.accountId,
+      accountName: data.accountName,
+      ...(data.transactionReference && { transactionReference: data.transactionReference }),
+      status: 'completed',
+      paymentDate,
+      processedAt: now,
+      ...(data.notes && { notes: data.notes }),
+      createdBy: userId,
+      createdAt: now,
+      updatedAt: now,
+    };
+
+    // T057 [US4] Create journal entry for partner payment
+    // This is a compound entry with 3 lines:
+    // Debit: Partner Payable account (decrease liability) - full gross amount
+    // Credit: Cash/Bank account (decrease asset) - net amount paid
+    // Credit: Commission Revenue account (increase income) - commission retained
+
+    // Get commission revenue account
+    const revenueAccountsQuery = await adminDb
+      .collection(`tenants/${tenantId}/accounts`)
+      .where('type', '==', 'income')
+      .where('subtype', '==', 'revenue')
+      .limit(1)
+      .get();
+
+    if (revenueAccountsQuery.empty) {
+      return { success: false, error: 'Revenue account not found' };
+    }
+
+    const revenueAccount = revenueAccountsQuery.docs[0].data();
+
+    const journalLines = [
+      {
+        accountId: partnerAccount.id,
+        accountName: partnerAccount.name,
+        accountCode: partnerAccount.code,
+        debit: data.grossAmount,
+        credit: 0,
+      },
+      {
+        accountId: paymentAccount.id,
+        accountName: paymentAccount.name,
+        accountCode: paymentAccount.code,
+        debit: 0,
+        credit: data.netAmount,
+      },
+      {
+        accountId: revenueAccount.id,
+        accountName: revenueAccount.name,
+        accountCode: revenueAccount.code,
+        debit: 0,
+        credit: data.commissionAmount,
+      },
+    ];
+
+    const journalEntry = await createJournalEntry({
+      tenantId,
+      description: `Partner payment ${paymentNumber} to ${data.partnerName} (Gross: ${data.grossAmount}, Commission: ${data.commissionAmount}, Net: ${data.netAmount})`,
+      type: 'partner_payment',
+      lines: journalLines,
+      sourceType: 'payment',
+      sourceId: paymentRef.id,
+      createdBy: userId,
+      date: data.paymentDate,
+    });
+
+    // Link journal entry to payment
+    payment.journalEntryId = journalEntry.id;
+
+    // Save payment
+    await paymentRef.set(payment);
+
+    // T059 [US4] Update invoice commission status when partner is paid
+    if (data.invoiceIds && data.invoiceIds.length > 0) {
+      for (const invoiceId of data.invoiceIds) {
+        const invoiceRef = adminDb.doc(`tenants/${tenantId}/invoices/${invoiceId}`);
+        const invoiceDoc = await invoiceRef.get();
+
+        if (invoiceDoc.exists) {
+          const invoice = invoiceDoc.data();
+
+          // Update commission status for this partner
+          if (invoice?.commissionsByPartner) {
+            const updatedCommissions = invoice.commissionsByPartner.map((c: any) => {
+              if (c.partnerId === data.partnerId && c.status === 'pending') {
+                return {
+                  ...c,
+                  status: 'settled',
+                  settlementId: payment.id,
+                };
+              }
+              return c;
+            });
+
+            await invoiceRef.update({
+              commissionsByPartner: updatedCommissions,
+              updatedAt: now,
+            });
+          }
+        }
+      }
+    }
+
+    // Create audit log
+    await createAuditLog({
+      tenantId,
+      userId,
+      action: 'create',
+      resource: 'payment',
+      resourceId: payment.id,
+      description: `Recorded partner payment ${paymentNumber} for ${data.netAmount} ${currency} (commission: ${data.commissionAmount})`,
+    });
+
+    revalidatePath(`/[locale]/(dashboard)/payments`);
+    if (data.invoiceIds) {
+      data.invoiceIds.forEach(invoiceId => {
+        revalidatePath(`/[locale]/(dashboard)/invoices/${invoiceId}`);
+      });
+    }
+    revalidatePath(`/[locale]/(dashboard)/partners/${data.partnerId}`);
+
+    return { success: true, data: payment };
+  } catch (error) {
+    console.error('Error recording partner payment:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to record partner payment',
+    };
+  }
+}
+
+/**
+ * T056 [US4] Get partner balance from account
+ */
+export async function getPartnerBalanceAction(
+  tenantId: string,
+  partnerId: string
+): Promise<ActionResult<{ balance: number; currency: string }>> {
+  try {
+    // Get partner account
+    const accountsQuery = await adminDb
+      .collection(`tenants/${tenantId}/accounts`)
+      .where('linkedEntityType', '==', 'partner')
+      .where('linkedEntityId', '==', partnerId)
+      .limit(1)
+      .get();
+
+    if (accountsQuery.empty) {
+      return { success: false, error: 'Partner account not found' };
+    }
+
+    const account = accountsQuery.docs[0].data();
+
+    // Get tenant currency
+    const tenantDoc = await adminDb.doc(`tenants/${tenantId}`).get();
+    const currency = tenantDoc.data()?.currency || 'SAR';
+
+    return {
+      success: true,
+      data: {
+        balance: account.balance || 0,
+        currency,
+      },
+    };
+  } catch (error) {
+    console.error('Error getting partner balance:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to get partner balance',
+    };
+  }
+}
+
+/**
+ * Get payment accounts (cash and bank accounts for payment recording)
+ */
+export async function getPaymentAccountsAction(
+  tenantId: string
+): Promise<ActionResult<any[]>> {
+  try {
+    const accountsSnapshot = await adminDb
+      .collection(`tenants/${tenantId}/accounts`)
+      .where('isActive', '==', true)
+      .where('subtype', 'in', ['cash', 'bank'])
+      .get();
+
+    const accounts = accountsSnapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    }));
+
+    return {
+      success: true,
+      data: accounts,
+    };
+  } catch (error) {
+    console.error('Error fetching payment accounts:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to fetch payment accounts',
     };
   }
 }

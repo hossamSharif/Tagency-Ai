@@ -9,8 +9,11 @@ import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useToast } from '@/hooks/use-toast';
+import { useTenant } from '@/hooks/use-tenant';
+import { useAuth } from '@/hooks/use-auth';
 import { InvoiceDetail } from '@/components/features/invoices/invoice-detail';
 import { Invoice } from '@/types/models/invoice';
+import { Account } from '@/types/models/account';
 import {
   issueServiceInvoice,
   cancelServiceInvoice,
@@ -19,32 +22,38 @@ import {
 import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { CancelInvoiceDialog } from '@/components/features/invoices/cancel-invoice-dialog';
+import { VersionConflictDialog } from '@/components/ui/version-conflict-dialog';
+import { RecordPaymentDialog } from '@/components/features/payments/record-payment-dialog';
+import { RecordPartnerPaymentDialog } from '@/components/features/payments/record-partner-payment-dialog';
+import { CreateCustomerPaymentInput, CreateCashPaymentInput, CreatePartnerPaymentInput } from '@/types/models/payment';
+import { createCustomerPayment, recordPartnerPaymentAction } from '@/app/actions/payments';
 
 interface InvoiceDetailClientProps {
   invoice: Invoice;
+  paymentAccounts: Account[];
   locale: string;
 }
 
-export function InvoiceDetailClient({ invoice: initialInvoice, locale }: InvoiceDetailClientProps) {
+export function InvoiceDetailClient({ invoice: initialInvoice, paymentAccounts, locale }: InvoiceDetailClientProps) {
   const t = useTranslations();
   const { toast } = useToast();
   const router = useRouter();
+  const { tenant } = useTenant();
+  const { user } = useAuth();
   const [isPending, startTransition] = useTransition();
   const [invoice, setInvoice] = useState(initialInvoice);
   const [showCancelDialog, setShowCancelDialog] = useState(false);
-  const [cancelReason, setCancelReason] = useState('');
+  const [showVersionConflict, setShowVersionConflict] = useState(false);
+  const [showPaymentDialog, setShowPaymentDialog] = useState(false);
+  const [showPartnerPaymentDialog, setShowPartnerPaymentDialog] = useState(false);
+  const [selectedPartner, setSelectedPartner] = useState<{
+    partnerId: string;
+    partnerName: string;
+    commissionAmount: number;
+    commissionPercentage: number;
+    grossAmount: number;
+  } | null>(null);
 
   function handleEdit() {
     router.push(`/${locale}/invoices/${invoice.id}/edit`);
@@ -67,7 +76,7 @@ export function InvoiceDetailClient({ invoice: initialInvoice, locale }: Invoice
         } else {
           toast({
             title: t('common.error'),
-            description: result.error || t('invoices.issueError'),
+            description: !result.success ? result.error : t('invoices.issueError'),
             variant: 'destructive',
           });
         }
@@ -82,45 +91,43 @@ export function InvoiceDetailClient({ invoice: initialInvoice, locale }: Invoice
     });
   }
 
-  async function handleCancelConfirm() {
-    if (!cancelReason.trim()) {
-      toast({
-        title: t('common.error'),
-        description: t('invoices.cancelReasonRequired'),
-        variant: 'destructive',
-      });
-      return;
-    }
+  async function handleCancel(invoiceId: string, version: number, reason: string) {
+    try {
+      const result = await cancelServiceInvoice(invoiceId, version, reason);
 
-    startTransition(async () => {
-      try {
-        const result = await cancelServiceInvoice(invoice.id, cancelReason);
-
-        if (result.success && result.data) {
-          setInvoice(result.data);
-          toast({
-            title: t('invoices.cancelSuccess'),
-            description: t('invoices.cancelSuccessDescription'),
-          });
-          setShowCancelDialog(false);
-          setCancelReason('');
-          router.refresh();
-        } else {
-          toast({
-            title: t('common.error'),
-            description: result.error || t('invoices.cancelError'),
-            variant: 'destructive',
-          });
+      if (result.success && result.data) {
+        setInvoice(result.data);
+        toast({
+          title: t('invoices.cancelSuccess'),
+          description: t('invoices.cancelSuccessDescription'),
+        });
+        router.refresh();
+        return { success: true };
+      } else {
+        // T090 [P] Check for version conflict
+        const errorMessage = !result.success ? result.error : t('invoices.cancelError');
+        if (errorMessage.includes('modified by another user') || errorMessage.includes('VERSION_CONFLICT')) {
+          setShowVersionConflict(true);
+          return { success: false, message: errorMessage };
         }
-      } catch (error) {
-        console.error('Error cancelling invoice:', error);
+
         toast({
           title: t('common.error'),
-          description: t('invoices.cancelError'),
+          description: errorMessage,
           variant: 'destructive',
         });
+        return { success: false, message: errorMessage };
       }
-    });
+    } catch (error) {
+      console.error('Error cancelling invoice:', error);
+      const message = error instanceof Error ? error.message : t('invoices.cancelError');
+      toast({
+        title: t('common.error'),
+        description: message,
+        variant: 'destructive',
+      });
+      return { success: false, message };
+    }
   }
 
   async function handleDownload() {
@@ -155,6 +162,97 @@ export function InvoiceDetailClient({ invoice: initialInvoice, locale }: Invoice
     }
   }
 
+  function handleRecordPayment() {
+    setShowPaymentDialog(true);
+  }
+
+  async function handlePaymentSubmit(data: CreateCustomerPaymentInput) {
+    try {
+      // Convert to CreateCashPaymentInput - invoiceId is guaranteed to exist
+      // since we're on the invoice detail page
+      if (!data.invoiceId) {
+        throw new Error('Invoice ID is required');
+      }
+
+      const cashPaymentInput: any = {
+        invoiceId: data.invoiceId,
+        amount: data.amount,
+        notes: data.notes,
+        // Include additional fields that the payment action expects
+        customerId: data.customerId,
+        currency: data.currency,
+        method: data.method || 'cash',
+        accountId: data.accountId,
+        accountName: data.accountName,
+        transactionReference: data.transactionReference,
+      };
+
+      const result = await createCustomerPayment(cashPaymentInput);
+
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to create payment');
+      }
+
+      // Refresh to get updated invoice
+      router.refresh();
+    } catch (error) {
+      console.error('Error submitting payment:', error);
+      throw error;
+    }
+  }
+
+  function handleRecordPartnerPayment(commission: { partnerId: string; partnerName: string; amount: number; status: string }) {
+    // Calculate gross amount from invoice line items for this partner
+    const grossAmount = invoice.lineItems
+      .filter((item) => item.partnerOfficeId === commission.partnerId)
+      .reduce((sum, item) => sum + item.total, 0);
+
+    const commissionPercentage = grossAmount > 0 ? (commission.amount / grossAmount) * 100 : 0;
+
+    setSelectedPartner({
+      partnerId: commission.partnerId,
+      partnerName: commission.partnerName,
+      commissionAmount: commission.amount,
+      commissionPercentage,
+      grossAmount,
+    });
+
+    setShowPartnerPaymentDialog(true);
+  }
+
+  async function handlePartnerPaymentSubmit(data: CreatePartnerPaymentInput) {
+    if (!tenant?.id || !user?.uid) return;
+
+    try {
+      // Extract only the fields that the action expects
+      const paymentData = {
+        partnerId: data.partnerId,
+        partnerName: data.partnerName,
+        invoiceIds: data.invoiceIds,
+        grossAmount: data.grossAmount,
+        commissionAmount: data.commissionAmount,
+        netAmount: data.netAmount,
+        method: data.method as 'cash' | 'bank',
+        accountId: data.accountId,
+        accountName: data.accountName,
+        transactionReference: data.transactionReference,
+        notes: data.notes,
+      };
+
+      const result = await recordPartnerPaymentAction(tenant.id, user.uid, paymentData);
+
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to record partner payment');
+      }
+
+      // Refresh to get updated invoice with commission status
+      router.refresh();
+    } catch (error) {
+      console.error('Error submitting partner payment:', error);
+      throw error;
+    }
+  }
+
   return (
     <>
       <div className="space-y-6">
@@ -182,44 +280,55 @@ export function InvoiceDetailClient({ invoice: initialInvoice, locale }: Invoice
               : undefined
           }
           onDownload={invoice.status !== 'draft' ? handleDownload : undefined}
+          onRecordPayment={invoice.status === 'issued' && invoice.balance > 0 ? handleRecordPayment : undefined}
+          onRecordPartnerPayment={invoice.status === 'issued' ? handleRecordPartnerPayment : undefined}
         />
       </div>
 
-      {/* Cancel Dialog */}
-      <AlertDialog open={showCancelDialog} onOpenChange={setShowCancelDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>{t('invoices.cancelInvoice')}</AlertDialogTitle>
-            <AlertDialogDescription>
-              {t('invoices.cancelInvoiceWarning')}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="cancelReason">{t('invoices.cancelReason')}</Label>
-              <Input
-                id="cancelReason"
-                placeholder={t('invoices.cancelReasonPlaceholder')}
-                value={cancelReason}
-                onChange={(e) => setCancelReason(e.target.value)}
-                disabled={isPending}
-              />
-            </div>
-          </div>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={isPending}>
-              {t('common.cancel')}
-            </AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleCancelConfirm}
-              disabled={isPending || !cancelReason.trim()}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              {t('invoices.confirmCancel')}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      {/* T080 [US9] Cancel Invoice Dialog */}
+      <CancelInvoiceDialog
+        invoice={invoice}
+        open={showCancelDialog}
+        onOpenChange={setShowCancelDialog}
+        onCancel={handleCancel}
+      />
+
+      {/* T090 [P] Version Conflict Dialog */}
+      <VersionConflictDialog
+        open={showVersionConflict}
+        onReload={() => router.refresh()}
+      />
+
+      {/* Record Payment Dialog */}
+      <RecordPaymentDialog
+        open={showPaymentDialog}
+        onOpenChange={setShowPaymentDialog}
+        invoiceId={invoice.id}
+        customerId={invoice.customerId}
+        customerName={invoice.customerName}
+        maxAmount={invoice.balance}
+        currency={invoice.currency}
+        accounts={paymentAccounts}
+        onSubmit={handlePaymentSubmit}
+      />
+
+      {/* Record Partner Payment Dialog */}
+      {selectedPartner && (
+        <RecordPartnerPaymentDialog
+          open={showPartnerPaymentDialog}
+          onOpenChange={setShowPartnerPaymentDialog}
+          partnerId={selectedPartner.partnerId}
+          partnerName={selectedPartner.partnerName}
+          invoiceIds={[invoice.id]}
+          defaultGrossAmount={selectedPartner.grossAmount}
+          defaultCommissionPercentage={selectedPartner.commissionPercentage}
+          currency={invoice.currency}
+          accounts={paymentAccounts}
+          onSubmit={handlePartnerPaymentSubmit}
+          mode="invoice-based"
+          locale={locale}
+        />
+      )}
     </>
   );
 }
