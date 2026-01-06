@@ -6,6 +6,7 @@ import { renderToBuffer } from '@react-pdf/renderer';
 import { adminDb } from '@/lib/firebase/admin';
 import { Invoice } from '@/types/models/invoice';
 import { InvoicePDF } from '@/lib/pdf/invoice-template';
+import { getSessionUser } from '@/lib/auth/require-role';
 
 export async function GET(
   request: NextRequest,
@@ -14,15 +15,17 @@ export async function GET(
   try {
     const { invoiceId } = await params;
 
-    // Get tenant ID from headers (set by middleware)
-    const tenantId = request.headers.get('x-tenant-id');
+    // Get tenant ID from session
+    const user = await getSessionUser();
 
-    if (!tenantId) {
+    if (!user?.tenantId) {
       return NextResponse.json(
-        { error: 'Tenant ID is required' },
-        { status: 400 }
+        { error: 'Unauthorized' },
+        { status: 401 }
       );
     }
+
+    const tenantId = user.tenantId;
 
     // Get invoice from Firestore
     const invoiceDoc = await adminDb
@@ -53,8 +56,8 @@ export async function GET(
       })
     );
 
-    // Return PDF as response
-    return new NextResponse(pdfBuffer, {
+    // Return PDF as response - convert Buffer to Uint8Array for Next.js 16 compatibility
+    return new NextResponse(new Uint8Array(pdfBuffer), {
       status: 200,
       headers: {
         'Content-Type': 'application/pdf',
