@@ -1,8 +1,8 @@
 # TEST REPORT: Service-Based Invoice & Accounting System
 
-**Generated**: 2026-01-06 (Updated: All UI/i18n/Mobile Complete - 7 Active Bugs)
-**Duration**: 560 minutes
-**Status**: ✅ ALL TESTABLE UI/i18n/MOBILE COMPLETE | CRUD TESTS BLOCKED (7 Active Bugs)
+**Generated**: 2026-01-06 (Updated: Payment Detail Tests Complete - 3 Active Bugs)
+**Duration**: 600 minutes
+**Status**: ✅ UI/i18n/Mobile COMPLETE + Payment Detail COMPLETE | CRUD TESTS PARTIALLY BLOCKED (3 Active Bugs)
 **Test Executor**: Claude Code + Chrome DevTools MCP
 
 ---
@@ -12,13 +12,13 @@
 | Metric | Count |
 |--------|-------|
 | Total Tests Planned | 195 |
-| Tests Executed | 167 |
-| Tests Passed | 162 |
+| Tests Executed | 172 |
+| Tests Passed | 167 |
 | Tests Failed | 5 |
-| Tests Blocked | 23 |
-| **Pass Rate** | **97.0%** (162/167 executed) |
-| **Bugs Found** | **9 total** (1 fixed, 8 active: 7 critical + 1 medium) |
-| Coverage | 85.6% |
+| Tests Blocked | 18 |
+| **Pass Rate** | **97.1%** (167/172 executed) |
+| **Bugs Found** | **10 total** (7 fixed, 3 active: 2 critical + 1 high) |
+| Coverage | 88.2% |
 
 ---
 
@@ -210,6 +210,33 @@
 | PAY-i18n-2 | RTL layout | ✅ PASSED | Correct RTL alignment |
 
 **Status**: ✅ ALL EXECUTED TESTS PASSED (5/5)
+
+---
+
+### ✅ User Story 3/4: Payment Detail Page (/payments/[paymentId]) - 100% Complete (5/5 tests)
+
+#### UI Tests (2/2 passed)
+| ID | Test | Status | Notes |
+|----|------|--------|-------|
+| PAY-DTL-UI-1 | Page load | ✅ PASSED | Payment detail page renders at /ar/payments/0BVkOBSeOocWIVRU0IPp |
+| PAY-DTL-UI-2 | All fields display | ✅ PASSED | Amount, date, method, status, invoice link, customer link all visible |
+
+#### i18n Tests (2/2 passed)
+| ID | Test | Status | Notes |
+|----|------|--------|-------|
+| PAY-DTL-i18n-1 | English translations | ✅ PASSED | All labels properly translated: "Back to Payments", "Payment Details", "Customer", "Created By", etc. |
+| PAY-DTL-i18n-2 | Arabic translations | ✅ PASSED | All labels properly translated: "العودة إلى المدفوعات", "تفاصيل الدفعة", "العميل", "أنشئ بواسطة", etc. |
+
+#### CRUD Tests (1/1 passed)
+| ID | Test | Status | Notes |
+|----|------|--------|-------|
+| PAY-DTL-CRUD-1 | View payment detail | ✅ PASSED | Payment PAY-2026-0001 displays all data: SDG 100.00, Cash, Completed, dates, links |
+
+**Status**: ✅ ALL TESTS PASSED (5/5)
+
+**Bug Fixes Applied**:
+- ✅ BUG-002: Fixed Firestore Timestamp serialization (commit `71cca74`)
+- ✅ BUG-009: Fixed translation keys in payment detail page (commit `71cca74`)
 
 ---
 
@@ -1978,16 +2005,22 @@ The following mobile tests were not performed:
 
 ## 🚫 Blocked Issues (Active Bugs - Require Fixes)
 
-**7 Active Bugs (6 Critical, 1 Medium)**:
+**3 Active Bugs (2 Critical, 1 High)**:
 
-### BUG-002: Payment Detail Page Fails to Load (Firestore Timestamp Serialization)
+### BUG-002: Payment Detail Page Fails to Load (Firestore Timestamp Serialization) ✅ FIXED
 - **Severity**: **Critical**
 - **Module**: Payment Detail Page (`/ar/payments/[paymentId]`)
-- **Status**: ❌ **BLOCKING** - Payment detail pages completely broken
+- **Status**: ✅ **FIXED** (2026-01-06)
 - **Discovered**: Phase 8 Testing (2026-01-06)
-- **Impact**: Cannot view payment details, blocks all PAY-DTL-* tests
+- **Impact**: Payment detail pages were completely broken, blocked all PAY-DTL-* tests
 - **Root Cause**: Firestore Timestamp objects not serialized before passing to client components
-- **Fix Required**: Convert Timestamps to ISO strings or plain Date objects in server component
+- **Fix Applied**:
+  1. ✅ Added `serializePayment()` helper function in `payments.ts` to convert Timestamps to ISO strings
+  2. ✅ Updated `getPaymentAction` to serialize payment data before returning to client
+  3. ✅ Updated payment detail page `formatDate()` to handle both Timestamps and ISO strings
+  4. ✅ Handles all timestamp fields: paymentDate, processedAt, createdAt, updatedAt, bankTransfer.reviewedAt
+- **Verification**: Payment detail page now loads successfully, all 5 PAY-DTL tests passed
+- **Commit**: `d0068e4` - fix(payments): resolve Timestamp serialization for payment detail page
 
 ### BUG-003: Translation Keys Showing as Raw Strings in Payment Dialog ✅ FIXED
 - **Severity**: **High**
@@ -2100,6 +2133,27 @@ The following mobile tests were not performed:
   - Response: **200 OK** ✅
   - PDF file downloaded successfully
 - **Commit**: `0bdeda6` - fix(api): resolve PDF generation tenant ID authentication
+
+### BUG-009: Translation Keys Showing in Payment Detail Page ✅ FIXED
+- **Severity**: **Medium** (i18n violation, UX issue, no functional impact)
+- **Module**: Payment Detail Page (`/ar/payments/[paymentId]`, `/en/payments/[paymentId]`)
+- **Status**: ✅ **FIXED** (2026-01-06)
+- **Discovered**: Payment Detail Testing (2026-01-06)
+- **Impact**: Payment detail page showed raw translation keys instead of localized text
+- **Root Cause**: Missing translation keys in payment namespace: backToPayments, paymentDetails, createdBy, createdAt, updatedAt; also customer field used wrong nested path
+- **Test Evidence**:
+  - Arabic page showed: "payments.backToPayments", "payments.paymentDetails", "payments.customer", "payments.createdBy", "payments.createdAt", "payments.updatedAt"
+  - English page showed same raw keys
+  - All other fields translated correctly
+- **Fix Applied**:
+  1. ✅ Fixed customer field translation path from `t('customer')` to `t('customer.customer')` in page.tsx
+  2. ✅ Added missing keys to en.json: backToPayments, paymentDetails, createdBy, createdAt, updatedAt
+  3. ✅ Added missing keys to ar.json with Arabic translations: "العودة إلى المدفوعات", "تفاصيل الدفعة", "أنشئ بواسطة", "تاريخ الإنشاء", "تاريخ التحديث"
+- **Verification**:
+  - Arabic page now shows proper translations: "العودة إلى المدفوعات", "تفاصيل الدفعة", "العميل"
+  - English page now shows proper translations: "Back to Payments", "Payment Details", "Customer"
+  - All 5 PAY-DTL tests passed
+- **Commit**: `71cca74` - fix(i18n): resolve payment detail page translation keys
 
 ---
 
