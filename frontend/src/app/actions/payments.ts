@@ -166,6 +166,75 @@ export async function createPaymentAction(
       updatedAt: now,
     };
 
+    // Create journal entry for customer payment
+    // Debit: Cash/Bank account (increase asset)
+    // Credit: Accounts Receivable - Customer (decrease asset)
+    const { createJournalEntry, createSimpleEntry } = await import('@/lib/accounting/journal-entries');
+
+    // Get payment account
+    const paymentAccount = await adminDb.doc(`tenants/${tenantId}/accounts/${accountId}`).get();
+    if (!paymentAccount.exists) {
+      return { success: false, error: 'Payment account not found' };
+    }
+
+    // Get or create customer receivable account
+    const customerAccounts = await adminDb
+      .collection(`tenants/${tenantId}/accounts`)
+      .where('subtype', '==', 'accounts_receivable')
+      .where('customerId', '==', invoice.customerId)
+      .limit(1)
+      .get();
+
+    let customerAccountData;
+    if (!customerAccounts.empty) {
+      customerAccountData = customerAccounts.docs[0].data();
+    } else {
+      // Create customer receivable account if not exists
+      const arAccountRef = adminDb.collection(`tenants/${tenantId}/accounts`).doc();
+      customerAccountData = {
+        id: arAccountRef.id,
+        code: `2001-${invoice.customerId.substring(0, 8)}`,
+        name: `Accounts Receivable - ${invoice.customerName}`,
+        type: 'asset',
+        subtype: 'accounts_receivable',
+        customerId: invoice.customerId,
+        balance: 0,
+        currency: invoice.currency,
+        isActive: true,
+        createdAt: now,
+        updatedAt: now,
+      };
+      await arAccountRef.set(customerAccountData);
+    }
+
+    const journalLines = createSimpleEntry(
+      {
+        id: paymentAccount.id,
+        name: paymentAccount.data()?.name || accountName,
+        code: paymentAccount.data()?.code || accountId,
+      },
+      {
+        id: customerAccountData.id,
+        name: customerAccountData.name,
+        code: customerAccountData.code,
+      },
+      validatedData.amount
+    );
+
+    const journalEntry = await createJournalEntry({
+      tenantId,
+      description: `Customer payment ${paymentNumber} from ${invoice.customerName} for invoice ${invoice.invoiceNumber}`,
+      type: 'customer_payment',
+      lines: journalLines,
+      sourceType: 'payment',
+      sourceId: paymentRef.id,
+      createdBy: userId,
+      date: now.toDate(),
+    });
+
+    // Link journal entry to payment
+    payment.journalEntryId = journalEntry.id;
+
     await paymentRef.set(payment);
 
     // Update invoice payment status
