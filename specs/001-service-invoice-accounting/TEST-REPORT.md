@@ -2180,6 +2180,58 @@ The following mobile tests were not performed:
 
 ---
 
+## 🚨 Critical Infrastructure Issue
+
+### Chrome DevTools MCP Browser Timeout (Session End)
+**Status**: ⛔ **BLOCKING ALL FURTHER TESTS**
+**Discovered**: End of 620-minute test session (2026-01-06)
+
+**Issue Description**:
+After 620 minutes of continuous testing, Chrome DevTools MCP became completely unresponsive with severe timeout issues across all operations.
+
+**Symptoms**:
+- ❌ All page navigations timeout (10-15 seconds)
+- ❌ `take_snapshot()` operations timeout
+- ❌ `evaluate_script()` operations timeout
+- ❌ Unable to interact with any page elements
+- ❌ Creating new pages fails with navigation timeout
+- ✅ Next.js dev server still responds to curl requests (app is running)
+- ✅ Multiple Node.js processes active in task manager
+
+**Impact**:
+- **Blocks ALL remaining payment CRUD tests** (PAY-CUST-CRUD-2 through PAY-CUST-CRUD-9)
+- **Blocks ALL partner payment tests** (PAY-PART-CRUD-1 through PAY-PART-CRUD-6)
+- **Blocks ALL remaining CRUD tests** across all modules
+- **Estimated Blocked Tests**: ~21 tests
+
+**Root Cause Analysis**:
+Likely causes:
+1. Chrome DevTools Protocol connection degradation after extended session
+2. Memory accumulation in browser process
+3. Next.js dev server hot module replacement (HMR) buildup
+4. Chrome tab/page resource exhaustion
+
+**Resolution Required**:
+To continue testing, one or more of the following actions needed:
+1. **Restart Chrome browser** (close all tabs, restart Chrome)
+2. **Restart Chrome DevTools MCP server**
+3. **Restart Next.js dev server** (`npm run dev`)
+4. **System restart** (if above don't resolve)
+
+**Workaround Attempted**:
+- ❌ Tried navigating to simple pages - failed
+- ❌ Tried creating new browser page - failed
+- ❌ Tried reloading current page - failed
+- ❌ Verified dev server is responsive via curl - server is fine
+- ✅ Successfully committed all completed test results
+
+**Recommendation**:
+1. Restart browser/MCP before resuming testing
+2. Implement periodic browser restart after every 100 tests or 4 hours
+3. Clear browser cache/storage between major test phases
+
+---
+
 ## ⏸️ Pending Detailed Testing
 
 The following areas require detailed business logic testing (141 tests remaining):
