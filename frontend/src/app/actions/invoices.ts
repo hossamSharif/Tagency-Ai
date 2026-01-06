@@ -4,7 +4,7 @@
 // T128-T131 [US3] Invoice actions
 
 import { revalidatePath } from 'next/cache';
-import { Timestamp } from 'firebase/firestore';
+import { Timestamp } from 'firebase-admin/firestore';
 import { adminDb } from '@/lib/firebase/admin';
 import { ActionResult } from '@/lib/actions/types';
 import { createAuditLog } from '@/lib/audit/create-log';
@@ -91,7 +91,7 @@ export async function generateInvoiceAction(
     const customer = customerDoc.data() as Customer;
 
     // Create line items from package snapshot
-    const lineItems: InvoiceLineItem[] = booking.packageSnapshot.services.map((service, index) => {
+    const lineItems = booking.packageSnapshot.services.map((service, index) => {
       const quantity = booking.travelers.length;
       const total = service.price * quantity;
       const commissionAmount = service.isOutsourced && service.commissionPercentage
@@ -477,7 +477,7 @@ export async function updateInvoicePaymentStatus(
 // ==========================================
 
 import { getSessionUser } from '@/lib/auth/require-role';
-import { createJournalEntry } from '@/lib/accounting/journal-entries';
+import { createJournalEntry, createReversalEntry } from '@/lib/accounting/journal-entries';
 import { FieldValue } from 'firebase-admin/firestore';
 
 /**
@@ -537,7 +537,7 @@ export async function createServiceInvoice(data: any): Promise<ActionResult<Invo
       paidAmount: 0,
       balance: data.total,
       invoiceDate: data.invoiceDate ? new Date(data.invoiceDate) : now,
-      dueDate: data.dueDate ? new Date(data.dueDate) : undefined,
+      dueDate: data.dueDate ? new Date(data.dueDate) : null,
       notes: data.notes || '',
       attachments: data.attachments || [],
       version: 1,
@@ -661,8 +661,24 @@ export async function issueServiceInvoice(invoiceId: string): Promise<ActionResu
 
     const invoice = invoiceDoc.data() as Invoice;
 
+    // Debug logging
+    console.log('🔍 Invoice status check:', {
+      invoiceId,
+      status: invoice.status,
+      statusType: typeof invoice.status,
+      rawStatus: JSON.stringify(invoice.status)
+    });
+
     // Only draft invoices can be issued
-    if (invoice.status !== 'draft') {
+    // Normalize status by trimming whitespace and converting to lowercase
+    const normalizedStatus = (invoice.status || '').toString().trim().toLowerCase();
+    if (normalizedStatus !== 'draft') {
+      console.error('❌ Status check failed:', {
+        expected: 'draft',
+        actual: invoice.status,
+        normalized: normalizedStatus,
+        comparison: normalizedStatus !== 'draft'
+      });
       return { success: false, error: 'Only draft invoices can be issued' };
     }
 
@@ -699,32 +715,30 @@ export async function issueServiceInvoice(invoiceId: string): Promise<ActionResu
     const revenueAccount = revenueAccountQuery.docs[0].data();
 
     // Create journal entry
-    const journalEntry = await createJournalEntry(
+    const journalEntry = await createJournalEntry({
       tenantId,
-      {
-        description: `Invoice ${invoice.invoiceNumber} issued to ${invoice.customerName}`,
-        type: 'invoice_created',
-        lines: [
-          {
-            accountId: customerAccount.id,
-            accountName: customerAccount.name,
-            accountCode: customerAccount.code,
-            debit: invoice.total,
-            credit: 0
-          },
-          {
-            accountId: revenueAccount.id,
-            accountName: revenueAccount.name,
-            accountCode: revenueAccount.code,
-            debit: 0,
-            credit: invoice.total
-          }
-        ],
-        sourceType: 'invoice',
-        sourceId: invoice.id
-      },
-      user.uid
-    );
+      description: `Invoice ${invoice.invoiceNumber} issued to ${invoice.customerName}`,
+      type: 'invoice_created',
+      lines: [
+        {
+          accountId: customerAccount.id,
+          accountName: customerAccount.name,
+          accountCode: customerAccount.code,
+          debit: invoice.total,
+          credit: 0
+        },
+        {
+          accountId: revenueAccount.id,
+          accountName: revenueAccount.name,
+          accountCode: revenueAccount.code,
+          debit: 0,
+          credit: invoice.total
+        }
+      ],
+      sourceType: 'invoice',
+      sourceId: invoice.id,
+      createdBy: user.uid
+    });
 
     // Update invoice status
     await invoiceRef.update({
@@ -733,6 +747,23 @@ export async function issueServiceInvoice(invoiceId: string): Promise<ActionResu
       updatedAt: new Date(),
       version: (invoice.version || 1) + 1
     });
+
+    // T040 [US1] Update partner commission totals when invoice is issued
+    if (invoice.commissionsByPartner && invoice.commissionsByPartner.length > 0) {
+      for (const commission of invoice.commissionsByPartner) {
+        if (commission.partnerOfficeId && commission.totalAmount > 0) {
+          const partnerRef = adminDb.doc(
+            `tenants/${tenantId}/partnerOffices/${commission.partnerOfficeId}`
+          );
+
+          await partnerRef.update({
+            pendingCommissions: FieldValue.increment(commission.totalAmount),
+            totalCommissionsEarned: FieldValue.increment(commission.totalAmount),
+            updatedAt: new Date()
+          });
+        }
+      }
+    }
 
     // Create audit log
     await createAuditLog({
@@ -761,11 +792,12 @@ export async function issueServiceInvoice(invoiceId: string): Promise<ActionResu
 }
 
 /**
- * T042 - Cancel service-based invoice
- * Cancels an invoice and updates status with reason
+ * T078-T079 [US9] Cancel service-based invoice with reversal journal entry
+ * Cancels an invoice, reverses journal entries, and handles partial payments
  */
 export async function cancelServiceInvoice(
   invoiceId: string,
+  version: number,
   reason: string
 ): Promise<ActionResult<Invoice>> {
   try {
@@ -791,25 +823,90 @@ export async function cancelServiceInvoice(
 
     const invoice = invoiceDoc.data() as Invoice;
 
-    // Can only cancel draft or issued invoices
-    if (['paid', 'cancelled'].includes(invoice.status)) {
+    // Optimistic locking check
+    if (invoice.version !== version) {
       return {
         success: false,
-        error: 'Cannot cancel a paid or already cancelled invoice'
+        error: 'Invoice has been modified by another user. Please refresh and try again.'
       };
     }
 
+    // Can only cancel draft, issued, or partial invoices
+    if (['cancelled'].includes(invoice.status)) {
+      return {
+        success: false,
+        error: 'Invoice is already cancelled'
+      };
+    }
+
+    // Check if invoice has been fully paid
+    if (invoice.status === 'paid') {
+      return {
+        success: false,
+        error: 'Cannot cancel a fully paid invoice. Please issue a refund instead.'
+      };
+    }
+
+    // T081 [US9] Handle partial payments
+    // If invoice has partial payments, we need to handle them
+    const hasPartialPayments = invoice.paidAmount > 0;
+    if (hasPartialPayments) {
+      // Note: In a real system, you might want to:
+      // 1. Require approval for cancelling invoices with partial payments
+      // 2. Automatically create a refund/credit note
+      // 3. Move the credit to customer account for future use
+      // For now, we'll just add a note about the partial payment
+      console.warn(`Cancelling invoice ${invoice.invoiceNumber} with partial payment of ${invoice.paidAmount}`);
+    }
+
+    // T079 [US9] Create reversal journal entry if invoice was issued
+    let reversalEntryId: string | undefined;
+    if (invoice.journalEntryId && invoice.status === 'issued') {
+      try {
+        const reversalEntry = await createReversalEntry(
+          tenantId,
+          invoice.journalEntryId,
+          user.uid,
+          `Invoice cancellation: ${reason}`
+        );
+        reversalEntryId = reversalEntry.id;
+      } catch (error) {
+        console.error('Error creating reversal entry:', error);
+        // Continue with cancellation even if reversal fails
+        // but log the error for manual review
+        await createAuditLog({
+          tenantId,
+          userId: user.uid,
+          action: 'error',
+          resource: 'invoice',
+          resourceId: invoice.id,
+          details: {
+            error: 'Failed to create reversal journal entry',
+            message: error instanceof Error ? error.message : 'Unknown error',
+            invoiceNumber: invoice.invoiceNumber
+          }
+        });
+      }
+    }
+
     // Update invoice
-    await invoiceRef.update({
+    const updateData: any = {
       status: 'cancelled',
-      cancelledAt: new Date(),
-      cancelReason: reason,
+      cancelledAt: FieldValue.serverTimestamp(),
+      cancelledBy: user.uid,
+      cancellationReason: reason,
       notes: invoice.notes
         ? `${invoice.notes}\n\nCancellation reason: ${reason}`
         : `Cancellation reason: ${reason}`,
-      updatedAt: new Date(),
+      updatedAt: FieldValue.serverTimestamp(),
       version: (invoice.version || 1) + 1
-    });
+    };
+
+    if (reversalEntryId) {
+      updateData.reversalJournalEntryId = reversalEntryId;
+    }
+
+    await invoiceRef.update(updateData);
 
     // Create audit log
     await createAuditLog({
@@ -821,27 +918,102 @@ export async function cancelServiceInvoice(
       details: {
         invoiceNumber: invoice.invoiceNumber,
         action: 'cancelled',
-        reason
+        reason,
+        hadPartialPayments: hasPartialPayments,
+        paidAmount: invoice.paidAmount,
+        reversalEntryId
       }
     });
 
     revalidatePath('/[locale]/(dashboard)/invoices');
     revalidatePath(`/[locale]/(dashboard)/invoices/${invoiceId}`);
+    revalidatePath('/[locale]/(dashboard)/accounting/journal');
+
+    // Refetch the invoice to get the actual timestamp values
+    const updatedInvoiceDoc = await invoiceRef.get();
+    const updatedInvoice = { id: updatedInvoiceDoc.id, ...updatedInvoiceDoc.data() } as Invoice;
 
     return {
       success: true,
-      data: {
-        ...invoice,
-        status: 'cancelled',
-        cancelledAt: new Date().toISOString(),
-        cancelReason: reason
-      } as Invoice
+      data: updatedInvoice
     };
   } catch (error) {
     console.error('Error cancelling service invoice:', error);
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Failed to cancel invoice'
+    };
+  }
+}
+
+// ==========================================
+// Partner Payment Invoice Linking
+// ==========================================
+
+/**
+ * Interface for invoices with pending partner commissions
+ */
+export interface InvoiceWithCommission {
+  invoiceId: string;
+  invoiceNumber: string;
+  invoiceDate: Date;
+  commissionAmount: number;
+  commissionPercentage: number;
+  grossAmount: number;
+}
+
+/**
+ * Get invoices with pending commissions for a specific partner
+ * Used for invoice-based partner payment flow
+ */
+export async function getInvoicesWithPendingCommissionsAction(
+  tenantId: string,
+  partnerId: string
+): Promise<ActionResult<InvoiceWithCommission[]>> {
+  try {
+    const invoicesSnapshot = await adminDb
+      .collection(`tenants/${tenantId}/invoices`)
+      .where('status', '==', 'issued')
+      .get();
+
+    const invoices: InvoiceWithCommission[] = [];
+
+    invoicesSnapshot.docs.forEach((doc) => {
+      const data = doc.data();
+      const commissionsByPartner = data.commissionsByPartner || [];
+
+      // Find this partner's commission
+      const partnerCommission = commissionsByPartner.find(
+        (c: any) => c.partnerOfficeId === partnerId && c.status === 'pending'
+      );
+
+      if (partnerCommission) {
+        // Calculate gross amount from line items for this partner
+        const grossAmount = (data.lineItems || [])
+          .filter((item: any) => item.partnerOfficeId === partnerId)
+          .reduce((sum: number, item: any) => sum + (item.total || 0), 0);
+
+        const commissionPercentage = grossAmount > 0
+          ? (partnerCommission.totalAmount / grossAmount) * 100
+          : 0;
+
+        invoices.push({
+          invoiceId: doc.id,
+          invoiceNumber: data.invoiceNumber,
+          invoiceDate: data.invoiceDate?.toDate() || data.invoiceDate || new Date(),
+          commissionAmount: partnerCommission.totalAmount,
+          commissionPercentage,
+          grossAmount,
+        });
+      }
+    });
+
+    return { success: true, data: invoices };
+  } catch (error) {
+    console.error('Error fetching invoices with pending commissions:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to fetch invoices'
     };
   }
 }

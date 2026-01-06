@@ -745,9 +745,41 @@ CR: 4001 - Service Revenue                      500.00
 - **Fix Required**: Add partner document updates to `issueServiceInvoice` action after invoice status is changed
 - **Test Evidence**: Partner "Galaxy Travel Agency" shows SAR 0 pending commissions despite invoice INV-2026-0002 having SAR 50 commission in "pending" status
 
+**BUG-001 FIX IMPLEMENTATION**:
+- **Status**: ✅ **IMPLEMENTED** (not yet verified)
+- **Location**: `frontend/src/app/actions/invoices.ts:751-766`
+- **Changes**: Added partner commission totals update logic after invoice status change
+- **Implementation**:
+  ```typescript
+  // T040 [US1] Update partner commission totals when invoice is issued
+  if (invoice.commissionsByPartner && invoice.commissionsByPartner.length > 0) {
+    for (const commission of invoice.commissionsByPartner) {
+      if (commission.partnerOfficeId && commission.totalAmount > 0) {
+        const partnerRef = adminDb.doc(
+          `tenants/${tenantId}/partnerOffices/${commission.partnerOfficeId}`
+        );
+
+        await partnerRef.update({
+          pendingCommissions: FieldValue.increment(commission.totalAmount),
+          totalCommissionsEarned: FieldValue.increment(commission.totalAmount),
+          updatedAt: new Date()
+        });
+      }
+    }
+  }
+  ```
+- **Testing Status**: ⏸️ **BLOCKED** - Cannot verify fix due to Firebase permissions error
+- **Blocking Issue**: Attempted to create new test invoice to verify fix but received "FirebaseError: Missing or insufficient permissions" error
+- **Impact**: Fix is implemented in code but cannot be verified. Invoice INV-2026-0002 was issued BEFORE fix was implemented, so it won't have updated partner totals.
+- **Next Steps**:
+  1. Investigate Firebase permissions error (may be Firestore security rules issue)
+  2. Once permissions resolved, create new invoice with partner service
+  3. Issue the new invoice and verify partner totals update correctly
+  4. If verified, mark test INV-ISSUE-3 as PASSED
+
 **What Remains**:
-- Fix BUG-001 (partner commission totals update)
-- Re-test partner commission tracking after fix
+- Resolve Firebase permissions error blocking invoice creation
+- Verify BUG-001 fix with new test invoice
 - Partner payment recording workflow
 - Multiple partners per invoice handling
 - Partner statement generation
@@ -756,18 +788,35 @@ CR: 4001 - Service Revenue                      500.00
 
 ## 🚫 Blocked Issues
 
-**1 Critical Bug Found in Phase 7**:
+**1 Issue Blocking Test Execution**:
+
+### BLOCK-001: Firebase Permissions Error on Invoice Creation
+- **Severity**: Critical (blocking test execution)
+- **Module**: Invoice Actions (`createServiceInvoice`)
+- **Impact**: Cannot create new invoices to test BUG-001 fix
+- **Status**: ⏸️ **Testing Blocked** - Cannot verify partner commission fix
+- **Error**: "FirebaseError: Missing or insufficient permissions"
+- **Context**: Occurred when attempting to create new test invoice after implementing BUG-001 fix
+- **Evidence**: Error dialog appeared on invoice creation form submission at `/ar/invoices/new`
+- **Next Steps**:
+  1. Check Firestore security rules for invoice collection
+  2. Verify user authentication token has write permissions
+  3. Check if permissions issue is related to partner collection updates in `issueServiceInvoice`
+  4. May need to update Firestore rules or re-authenticate
+
+**1 Critical Bug Fixed (Awaiting Verification)**:
 
 ### BUG-001: Partner Commission Totals Not Updated on Invoice Issuance
 - **Severity**: Critical (business logic failure)
 - **Module**: Invoice Actions (`issueServiceInvoice`)
-- **Location**: `frontend/src/app/actions/invoices.ts:647-775`
+- **Location**: `frontend/src/app/actions/invoices.ts:751-766`
 - **Impact**: Partner commission tracking completely non-functional
-- **Status**: ⏸️ **Testing Paused** - Fix required before proceeding with partner payment tests
+- **Status**: ✅ **FIXED** (not yet verified due to BLOCK-001)
 - **Expected**: When invoice is issued, update partner's `pendingCommissions` and `totalCommissionsEarned`
 - **Actual**: Partner totals remain at 0, commission data only stored in invoice document
 - **Evidence**: Partner "Galaxy Travel Agency" shows SAR 0 pending commissions despite invoice INV-2026-0002 having SAR 50 commission in "pending" status
-- **Next Steps**: Add partner document updates to `issueServiceInvoice` action after line 749 (after invoice status update)
+- **Fix**: Added partner document updates using `FieldValue.increment()` to atomically update commission totals
+- **Verification Status**: Cannot verify until BLOCK-001 is resolved
 
 ---
 
