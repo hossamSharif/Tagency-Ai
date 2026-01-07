@@ -25,6 +25,9 @@ interface InvoiceDetailProps {
   onIssue?: () => void;
   onCancel?: () => void;
   onDownload?: () => void;
+  onRecordPayment?: () => void;
+  onRecordPartnerPayment?: (commission: { partnerId: string; partnerName: string; amount: number; status: string }) => void;
+  isPending?: boolean;
 }
 
 function getStatusColor(status: string): string {
@@ -45,7 +48,8 @@ function getStatusColor(status: string): string {
 }
 
 function formatCurrency(amount: number, locale: string = 'en'): string {
-  return new Intl.NumberFormat(locale === 'ar' ? 'ar-SA' : 'en-US', {
+  // Always use 'en-US' locale for English numerals
+  return new Intl.NumberFormat('en-US', {
     style: 'decimal',
     minimumFractionDigits: 2,
     maximumFractionDigits: 2
@@ -66,7 +70,10 @@ export function InvoiceDetail({
   onEdit,
   onIssue,
   onCancel,
-  onDownload
+  onDownload,
+  onRecordPayment,
+  onRecordPartnerPayment,
+  isPending = false
 }: InvoiceDetailProps) {
   const t = useTranslations();
   const locale = useLocale();
@@ -95,15 +102,21 @@ export function InvoiceDetail({
             </Button>
           )}
           {onIssue && invoice.status === 'draft' && (
-            <Button onClick={onIssue}>
+            <Button onClick={onIssue} disabled={isPending}>
               <CheckCircle className="h-4 w-4 mr-2" />
-              {t('invoices.issueInvoice')}
+              {isPending ? t('common.processing') : t('invoices.issueInvoice')}
             </Button>
           )}
           {onDownload && invoice.status !== 'draft' && (
             <Button variant="outline" onClick={onDownload}>
               <Download className="h-4 w-4 mr-2" />
               {t('common.download')}
+            </Button>
+          )}
+          {onRecordPayment && invoice.status === 'issued' && invoice.balance > 0 && (
+            <Button onClick={onRecordPayment}>
+              <DollarSign className="h-4 w-4 mr-2" />
+              {t('payments.recordPayment')}
             </Button>
           )}
           {onCancel && invoice.status !== 'cancelled' && invoice.status !== 'paid' && (
@@ -185,11 +198,30 @@ export function InvoiceDetail({
                 {/* Beneficiary */}
                 {item.beneficiary && item.beneficiary.name && (
                   <div className="pt-2 border-t">
-                    <p className="text-sm font-medium">{t('invoices.beneficiary')}:</p>
-                    <p className="text-sm text-muted-foreground">
-                      {item.beneficiary.name} ({t(`invoices.relationships.${item.beneficiary.relationship}`)})
-                      {item.beneficiary.idNumber && ` - ID: ${item.beneficiary.idNumber}`}
-                    </p>
+                    <div className="flex items-start gap-3">
+                      {/* Passport Image */}
+                      <div className="flex-shrink-0">
+                        {item.beneficiary.passportImageUrl ? (
+                          <img
+                            src={item.beneficiary.passportImageUrl}
+                            alt={item.beneficiary.name}
+                            className="w-16 h-16 rounded-lg object-cover border"
+                          />
+                        ) : (
+                          <div className="w-16 h-16 rounded-lg border bg-muted flex items-center justify-center">
+                            <User className="h-8 w-8 text-muted-foreground" />
+                          </div>
+                        )}
+                      </div>
+                      {/* Beneficiary Info */}
+                      <div className="flex-1">
+                        <p className="text-sm font-medium">{t('invoices.beneficiaryLabel')}:</p>
+                        <p className="text-sm text-muted-foreground">
+                          {item.beneficiary.name} ({t(`invoices.relationships.${item.beneficiary.relationship}`)})
+                          {item.beneficiary.idNumber && ` - ID: ${item.beneficiary.idNumber}`}
+                        </p>
+                      </div>
+                    </div>
                   </div>
                 )}
 
@@ -279,13 +311,24 @@ export function InvoiceDetail({
               <div className="space-y-2">
                 <h4 className="font-medium">{t('invoices.partnerCommissions')}:</h4>
                 {invoice.commissionsByPartner.map((comm) => (
-                  <div key={comm.partnerId} className="flex justify-between text-sm">
+                  <div key={comm.partnerId} className="flex justify-between items-center text-sm">
                     <span className="text-muted-foreground">{comm.partnerName}:</span>
                     <div className="flex items-center gap-2">
                       <span>{formatCurrency(comm.amount, locale)}</span>
                       <Badge variant={comm.status === 'settled' ? 'default' : 'secondary'}>
                         {t(`invoices.commissionStatus.${comm.status}`)}
                       </Badge>
+                      {/* Pay Partner Button */}
+                      {comm.status === 'pending' && invoice.status === 'issued' && onRecordPartnerPayment && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => onRecordPartnerPayment(comm)}
+                        >
+                          <DollarSign className="h-3 w-3 me-1" />
+                          {t('payments.payPartner')}
+                        </Button>
+                      )}
                     </div>
                   </div>
                 ))}

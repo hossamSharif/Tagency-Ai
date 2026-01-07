@@ -60,6 +60,9 @@ export function InvoiceDetailClient({ invoice: initialInvoice, paymentAccounts, 
   }
 
   function handleIssue() {
+    // Prevent duplicate calls while processing
+    if (isPending) return;
+
     startTransition(async () => {
       try {
         const result = await issueServiceInvoice(invoice.id);
@@ -72,7 +75,7 @@ export function InvoiceDetailClient({ invoice: initialInvoice, paymentAccounts, 
               invoiceNumber: result.data.invoiceNumber,
             }),
           });
-          router.refresh();
+          // router.refresh() removed - local state update is sufficient
         } else {
           toast({
             title: t('common.error'),
@@ -282,6 +285,7 @@ export function InvoiceDetailClient({ invoice: initialInvoice, paymentAccounts, 
           onDownload={invoice.status !== 'draft' ? handleDownload : undefined}
           onRecordPayment={invoice.status === 'issued' && invoice.balance > 0 ? handleRecordPayment : undefined}
           onRecordPartnerPayment={invoice.status === 'issued' ? handleRecordPartnerPayment : undefined}
+          isPending={isPending}
         />
       </div>
 
