@@ -1,7 +1,7 @@
 'use server';
 
 import { adminDb } from '@/lib/firebase/admin';
-import { getCurrentUser } from '@/lib/firebase/auth';
+import { getSessionUser } from '@/lib/auth/require-role';
 import { Timestamp } from 'firebase-admin/firestore';
 
 export interface StatementTransaction {
@@ -39,7 +39,7 @@ export async function getAccountStatement(params: {
   startDate?: Date;
   endDate?: Date;
 }): Promise<{ success: boolean; data?: AccountStatement; error?: string }> {
-  const user = await getCurrentUser();
+  const user = await getSessionUser();
   if (!user?.tenantId) {
     return { success: false, error: 'Unauthorized' };
   }
@@ -193,7 +193,7 @@ export async function getStatementAccounts(): Promise<{
   }>;
   error?: string;
 }> {
-  const user = await getCurrentUser();
+  const user = await getSessionUser();
   if (!user?.tenantId) {
     return { success: false, error: 'Unauthorized' };
   }
@@ -261,7 +261,7 @@ export async function getCustomerStatement(params: {
   startDate?: Date;
   endDate?: Date;
 }): Promise<{ success: boolean; data?: AccountStatement; error?: string }> {
-  const user = await getCurrentUser();
+  const user = await getSessionUser();
   if (!user?.tenantId) {
     return { success: false, error: 'Unauthorized' };
   }
@@ -301,7 +301,7 @@ export async function getPartnerStatement(params: {
   startDate?: Date;
   endDate?: Date;
 }): Promise<{ success: boolean; data?: AccountStatement; error?: string }> {
-  const user = await getCurrentUser();
+  const user = await getSessionUser();
   if (!user?.tenantId) {
     return { success: false, error: 'Unauthorized' };
   }
