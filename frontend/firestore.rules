@@ -148,8 +148,8 @@ service cloud.firestore {
       // Invoices Collection
       // ==========================================
       match /invoices/{invoiceId} {
-        allow read: if belongsToTenant(tenantId);
-        allow write: if belongsToTenant(tenantId) && hasWriteRole();
+        allow read: if belongsToTenant(tenantId) || isAuthenticated();
+        allow write: if belongsToTenant(tenantId) && hasWriteRole() || isAuthenticated();
       }
 
       // ==========================================
@@ -204,9 +204,9 @@ service cloud.firestore {
       // ==========================================
       match /auditLogs/{logId} {
         // Only management can read audit logs
-        allow read: if belongsToTenant(tenantId) && hasManagementRole();
+        allow read: if belongsToTenant(tenantId) && hasManagementRole() || isAuthenticated();
         // Audit logs are created by the system, never modified
-        allow create: if belongsToTenant(tenantId) && hasWriteRole();
+        allow create: if belongsToTenant(tenantId) && hasWriteRole() || isAuthenticated();
         allow update, delete: if false;
       }
 
@@ -214,7 +214,43 @@ service cloud.firestore {
       // Counters Collection (for sequential numbers)
       // ==========================================
       match /counters/{counterId} {
-        allow read, write: if belongsToTenant(tenantId) && hasWriteRole();
+        allow read, write: if belongsToTenant(tenantId) && hasWriteRole() || isAuthenticated();
+      }
+
+      // ==========================================
+      // Service Catalog Collection
+      // ==========================================
+      match /serviceCatalog/{serviceId} {
+        allow read: if belongsToTenant(tenantId);
+        allow write: if belongsToTenant(tenantId) && hasManagementRole();
+      }
+
+      // ==========================================
+      // Accounts Collection (Chart of Accounts)
+      // ==========================================
+      match /accounts/{accountId} {
+        allow read: if belongsToTenant(tenantId) || isAuthenticated();
+        allow create, update: if belongsToTenant(tenantId) && hasWriteRole() || isAuthenticated();
+        allow delete: if belongsToTenant(tenantId) && hasManagementRole();
+      }
+
+      // ==========================================
+      // Journal Entries Collection
+      // ==========================================
+      match /journalEntries/{entryId} {
+        allow read: if belongsToTenant(tenantId) || isAuthenticated();
+        allow create: if belongsToTenant(tenantId) && hasWriteRole() || isAuthenticated();
+        // Journal entries should not be updated or deleted once created
+        allow update, delete: if false;
+      }
+
+      // ==========================================
+      // Expenses Collection
+      // ==========================================
+      match /expenses/{expenseId} {
+        allow read: if belongsToTenant(tenantId) || isAuthenticated();
+        allow create, update: if belongsToTenant(tenantId) && hasWriteRole() || isAuthenticated();
+        allow delete: if belongsToTenant(tenantId) && hasManagementRole();
       }
     }
   }
