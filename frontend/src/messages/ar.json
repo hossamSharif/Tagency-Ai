@@ -225,6 +225,8 @@
     "withPassport": "يملك جواز سفر",
     "withoutPassport": "بدون جواز سفر",
     "details": "التفاصيل",
+    "passportTab": "جواز السفر",
+    "documentsTab": "المستندات",
     "passport": {
       "title": "بيانات جواز السفر",
       "scan": "مسح جواز السفر",
@@ -243,6 +245,10 @@
       "verify": "تحقق من البيانات"
     },
     "bookings": "الحجوزات",
+    "invoices": "الفواتير",
+    "totalInvoices": "إجمالي الفواتير",
+    "noInvoices": "لا توجد فواتير",
+    "createInvoice": "إنشاء فاتورة",
     "documents": {
       "title": "المستندات",
       "upload": "رفع مستند",
@@ -631,6 +637,7 @@
     "payment": "دفعة",
     "record": "تسجيل دفعة",
     "recordPayment": "تسجيل دفعة",
+    "receiveFromCustomer": "استلام دفعة",
     "recordPaymentDescription": "تسجيل دفعة مستلمة من {customerName}",
     "success": "تم تسجيل الدفعة",
     "paymentRecordedSuccess": "تم تسجيل الدفعة بنجاح",
@@ -697,6 +704,9 @@
     "invoiceBasedPayment": "دفعة بناءً على الفواتير",
     "manualPayment": "إدخال دفعة يدوي",
     "calculatedFromInvoices": "محسوب من الفواتير المحددة",
+    "calculatedFromInvoice": "محسوب من الفاتورة",
+    "singleInvoicePayment": "دفعة فاتورة واحدة",
+    "payingForInvoice": "سيتم تسجيل الدفعة لهذه الفاتورة",
     "accountBalance": "رصيد الحساب",
     "currentBalance": "الرصيد الحالي",
     "amountOwed": "المبلغ المستحق من العميل",

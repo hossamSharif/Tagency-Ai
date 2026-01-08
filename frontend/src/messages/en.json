@@ -225,6 +225,8 @@
     "withPassport": "With Passport",
     "withoutPassport": "Without Passport",
     "details": "Details",
+    "passportTab": "Passport",
+    "documentsTab": "Documents",
     "passport": {
       "title": "Passport Data",
       "scan": "Scan Passport",
@@ -243,6 +245,10 @@
       "verify": "Verify Data"
     },
     "bookings": "Bookings",
+    "invoices": "Invoices",
+    "totalInvoices": "Total Invoices",
+    "noInvoices": "No invoices found",
+    "createInvoice": "Create Invoice",
     "documents": {
       "title": "Documents",
       "upload": "Upload Document",
@@ -699,6 +705,7 @@
     "payment": "Payment",
     "record": "Record Payment",
     "recordPayment": "Record Payment",
+    "receiveFromCustomer": "Receive Payment",
     "recordPaymentDescription": "Record a payment received from {customerName}",
     "success": "Payment Recorded",
     "paymentRecordedSuccess": "Payment has been recorded successfully",
@@ -789,6 +796,9 @@
     "invoiceBasedPayment": "Payment Based on Invoices",
     "manualPayment": "Manual Payment Entry",
     "calculatedFromInvoices": "Calculated from selected invoices",
+    "calculatedFromInvoice": "Calculated from invoice",
+    "singleInvoicePayment": "Single Invoice Payment",
+    "payingForInvoice": "Payment will be recorded for this invoice",
     "accountBalance": "Account Balance",
     "currentBalance": "Current Balance",
     "amountOwed": "Amount owed by customer",
