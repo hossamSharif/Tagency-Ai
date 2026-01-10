@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react';
 import { doc, onSnapshot, Unsubscribe } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
 import { useAuth } from '@/hooks/use-auth';
@@ -51,15 +51,39 @@ export interface TenantProviderProps {
 }
 
 export function TenantProvider({ children }: TenantProviderProps) {
-  const { claims, loading: authLoading } = useAuth();
+  const { claims, loading: authLoading, refreshToken } = useAuth();
   const [state, setState] = useState<TenantState>(initialState);
   const [refreshKey, setRefreshKey] = useState(0);
+  const retryCount = useRef(0);
+  const maxRetries = 3;
+  const retryTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Subscribe to tenant and subscription data
   useEffect(() => {
+    // Clear any pending retry timeouts
+    if (retryTimeoutRef.current) {
+      clearTimeout(retryTimeoutRef.current);
+      retryTimeoutRef.current = null;
+    }
+
     if (authLoading) return;
 
     const tenantId = claims?.tenantId;
+
+    // If no tenantId but we have claims (partial data), retry after a short delay
+    // This handles the case where claims are being fetched/refreshed
+    if (!tenantId && claims && retryCount.current < maxRetries) {
+      retryCount.current++;
+      console.log(`Tenant ID not found in claims, retrying... (${retryCount.current}/${maxRetries})`);
+
+      retryTimeoutRef.current = setTimeout(() => {
+        refreshToken?.();
+        setRefreshKey((prev) => prev + 1);
+      }, 1000 * retryCount.current); // Exponential backoff
+
+      return;
+    }
+
     if (!tenantId) {
       setState({
         tenant: null,
@@ -69,6 +93,9 @@ export function TenantProvider({ children }: TenantProviderProps) {
       });
       return;
     }
+
+    // Reset retry count on successful tenantId
+    retryCount.current = 0;
 
     setState((prev) => ({ ...prev, loading: true }));
 
@@ -134,13 +161,14 @@ export function TenantProvider({ children }: TenantProviderProps) {
     return () => {
       unsubscribers.forEach((unsub) => unsub());
     };
-  }, [claims?.tenantId, authLoading, refreshKey]);
+  }, [claims?.tenantId, claims, authLoading, refreshKey, refreshToken]);
 
   // Format currency using tenant's currency setting
   const formatCurrency = useCallback(
     (amount: number): string => {
       const currency = state.tenant?.currency || 'SAR';
-      const locale = state.tenant?.language === 'ar' ? 'ar-SA' : 'en-US';
+      // Always use 'en-US' locale to ensure English numerals (0-9) instead of Arabic numerals
+      const locale = 'en-US';
 
       try {
         return new Intl.NumberFormat(locale, {
@@ -155,7 +183,7 @@ export function TenantProvider({ children }: TenantProviderProps) {
         return `${symbol} ${amount.toFixed(2)}`;
       }
     },
-    [state.tenant?.currency, state.tenant?.language]
+    [state.tenant?.currency]
   );
 
   // Get currency symbol

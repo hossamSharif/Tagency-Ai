@@ -7,22 +7,38 @@
 
 import Stripe from 'stripe';
 
-// Validate required environment variables
-function getRequiredEnvVar(name: string): string {
-  const value = process.env[name];
-  if (!value) {
-    throw new Error(`Missing required environment variable: ${name}`);
+// Lazy-loaded Stripe instance to avoid module-level env var issues
+let _stripe: Stripe | null = null;
+
+/**
+ * Get the Stripe client instance (lazy initialization)
+ * This ensures env vars are loaded before accessing them
+ */
+export function getStripe(): Stripe {
+  if (!_stripe) {
+    const secretKey = process.env.STRIPE_SECRET_KEY;
+    if (!secretKey) {
+      throw new Error(
+        'STRIPE_SECRET_KEY is not configured. Please add it to your .env.local file.'
+      );
+    }
+    _stripe = new Stripe(secretKey, {
+      apiVersion: '2025-12-15.clover',
+      typescript: true,
+    });
   }
-  return value;
+  return _stripe;
 }
 
 /**
- * Server-side Stripe client
+ * Server-side Stripe client (lazy-loaded)
  * Only use this on the server (API routes, server actions)
+ * @deprecated Use getStripe() for better error handling
  */
-export const stripe = new Stripe(getRequiredEnvVar('STRIPE_SECRET_KEY'), {
-  apiVersion: '2024-11-20.acacia',
-  typescript: true,
+export const stripe = new Proxy({} as Stripe, {
+  get(_, prop) {
+    return getStripe()[prop as keyof Stripe];
+  },
 });
 
 /**

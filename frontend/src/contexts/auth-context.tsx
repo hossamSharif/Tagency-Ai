@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react';
 import { User } from 'firebase/auth';
 import {
   signIn as firebaseSignIn,
@@ -21,36 +21,121 @@ const initialState: AuthState = {
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
+// Cache key for storing claims in sessionStorage
+const CLAIMS_CACHE_KEY = 'auth_claims_cache';
+
+/**
+ * Get cached claims from sessionStorage
+ */
+function getCachedClaims(userId: string): CustomClaims | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const cached = sessionStorage.getItem(CLAIMS_CACHE_KEY);
+    if (cached) {
+      const parsed = JSON.parse(cached);
+      // Verify the cached claims belong to current user
+      if (parsed.userId === userId) {
+        return parsed.claims;
+      }
+    }
+  } catch {
+    // Ignore cache errors
+  }
+  return null;
+}
+
+/**
+ * Cache claims in sessionStorage
+ */
+function setCachedClaims(userId: string, claims: CustomClaims): void {
+  if (typeof window === 'undefined') return;
+  try {
+    sessionStorage.setItem(CLAIMS_CACHE_KEY, JSON.stringify({ userId, claims }));
+  } catch {
+    // Ignore cache errors
+  }
+}
+
+/**
+ * Clear cached claims
+ */
+function clearCachedClaims(): void {
+  if (typeof window === 'undefined') return;
+  try {
+    sessionStorage.removeItem(CLAIMS_CACHE_KEY);
+  } catch {
+    // Ignore cache errors
+  }
+}
+
 export interface AuthProviderProps {
   children: React.ReactNode;
 }
 
 export function AuthProvider({ children }: AuthProviderProps) {
   const [state, setState] = useState<AuthState>(initialState);
+  const claimsRefreshAttempts = useRef(0);
+  const maxRefreshAttempts = 3;
 
-  // Fetch custom claims from token
-  const fetchClaims = useCallback(async (user: User): Promise<CustomClaims | null> => {
+  // Fetch custom claims from token with CORS resilience
+  const fetchClaims = useCallback(async (user: User, forceRefresh = false): Promise<CustomClaims | null> => {
+    // First try to get cached claims (useful when CORS fails)
+    const cachedClaims = getCachedClaims(user.uid);
+
     try {
-      const tokenResult = await getIdTokenResult(true);
+      // Only force refresh if explicitly requested and we haven't exceeded attempts
+      const shouldForceRefresh = forceRefresh && claimsRefreshAttempts.current < maxRefreshAttempts;
+      const tokenResult = await getIdTokenResult(shouldForceRefresh);
+
       if (tokenResult) {
-        return {
+        const claims: CustomClaims = {
           tenantId: tokenResult.claims.tenantId as string | undefined,
           role: tokenResult.claims.role as UserRole | undefined,
           partnerOfficeId: tokenResult.claims.partnerOfficeId as string | undefined,
           platformAdmin: tokenResult.claims.platformAdmin as boolean | undefined,
         };
+
+        // Cache the claims for CORS failure recovery
+        if (claims.tenantId) {
+          setCachedClaims(user.uid, claims);
+          claimsRefreshAttempts.current = 0; // Reset attempts on success
+        }
+
+        return claims;
       }
     } catch (error) {
-      console.error('Error fetching claims:', error);
+      // Increment refresh attempts to avoid infinite CORS failures
+      claimsRefreshAttempts.current++;
+
+      // Check if it's a CORS error
+      const isCorsError = error instanceof Error &&
+        (error.message.includes('CORS') ||
+         error.message.includes('network') ||
+         error.message.includes('Failed to fetch'));
+
+      if (isCorsError) {
+        console.warn('Auth token refresh failed (CORS). Using cached claims if available.');
+      } else {
+        console.error('Error fetching claims:', error);
+      }
+
+      // Return cached claims on error (especially CORS errors)
+      if (cachedClaims) {
+        console.log('Using cached claims due to refresh failure');
+        return cachedClaims;
+      }
     }
-    return null;
+
+    // Last resort: return cached claims
+    return cachedClaims;
   }, []);
 
   // Listen to auth state changes
   useEffect(() => {
     const unsubscribe = onAuthStateChange(async (user) => {
       if (user) {
-        const claims = await fetchClaims(user);
+        // Try to get claims without forcing refresh initially (to avoid CORS issues)
+        const claims = await fetchClaims(user, false);
         const authUser: AuthUser = user;
         authUser.customClaims = claims || undefined;
 
@@ -61,6 +146,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
           error: null,
         });
       } else {
+        // Clear cached claims on sign out
+        clearCachedClaims();
         setState({
           user: null,
           claims: null,
@@ -107,6 +194,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const signOut = useCallback(async () => {
     setState((prev) => ({ ...prev, loading: true, error: null }));
     try {
+      // Clear cached claims before signing out
+      clearCachedClaims();
       await firebaseSignOut();
     } catch (error) {
       setState((prev) => ({
@@ -130,7 +219,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
   // Refresh token to get updated claims
   const refreshToken = useCallback(async () => {
     if (state.user) {
-      const claims = await fetchClaims(state.user);
+      // Force refresh to get latest claims
+      const claims = await fetchClaims(state.user, true);
       setState((prev) => ({ ...prev, claims }));
     }
   }, [state.user, fetchClaims]);
