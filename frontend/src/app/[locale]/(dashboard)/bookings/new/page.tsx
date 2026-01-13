@@ -1,98 +1,56 @@
-'use client';
-
-// Booking create page
+// Booking create page - Server Component
 // T122 [US2] Create booking create page
 
-import { useState } from 'react';
-import { useTranslations } from 'next-intl';
-import { useRouter, useParams, useSearchParams } from 'next/navigation';
-import { ArrowLeft } from 'lucide-react';
-import Link from 'next/link';
-import { Button } from '@/components/ui/button';
-import { LoadingSpinner } from '@/components/ui/loading-spinner';
-import { BookingForm } from '@/components/features/bookings/booking-form';
-import { useAuth } from '@/hooks/use-auth';
-import { useTenant } from '@/hooks/use-tenant';
-import { useCustomers } from '@/hooks/use-customers';
-import { usePackages } from '@/hooks/use-packages';
-import { createBookingAction } from '@/app/actions/bookings';
-import { CreateBookingInput } from '@/lib/validations/bookings';
-import { toast } from 'sonner';
+import { getTranslations } from 'next-intl/server';
+import { requireAuth } from '@/lib/auth/require-role';
+import { BookingFormClient } from '@/components/features/bookings/booking-form-client';
+import { listCustomersAction } from '@/app/actions/customers';
+import { listPackagesAction } from '@/app/actions/packages';
+import { Customer } from '@/types/models/customer';
+import { Package } from '@/types/models/package';
 
-export default function NewBookingPage() {
-  const t = useTranslations('bookings');
-  const router = useRouter();
-  const params = useParams();
-  const searchParams = useSearchParams();
-  const locale = params.locale as string;
+interface NewBookingPageProps {
+  params: Promise<{ locale: string }>;
+  searchParams: Promise<{ customerId?: string; packageId?: string }>;
+}
 
-  const preselectedCustomerId = searchParams.get('customerId') || undefined;
-  const preselectedPackageId = searchParams.get('packageId') || undefined;
+export async function generateMetadata({ params }: NewBookingPageProps) {
+  const { locale } = await params;
+  const t = await getTranslations({ locale, namespace: 'bookings' });
 
-  const { user } = useAuth();
-  const { tenant } = useTenant();
-  const { customers, loading: customersLoading } = useCustomers();
-  const { packages, loading: packagesLoading } = usePackages();
-
-  const [isLoading, setIsLoading] = useState(false);
-
-  const handleSubmit = async (data: CreateBookingInput) => {
-    if (!tenant?.id || !user?.uid) {
-      toast.error(t('errors.notAuthenticated'));
-      return;
-    }
-
-    setIsLoading(true);
-    try {
-      const result = await createBookingAction(tenant.id, user.uid, data);
-
-      if (!result.success) {
-        toast.error(result.error || t('errors.createFailed'));
-        return;
-      }
-      toast.success(t('bookingCreated'));
-      router.push(`/${locale}/bookings/${result.data.id}`);
-    } catch (error) {
-      console.error('Error creating booking:', error);
-      toast.error(t('errors.createFailed'));
-    } finally {
-      setIsLoading(false);
-    }
+  return {
+    title: t('createBooking'),
   };
+}
 
-  if (customersLoading || packagesLoading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <LoadingSpinner size="lg" />
-      </div>
-    );
-  }
+export default async function NewBookingPage({ params, searchParams }: NewBookingPageProps) {
+  const { locale } = await params;
+  const { customerId, packageId } = await searchParams;
+
+  // Require authentication
+  await requireAuth(locale);
+
+  // Fetch customers and active packages using server actions
+  const [customersResult, packagesResult] = await Promise.all([
+    listCustomersAction(),
+    listPackagesAction({ status: 'active' }),
+  ]);
+
+  const customers = (customersResult.success && customersResult.data
+    ? customersResult.data
+    : []) as Customer[];
+
+  const packages = (packagesResult.success && packagesResult.data
+    ? packagesResult.data
+    : []) as unknown as Package[];
 
   return (
-    <div className="space-y-6 max-w-3xl mx-auto">
-      {/* Header */}
-      <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" asChild>
-          <Link href={`/${locale}/bookings`}>
-            <ArrowLeft className="h-4 w-4" />
-          </Link>
-        </Button>
-        <div>
-          <h1 className="text-2xl font-bold">{t('createBooking')}</h1>
-          <p className="text-muted-foreground">{t('createBookingDescription')}</p>
-        </div>
-      </div>
-
-      {/* Form */}
-      <BookingForm
-        customers={customers}
-        packages={packages}
-        onSubmit={handleSubmit}
-        onCancel={() => router.push(`/${locale}/bookings`)}
-        isLoading={isLoading}
-        preselectedCustomerId={preselectedCustomerId}
-        preselectedPackageId={preselectedPackageId}
-      />
-    </div>
+    <BookingFormClient
+      customers={customers}
+      packages={packages}
+      locale={locale}
+      preselectedCustomerId={customerId}
+      preselectedPackageId={packageId}
+    />
   );
 }

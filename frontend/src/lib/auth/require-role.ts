@@ -28,7 +28,8 @@ export async function getSessionUser(): Promise<SessionUser | null> {
   }
 
   try {
-    const decodedToken = await adminAuth.verifySessionCookie(sessionCookie.value);
+    // Verify session cookie using Firebase Admin SDK
+    const decodedToken = await adminAuth.verifySessionCookie(sessionCookie.value, true);
 
     return {
       uid: decodedToken.uid,

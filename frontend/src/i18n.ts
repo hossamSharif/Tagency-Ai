@@ -1,5 +1,4 @@
 import { getRequestConfig } from 'next-intl/server';
-import { notFound } from 'next/navigation';
 
 /**
  * Supported locales
@@ -35,15 +34,19 @@ export const localeNames: Record<Locale, { native: string; english: string }> = 
 };
 
 /**
- * next-intl configuration
+ * next-intl configuration (v3.22+ API)
  */
-export default getRequestConfig(async ({ locale }) => {
+export default getRequestConfig(async ({ requestLocale }) => {
+  // Get the locale from the request
+  let locale = await requestLocale;
+
   // Validate that the incoming locale is valid
-  if (!isValidLocale(locale)) {
-    notFound();
+  if (!locale || !isValidLocale(locale)) {
+    locale = defaultLocale;
   }
 
   return {
+    locale,
     messages: (await import(`./messages/${locale}.json`)).default,
     timeZone: 'Asia/Riyadh',
     now: new Date(),

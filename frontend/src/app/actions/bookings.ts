@@ -4,10 +4,10 @@
 // T098-T102 [US2] Booking actions
 
 import { revalidatePath } from 'next/cache';
-import { Timestamp } from 'firebase/firestore';
+import { Timestamp, FieldValue } from 'firebase-admin/firestore';
 import { adminDb } from '@/lib/firebase/admin';
+import { getSessionUser, type SessionUser } from '@/lib/auth/require-role';
 import { ActionResult } from '@/lib/actions/types';
-import { createAuditLog } from '@/lib/audit/create-log';
 import {
   createBookingSchema,
   updateBookingSchema,
@@ -101,11 +101,14 @@ async function createPackageSnapshot(
  * T098 [US2] Create a new booking
  */
 export async function createBookingAction(
-  tenantId: string,
-  userId: string,
   input: CreateBookingInput
 ): Promise<ActionResult<Booking>> {
   try {
+    // Get authenticated user from session
+    const user = await requireAuthenticatedUser();
+    const tenantId = user.tenantId;
+    const userId = user.uid;
+
     // Validate input
     const validatedData = createBookingSchema.parse(input);
 
@@ -176,15 +179,29 @@ export async function createBookingAction(
       status: 'pending' as const,
     })) || [];
 
-    const booking: Booking = {
+    // Transform travelers passport dates from strings to Timestamps
+    // Note: Using admin SDK Timestamp which is compatible with Firestore storage
+    const transformedTravelers = validatedData.travelers.map((traveler) => ({
+      ...traveler,
+      passport: traveler.passport
+        ? {
+            ...traveler.passport,
+            dateOfBirth: Timestamp.fromDate(new Date(traveler.passport.dateOfBirth)),
+            expiryDate: Timestamp.fromDate(new Date(traveler.passport.expiryDate)),
+          }
+        : undefined,
+    })) as unknown as Booking['travelers'];
+
+    // Note: Using admin SDK types which are compatible at runtime but differ in TypeScript definitions
+    const booking = {
       id: bookingRef.id,
       bookingNumber,
       customerId: validatedData.customerId,
       packageId: validatedData.packageId,
       packageSnapshot,
-      travelers: validatedData.travelers,
-      status: 'pending',
-      paymentStatus: 'unpaid',
+      travelers: transformedTravelers,
+      status: 'pending' as const,
+      paymentStatus: 'unpaid' as const,
       bookingDate: now,
       travelDate: Timestamp.fromDate(new Date(validatedData.travelDate)),
       totalAmount,
@@ -197,7 +214,7 @@ export async function createBookingAction(
       createdBy: userId,
       createdAt: now,
       updatedAt: now,
-    };
+    } as unknown as Booking;
 
     // Use batch to update booking and package atomically
     const batch = adminDb.batch();
@@ -208,22 +225,22 @@ export async function createBookingAction(
     });
     await batch.commit();
 
-    // Create audit log
-    await createAuditLog({
+    // Create audit log using Admin SDK
+    await createAuditLogEntry(
       tenantId,
-      userId,
-      action: 'create',
-      resource: 'booking',
-      resourceId: booking.id,
-      description: `Created booking ${bookingNumber} for package: ${packageSnapshot.name}`,
-    });
+      user,
+      'create',
+      'booking',
+      booking.id,
+      `Created booking ${bookingNumber} for package: ${packageSnapshot.name}`
+    );
 
     revalidatePath(`/[locale]/(dashboard)/bookings`);
     revalidatePath(`/[locale]/(dashboard)/packages/${validatedData.packageId}`);
 
     return {
       success: true,
-      data: booking,
+      data: serializeBooking(booking as unknown as Record<string, unknown>),
     };
   } catch (error) {
     console.error('Error creating booking:', error);
@@ -285,15 +302,22 @@ export async function updateBookingAction(
 
     await bookingRef.update(updatedBooking);
 
-    // Create audit log
-    await createAuditLog({
-      tenantId,
-      userId,
-      action: 'update',
-      resource: 'booking',
-      resourceId: bookingId,
-      description: `Updated booking ${existingBooking.bookingNumber}`,
-    });
+    // Create audit log using Admin SDK
+    await adminDb
+      .collection('tenants')
+      .doc(tenantId)
+      .collection('auditLogs')
+      .add({
+        userId,
+        userEmail: 'system',
+        userRole: 'admin',
+        action: 'update',
+        entityType: 'booking',
+        entityId: bookingId,
+        description: `Updated booking ${existingBooking.bookingNumber}`,
+        changes: null,
+        timestamp: FieldValue.serverTimestamp(),
+      });
 
     revalidatePath(`/[locale]/(dashboard)/bookings`);
     revalidatePath(`/[locale]/(dashboard)/bookings/${bookingId}`);
@@ -312,15 +336,17 @@ export async function updateBookingAction(
 }
 
 /**
- * T100 [US2] Update booking status
+ * T100 [US2] Update booking status - uses server-side authentication
  */
 export async function updateBookingStatusAction(
-  tenantId: string,
-  userId: string,
   bookingId: string,
   input: UpdateBookingStatusInput
 ): Promise<ActionResult<Booking>> {
   try {
+    const user = await requireAuthenticatedUser();
+    const tenantId = user.tenantId;
+    const userId = user.uid;
+
     // Validate input
     const validatedData = updateBookingStatusSchema.parse(input);
 
@@ -353,29 +379,35 @@ export async function updateBookingStatusAction(
     }
 
     const now = Timestamp.now();
-    const updateData: Partial<Booking> = {
+    const updateData = {
       status: validatedData.status,
       updatedAt: now,
     };
 
-    await bookingRef.update(updateData);
+    await bookingRef.update(updateData as Partial<Booking>);
 
-    // Create audit log
-    await createAuditLog({
-      tenantId,
-      userId,
-      action: 'status_change',
-      resource: 'booking',
-      resourceId: bookingId,
-      description: `Changed booking ${existingBooking.bookingNumber} status from ${existingBooking.status} to ${validatedData.status}`,
-      changes: [
-        {
-          field: 'status',
-          oldValue: existingBooking.status,
-          newValue: validatedData.status,
-        },
-      ],
-    });
+    // Create audit log using Admin SDK
+    await adminDb
+      .collection('tenants')
+      .doc(tenantId)
+      .collection('auditLogs')
+      .add({
+        userId,
+        userEmail: 'system',
+        userRole: 'admin',
+        action: 'status_change',
+        entityType: 'booking',
+        entityId: bookingId,
+        description: `Changed booking ${existingBooking.bookingNumber} status from ${existingBooking.status} to ${validatedData.status}`,
+        changes: [
+          {
+            field: 'status',
+            oldValue: existingBooking.status,
+            newValue: validatedData.status,
+          },
+        ],
+        timestamp: FieldValue.serverTimestamp(),
+      });
 
     // Trigger notification based on status change
     try {
@@ -456,15 +488,22 @@ export async function uploadBookingDocumentAction(
       updatedAt: now,
     });
 
-    // Create audit log
-    await createAuditLog({
-      tenantId,
-      userId,
-      action: 'update',
-      resource: 'booking',
-      resourceId: bookingId,
-      description: `Uploaded ${documentType} document for booking ${existingBooking.bookingNumber}`,
-    });
+    // Create audit log using Admin SDK
+    await adminDb
+      .collection('tenants')
+      .doc(tenantId)
+      .collection('auditLogs')
+      .add({
+        userId,
+        userEmail: 'system',
+        userRole: 'admin',
+        action: 'update',
+        entityType: 'booking',
+        entityId: bookingId,
+        description: `Uploaded ${documentType} document for booking ${existingBooking.bookingNumber}`,
+        changes: null,
+        timestamp: FieldValue.serverTimestamp(),
+      });
 
     revalidatePath(`/[locale]/(dashboard)/bookings/${bookingId}`);
 
@@ -482,18 +521,31 @@ export async function uploadBookingDocumentAction(
 }
 
 /**
- * T102 [US2] Update traveler passport data
+ * T102 [US2] Update traveler passport data - uses server-side authentication
  */
 export async function updateTravelerPassportAction(
-  tenantId: string,
-  userId: string,
-  input: UpdateTravelerPassportInput
+  bookingId: string,
+  travelerIndex: number,
+  passport: {
+    passportNumber: string;
+    fullName: string;
+    dateOfBirth: string;
+    expiryDate: string;
+    nationality: string;
+    gender: 'male' | 'female';
+    issuingCountry: string;
+  }
 ): Promise<ActionResult<Booking>> {
   try {
+    const user = await requireAuthenticatedUser();
+    const tenantId = user.tenantId;
+    const userId = user.uid;
+
     // Validate input
+    const input = { bookingId, travelerIndex, passport };
     const validatedData = updateTravelerPassportSchema.parse(input);
 
-    const bookingRef = adminDb.doc(`tenants/${tenantId}/bookings/${validatedData.bookingId}`);
+    const bookingRef = adminDb.doc(`tenants/${tenantId}/bookings/${bookingId}`);
     const bookingDoc = await bookingRef.get();
 
     if (!bookingDoc.exists) {
@@ -515,9 +567,10 @@ export async function updateTravelerPassportAction(
     const now = Timestamp.now();
 
     // Update traveler passport
-    const travelers = [...existingBooking.travelers];
+    // Note: Using admin SDK Timestamp which is compatible at runtime with client SDK types
+    const travelers = [...existingBooking.travelers] as unknown[];
     travelers[validatedData.travelerIndex] = {
-      ...travelers[validatedData.travelerIndex],
+      ...(existingBooking.travelers[validatedData.travelerIndex] as unknown as Record<string, unknown>),
       passport: {
         passportNumber: validatedData.passport.passportNumber.toUpperCase(),
         fullName: validatedData.passport.fullName,
@@ -534,17 +587,24 @@ export async function updateTravelerPassportAction(
     await bookingRef.update({
       travelers,
       updatedAt: now,
-    });
+    } as Record<string, unknown>);
 
-    // Create audit log
-    await createAuditLog({
-      tenantId,
-      userId,
-      action: 'update',
-      resource: 'booking',
-      resourceId: validatedData.bookingId,
-      description: `Updated passport for traveler ${validatedData.travelerIndex + 1} in booking ${existingBooking.bookingNumber}`,
-    });
+    // Create audit log using Admin SDK
+    await adminDb
+      .collection('tenants')
+      .doc(tenantId)
+      .collection('auditLogs')
+      .add({
+        userId,
+        userEmail: 'system',
+        userRole: 'admin',
+        action: 'update',
+        entityType: 'booking',
+        entityId: validatedData.bookingId,
+        description: `Updated passport for traveler ${validatedData.travelerIndex + 1} in booking ${existingBooking.bookingNumber}`,
+        changes: null,
+        timestamp: FieldValue.serverTimestamp(),
+      });
 
     revalidatePath(`/[locale]/(dashboard)/bookings/${validatedData.bookingId}`);
 
@@ -562,13 +622,15 @@ export async function updateTravelerPassportAction(
 }
 
 /**
- * Get booking by ID
+ * Get booking by ID - uses server-side authentication
  */
 export async function getBookingAction(
-  tenantId: string,
   bookingId: string
 ): Promise<ActionResult<Booking>> {
   try {
+    const user = await requireAuthenticatedUser();
+    const tenantId = user.tenantId;
+
     const bookingDoc = await adminDb
       .doc(`tenants/${tenantId}/bookings/${bookingId}`)
       .get();
@@ -582,7 +644,7 @@ export async function getBookingAction(
 
     return {
       success: true,
-      data: bookingDoc.data() as Booking,
+      data: serializeBooking({ id: bookingDoc.id, ...bookingDoc.data() } as Record<string, unknown>),
     };
   } catch (error) {
     console.error('Error getting booking:', error);
@@ -594,16 +656,144 @@ export async function getBookingAction(
 }
 
 /**
- * Cancel booking
+ * Cancel booking - uses server-side authentication
  */
 export async function cancelBookingAction(
-  tenantId: string,
-  userId: string,
   bookingId: string,
   reason?: string
 ): Promise<ActionResult<Booking>> {
-  return updateBookingStatusAction(tenantId, userId, bookingId, {
+  return updateBookingStatusAction(bookingId, {
     status: 'cancelled',
     reason,
   });
+}
+
+/**
+ * Require authentication and return user with tenant
+ */
+async function requireAuthenticatedUser(): Promise<SessionUser> {
+  const user = await getSessionUser();
+  if (!user) {
+    throw new Error('Unauthenticated');
+  }
+  return user;
+}
+
+/**
+ * Create audit log entry using Admin SDK
+ */
+async function createAuditLogEntry(
+  tenantId: string,
+  user: SessionUser,
+  action: string,
+  entityType: string,
+  entityId: string,
+  description: string,
+  changes?: Array<{ field: string; oldValue: unknown; newValue: unknown }>
+): Promise<void> {
+  await adminDb
+    .collection('tenants')
+    .doc(tenantId)
+    .collection('auditLogs')
+    .add({
+      userId: user.uid,
+      userEmail: user.email || 'system',
+      userRole: user.role || 'admin',
+      action,
+      entityType,
+      entityId,
+      description,
+      changes: changes || null,
+      timestamp: FieldValue.serverTimestamp(),
+    });
+}
+
+/**
+ * Serialize Firestore Timestamps to ISO strings for client components
+ * Note: Using unknown casting due to admin/client SDK Timestamp type differences
+ */
+function serializeBooking(booking: Record<string, unknown>): Booking {
+  const serializeTimestamp = (ts: unknown): unknown => {
+    if (!ts) return undefined;
+    // Admin SDK Timestamp has toDate() method
+    if (ts && typeof ts === 'object' && 'toDate' in ts && typeof (ts as { toDate: () => Date }).toDate === 'function') {
+      return (ts as { toDate: () => Date }).toDate().toISOString();
+    }
+    return ts;
+  };
+
+  const travelers = booking.travelers as Array<Record<string, unknown>>;
+
+  return {
+    ...booking,
+    bookingDate: serializeTimestamp(booking.bookingDate),
+    travelDate: serializeTimestamp(booking.travelDate),
+    createdAt: serializeTimestamp(booking.createdAt),
+    updatedAt: serializeTimestamp(booking.updatedAt),
+    travelers: travelers.map((traveler) => ({
+      ...traveler,
+      passport: traveler.passport
+        ? {
+            ...(traveler.passport as Record<string, unknown>),
+            dateOfBirth: serializeTimestamp((traveler.passport as Record<string, unknown>).dateOfBirth),
+            expiryDate: serializeTimestamp((traveler.passport as Record<string, unknown>).expiryDate),
+            extractedAt: serializeTimestamp((traveler.passport as Record<string, unknown>).extractedAt),
+          }
+        : undefined,
+    })),
+  } as unknown as Booking;
+}
+
+/**
+ * List bookings for tenant with server-side authentication
+ */
+export async function listBookingsAction(options?: {
+  customerId?: string;
+  packageId?: string;
+  status?: BookingStatus;
+  limit?: number;
+}): Promise<ActionResult<Booking[]>> {
+  try {
+    // Get authenticated user from session
+    const user = await requireAuthenticatedUser();
+    const tenantId = user.tenantId;
+
+    const { customerId, packageId, status, limit: limitCount = 100 } = options || {};
+
+    let queryRef = adminDb
+      .collection(`tenants/${tenantId}/bookings`)
+      .orderBy('createdAt', 'desc')
+      .limit(limitCount);
+
+    // Add filters if provided
+    if (customerId) {
+      queryRef = queryRef.where('customerId', '==', customerId);
+    }
+
+    if (packageId) {
+      queryRef = queryRef.where('packageId', '==', packageId);
+    }
+
+    if (status) {
+      queryRef = queryRef.where('status', '==', status);
+    }
+
+    const snapshot = await queryRef.get();
+
+    const bookings = snapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    })) as unknown as Record<string, unknown>[];
+
+    return {
+      success: true,
+      data: bookings.map(serializeBooking),
+    };
+  } catch (error) {
+    console.error('Error listing bookings:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to list bookings',
+    };
+  }
 }

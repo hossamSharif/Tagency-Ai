@@ -24,9 +24,9 @@ export const partnerStatusSchema = z.enum(['active', 'suspended', 'pending']);
 // ==========================================
 
 export const bankDetailsSchema = z.object({
-  bankName: requiredString,
-  accountNumber: requiredString,
-  accountHolder: requiredString,
+  bankName: z.string().optional().or(z.literal('')),
+  accountNumber: z.string().optional().or(z.literal('')),
+  accountHolder: z.string().optional().or(z.literal('')),
   iban: z.string().optional().or(z.literal('')),
   swiftCode: z.string().optional().or(z.literal('')),
 });
@@ -39,6 +39,7 @@ export type BankDetailsInput = z.infer<typeof bankDetailsSchema>;
 
 /**
  * Create partner office form validation
+ * Only name and phone are required - all other fields are optional
  */
 export const createPartnerSchema = z.object({
   name: z
@@ -49,11 +50,17 @@ export const createPartnerSchema = z.object({
     .string()
     .min(2, 'Code must be at least 2 characters')
     .max(20, 'Code cannot exceed 20 characters')
-    .regex(/^[A-Z0-9-]+$/, 'Code must contain only uppercase letters, numbers, and hyphens'),
-  contactPerson: requiredString,
-  email: emailSchema,
+    .regex(/^[A-Z0-9-]+$/, 'Code must contain only uppercase letters, numbers, and hyphens')
+    .optional()
+    .or(z.literal('')),
+  contactPerson: z.string().optional().or(z.literal('')),
+  email: z.string().email('Invalid email address').optional().or(z.literal('')),
   phone: phoneSchema,
-  defaultCommissionPercentage: percentageSchema,
+  defaultCommissionPercentage: z
+    .number()
+    .min(0, 'Commission must be at least 0%')
+    .max(100, 'Commission cannot exceed 100%')
+    .optional(),
   bankAccount: bankDetailsSchema.optional(),
   notes: z.string().max(2000, 'Notes cannot exceed 2000 characters').optional(),
 });

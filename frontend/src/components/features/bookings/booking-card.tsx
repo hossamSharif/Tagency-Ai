@@ -28,7 +28,6 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { BookingStatusBadge } from './booking-status-badge';
 import { Booking } from '@/types/models/booking';
-import { Timestamp } from 'firebase/firestore';
 
 interface BookingCardProps {
   booking: Booking;
@@ -46,13 +45,27 @@ export function BookingCard({
   const t = useTranslations('bookings');
   const dateLocale = locale === 'ar' ? ar : enUS;
 
-  const formatDate = (timestamp: Timestamp) => {
-    const date = timestamp.toDate();
-    return format(date, 'dd MMM yyyy', { locale: dateLocale });
+  const formatDate = (timestamp: string | { toDate?: () => Date } | Date) => {
+    try {
+      let date: Date;
+      if (typeof timestamp === 'string') {
+        date = new Date(timestamp);
+      } else if (timestamp instanceof Date) {
+        date = timestamp;
+      } else if (timestamp?.toDate) {
+        date = timestamp.toDate();
+      } else {
+        return 'N/A';
+      }
+      return format(date, 'dd MMM yyyy', { locale: dateLocale });
+    } catch {
+      return 'N/A';
+    }
   };
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat(locale === 'ar' ? 'ar-SA' : 'en-US', {
+    // Always use 'en-US' locale for English numerals
+    return new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: booking.currency,
     }).format(amount);
@@ -131,7 +144,7 @@ export function BookingCard({
 
         <div className="flex items-center gap-2 text-sm">
           <Calendar className="h-4 w-4 text-muted-foreground" />
-          <span>{formatDate(booking.travelDate)}</span>
+          <span>{formatDate(booking.travelDate as unknown as string)}</span>
         </div>
 
         <div className="flex items-center justify-between pt-2 border-t">

@@ -349,7 +349,7 @@ function getStatusStyle(status: string) {
 
 export function InvoicePDF({
   invoice,
-  companyName = 'Travel Agency',
+  companyName = 'Agency AI',
   companyAddress = '',
   companyPhone = '',
   companyEmail = '',

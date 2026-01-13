@@ -2,7 +2,8 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import Image from 'next/image';
+import { usePathname, useParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import {
   Package,
@@ -17,6 +18,11 @@ import {
   Menu,
   X,
   Home,
+  Briefcase,
+  Calculator,
+  ScrollText,
+  Receipt,
+  FileBarChart,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -27,7 +33,6 @@ import { useIsSubscriptionActive, useTrialDaysRemaining, useIsInTrial } from '@/
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
-  params: { locale: string };
 }
 
 interface NavItem {
@@ -37,11 +42,12 @@ interface NavItem {
   roles?: string[];
 }
 
-export default function DashboardLayout({ children, params }: DashboardLayoutProps) {
+export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = React.useState(false);
   const pathname = usePathname();
+  const params = useParams();
   const t = useTranslations();
-  const { locale } = params;
+  const locale = params.locale as string || 'en';
   const isArabic = locale === 'ar';
 
   const { user, claims, signOut } = useAuth();
@@ -50,14 +56,19 @@ export default function DashboardLayout({ children, params }: DashboardLayoutPro
 
   const navItems: NavItem[] = [
     { href: `/${locale}`, label: t('reports.dashboard'), icon: Home },
-    { href: `/${locale}/packages`, label: t('packages.title'), icon: Package },
-    { href: `/${locale}/customers`, label: t('customers.title'), icon: Users },
-    { href: `/${locale}/bookings`, label: t('bookings.title'), icon: BookOpen },
     { href: `/${locale}/invoices`, label: t('invoices.title'), icon: FileText },
     { href: `/${locale}/payments`, label: t('payments.title'), icon: CreditCard },
+    { href: `/${locale}/services`, label: t('services.title'), icon: Briefcase },
+    { href: `/${locale}/customers`, label: t('customers.title'), icon: Users },
     { href: `/${locale}/partners`, label: t('partners.title'), icon: Building2, roles: ['owner', 'admin'] },
+    { href: `/${locale}/accounting/accounts`, label: t('accounting.title'), icon: Calculator, roles: ['owner', 'admin'] },
+    { href: `/${locale}/accounting/journal`, label: t('accounting.journal'), icon: ScrollText, roles: ['owner', 'admin'] },
+    { href: `/${locale}/statements`, label: t('statements.title'), icon: FileBarChart, roles: ['owner', 'admin'] },
+    { href: `/${locale}/accounting/expenses`, label: t('expenses.title'), icon: Receipt, roles: ['owner', 'admin'] },
     { href: `/${locale}/reports`, label: t('reports.title'), icon: BarChart3, roles: ['owner', 'admin'] },
     { href: `/${locale}/settings`, label: t('settings.title'), icon: Settings },
+    // { href: `/${locale}/packages`, label: t('packages.title'), icon: Package }, // Hidden - pages accessible via direct URL
+    // { href: `/${locale}/bookings`, label: t('bookings.title'), icon: BookOpen }, // Hidden - pages accessible via direct URL
   ];
 
   const filteredNavItems = navItems.filter((item) => {
@@ -69,14 +80,17 @@ export default function DashboardLayout({ children, params }: DashboardLayoutPro
     <div className="flex flex-col h-full">
       {/* Logo */}
       <div className="p-4 border-b">
-        <Link href={`/${locale}`} className="flex items-center gap-2">
-          <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
-            <span className="text-primary-foreground font-bold text-xl">
-              {isArabic ? 'و' : 'T'}
-            </span>
-          </div>
+        <Link href={`/${locale}`} className="flex items-center gap-3">
+          <Image
+            src="/logo.svg"
+            alt="Agency AI"
+            width={40}
+            height={40}
+            className="flex-shrink-0"
+            priority
+          />
           <span className="text-lg font-bold text-foreground">
-            {tenant?.name || (isArabic ? 'وكالة السفر' : 'Travel Agency')}
+            {tenant?.name || t('common.appName')}
           </span>
         </Link>
       </div>

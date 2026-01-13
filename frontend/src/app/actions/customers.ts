@@ -4,10 +4,10 @@
 // T094-T097 [US2] Customer actions
 
 import { revalidatePath } from 'next/cache';
-import { Timestamp } from 'firebase/firestore';
-import { adminDb, adminAuth } from '@/lib/firebase/admin';
+import { Timestamp, FieldValue } from 'firebase-admin/firestore';
+import { adminDb } from '@/lib/firebase/admin';
+import { getSessionUser, type SessionUser } from '@/lib/auth/require-role';
 import { ActionResult } from '@/lib/actions/types';
-import { createAuditLog } from '@/lib/audit/create-log';
 import {
   createCustomerSchema,
   updateCustomerSchema,
@@ -17,16 +17,50 @@ import {
   UpdatePassportInput,
 } from '@/lib/validations/customers';
 import { Customer } from '@/types/models/customer';
+import { createCustomerAccount } from '@/lib/accounting/default-accounts';
+
+/**
+ * Require authentication and return user with tenant
+ */
+async function requireAuthenticatedUser(): Promise<SessionUser> {
+  const user = await getSessionUser();
+  if (!user) {
+    throw new Error('Unauthenticated');
+  }
+  return user;
+}
+
+/**
+ * Serialize Firestore Timestamps to ISO strings for client components
+ * Note: Using unknown casting due to admin/client SDK Timestamp type differences
+ */
+function serializeCustomer(customer: Record<string, unknown>): Customer {
+  const serializeTimestamp = (ts: unknown): unknown => {
+    if (!ts) return undefined;
+    if (ts && typeof ts === 'object' && 'toDate' in ts && typeof (ts as { toDate: () => Date }).toDate === 'function') {
+      return (ts as { toDate: () => Date }).toDate().toISOString();
+    }
+    return ts;
+  };
+
+  return {
+    ...customer,
+    createdAt: serializeTimestamp(customer.createdAt),
+    updatedAt: serializeTimestamp(customer.updatedAt),
+  } as unknown as Customer;
+}
 
 /**
  * T094 [US2] Create a new customer
  */
 export async function createCustomerAction(
-  tenantId: string,
-  userId: string,
   input: CreateCustomerInput
 ): Promise<ActionResult<Customer>> {
   try {
+    // Get authenticated user from session
+    const user = await requireAuthenticatedUser();
+    const tenantId = user.tenantId;
+
     // Validate input
     const validatedData = createCustomerSchema.parse(input);
 
@@ -48,32 +82,52 @@ export async function createCustomerAction(
     const customerRef = adminDb.collection(`tenants/${tenantId}/customers`).doc();
     const now = Timestamp.now();
 
-    const customer: Customer = {
+    // Note: Using admin SDK types which are compatible at runtime but differ in TypeScript definitions
+    const customer = {
       id: customerRef.id,
       ...validatedData,
       balance: 0,
       documents: [],
       createdAt: now,
       updatedAt: now,
-    };
+    } as unknown as Customer;
 
     await customerRef.set(customer);
 
-    // Create audit log
-    await createAuditLog({
-      tenantId,
-      userId,
-      action: 'create',
-      resource: 'customer',
-      resourceId: customer.id,
-      description: `Created customer: ${customer.firstName} ${customer.lastName}`,
-    });
+    // T030 [US6] Create customer account in chart of accounts
+    try {
+      await createCustomerAccount(
+        tenantId,
+        customer.id,
+        `${customer.firstName} ${customer.lastName}`
+      );
+    } catch (accountError) {
+      console.error('Error creating customer account:', accountError);
+      // Don't fail the customer creation if account creation fails
+      // Account can be created manually later if needed
+    }
+
+    // Create audit log using Admin SDK
+    await adminDb
+      .collection('tenants')
+      .doc(tenantId)
+      .collection('auditLogs')
+      .add({
+        userId: user.uid,
+        userEmail: user.email || 'system',
+        userRole: user.role || 'admin',
+        action: 'create',
+        entityType: 'customer',
+        entityId: customer.id,
+        description: `Created customer: ${customer.firstName} ${customer.lastName}`,
+        timestamp: FieldValue.serverTimestamp(),
+      });
 
     revalidatePath(`/[locale]/(dashboard)/customers`);
 
     return {
       success: true,
-      data: customer,
+      data: serializeCustomer(customer as unknown as Record<string, unknown>),
     };
   } catch (error) {
     console.error('Error creating customer:', error);
@@ -88,12 +142,14 @@ export async function createCustomerAction(
  * T095 [US2] Update an existing customer
  */
 export async function updateCustomerAction(
-  tenantId: string,
-  userId: string,
   customerId: string,
   input: UpdateCustomerInput
 ): Promise<ActionResult<Customer>> {
   try {
+    // Get authenticated user from session
+    const user = await requireAuthenticatedUser();
+    const tenantId = user.tenantId;
+
     // Validate input
     const validatedData = updateCustomerSchema.parse(input);
 
@@ -133,27 +189,33 @@ export async function updateCustomerAction(
 
     await customerRef.update(updatedCustomer);
 
-    // Create audit log
-    await createAuditLog({
-      tenantId,
-      userId,
-      action: 'update',
-      resource: 'customer',
-      resourceId: customerId,
-      description: `Updated customer: ${updatedCustomer.firstName} ${updatedCustomer.lastName}`,
-      changes: Object.keys(validatedData).map((key) => ({
-        field: key,
-        oldValue: existingCustomer[key as keyof Customer],
-        newValue: validatedData[key as keyof UpdateCustomerInput],
-      })),
-    });
+    // Create audit log using Admin SDK
+    await adminDb
+      .collection('tenants')
+      .doc(tenantId)
+      .collection('auditLogs')
+      .add({
+        userId: user.uid,
+        userEmail: user.email || 'system',
+        userRole: user.role || 'admin',
+        action: 'update',
+        entityType: 'customer',
+        entityId: customerId,
+        description: `Updated customer: ${updatedCustomer.firstName} ${updatedCustomer.lastName}`,
+        changes: JSON.stringify(Object.keys(validatedData).map((key) => ({
+          field: key,
+          oldValue: existingCustomer[key as keyof Customer],
+          newValue: validatedData[key as keyof UpdateCustomerInput],
+        }))),
+        timestamp: FieldValue.serverTimestamp(),
+      });
 
     revalidatePath(`/[locale]/(dashboard)/customers`);
     revalidatePath(`/[locale]/(dashboard)/customers/${customerId}`);
 
     return {
       success: true,
-      data: updatedCustomer as Customer,
+      data: serializeCustomer(updatedCustomer as Record<string, unknown>),
     };
   } catch (error) {
     console.error('Error updating customer:', error);
@@ -168,12 +230,14 @@ export async function updateCustomerAction(
  * T096 [US2] Update customer passport data
  */
 export async function updateCustomerPassportAction(
-  tenantId: string,
-  userId: string,
   customerId: string,
   input: UpdatePassportInput
 ): Promise<ActionResult<Customer>> {
   try {
+    // Get authenticated user from session
+    const user = await requireAuthenticatedUser();
+    const tenantId = user.tenantId;
+
     // Validate input
     const validatedData = updatePassportSchema.parse(input);
 
@@ -212,28 +276,27 @@ export async function updateCustomerPassportAction(
       updatedAt: Timestamp.now(),
     });
 
-    // Create audit log
-    await createAuditLog({
-      tenantId,
-      userId,
-      action: 'update',
-      resource: 'customer',
-      resourceId: customerId,
-      description: `Updated passport for customer: ${existingCustomer.firstName} ${existingCustomer.lastName}`,
-      changes: [
-        {
-          field: 'passport',
-          oldValue: existingCustomer.passport,
-          newValue: passportData,
-        },
-      ],
-    });
+    // Create audit log using Admin SDK
+    await adminDb
+      .collection('tenants')
+      .doc(tenantId)
+      .collection('auditLogs')
+      .add({
+        userId: user.uid,
+        userEmail: user.email || 'system',
+        userRole: user.role || 'admin',
+        action: 'update',
+        entityType: 'customer',
+        entityId: customerId,
+        description: `Updated passport for customer: ${existingCustomer.firstName} ${existingCustomer.lastName}`,
+        timestamp: FieldValue.serverTimestamp(),
+      });
 
     revalidatePath(`/[locale]/(dashboard)/customers/${customerId}`);
 
     return {
       success: true,
-      data: updatedCustomer as Customer,
+      data: serializeCustomer(updatedCustomer as Record<string, unknown>),
     };
   } catch (error) {
     console.error('Error updating customer passport:', error);
@@ -248,14 +311,16 @@ export async function updateCustomerPassportAction(
  * T097 [US2] Upload customer document
  */
 export async function uploadCustomerDocumentAction(
-  tenantId: string,
-  userId: string,
   customerId: string,
   documentType: 'passport' | 'visa' | 'photo' | 'vaccination' | 'other',
   documentName: string,
   documentUrl: string
 ): Promise<ActionResult<Customer>> {
   try {
+    // Get authenticated user from session
+    const user = await requireAuthenticatedUser();
+    const tenantId = user.tenantId;
+
     const customerRef = adminDb.doc(`tenants/${tenantId}/customers/${customerId}`);
     const customerDoc = await customerRef.get();
 
@@ -284,25 +349,31 @@ export async function uploadCustomerDocumentAction(
       updatedAt: now,
     });
 
-    // Create audit log
-    await createAuditLog({
-      tenantId,
-      userId,
-      action: 'update',
-      resource: 'customer',
-      resourceId: customerId,
-      description: `Uploaded ${documentType} document for customer: ${existingCustomer.firstName} ${existingCustomer.lastName}`,
-    });
+    // Create audit log using Admin SDK
+    await adminDb
+      .collection('tenants')
+      .doc(tenantId)
+      .collection('auditLogs')
+      .add({
+        userId: user.uid,
+        userEmail: user.email || 'system',
+        userRole: user.role || 'admin',
+        action: 'update',
+        entityType: 'customer',
+        entityId: customerId,
+        description: `Uploaded ${documentType} document for customer: ${existingCustomer.firstName} ${existingCustomer.lastName}`,
+        timestamp: FieldValue.serverTimestamp(),
+      });
 
     revalidatePath(`/[locale]/(dashboard)/customers/${customerId}`);
 
     return {
       success: true,
-      data: {
+      data: serializeCustomer({
         ...existingCustomer,
         documents,
         updatedAt: now,
-      } as Customer,
+      } as unknown as Record<string, unknown>),
     };
   } catch (error) {
     console.error('Error uploading customer document:', error);
@@ -317,12 +388,14 @@ export async function uploadCustomerDocumentAction(
  * Delete customer document
  */
 export async function deleteCustomerDocumentAction(
-  tenantId: string,
-  userId: string,
   customerId: string,
   documentId: string
 ): Promise<ActionResult<void>> {
   try {
+    // Get authenticated user from session
+    const user = await requireAuthenticatedUser();
+    const tenantId = user.tenantId;
+
     const customerRef = adminDb.doc(`tenants/${tenantId}/customers/${customerId}`);
     const customerDoc = await customerRef.get();
 
@@ -343,15 +416,21 @@ export async function deleteCustomerDocumentAction(
       updatedAt: Timestamp.now(),
     });
 
-    // Create audit log
-    await createAuditLog({
-      tenantId,
-      userId,
-      action: 'delete',
-      resource: 'customer',
-      resourceId: customerId,
-      description: `Deleted document from customer: ${existingCustomer.firstName} ${existingCustomer.lastName}`,
-    });
+    // Create audit log using Admin SDK
+    await adminDb
+      .collection('tenants')
+      .doc(tenantId)
+      .collection('auditLogs')
+      .add({
+        userId: user.uid,
+        userEmail: user.email || 'system',
+        userRole: user.role || 'admin',
+        action: 'delete',
+        entityType: 'customer',
+        entityId: customerId,
+        description: `Deleted document from customer: ${existingCustomer.firstName} ${existingCustomer.lastName}`,
+        timestamp: FieldValue.serverTimestamp(),
+      });
 
     revalidatePath(`/[locale]/(dashboard)/customers/${customerId}`);
 
@@ -369,10 +448,13 @@ export async function deleteCustomerDocumentAction(
  * Get customer by ID
  */
 export async function getCustomerAction(
-  tenantId: string,
   customerId: string
 ): Promise<ActionResult<Customer>> {
   try {
+    // Get authenticated user from session
+    const user = await requireAuthenticatedUser();
+    const tenantId = user.tenantId;
+
     const customerDoc = await adminDb
       .doc(`tenants/${tenantId}/customers/${customerId}`)
       .get();
@@ -386,7 +468,7 @@ export async function getCustomerAction(
 
     return {
       success: true,
-      data: customerDoc.data() as Customer,
+      data: serializeCustomer({ id: customerDoc.id, ...customerDoc.data() } as Record<string, unknown>),
     };
   } catch (error) {
     console.error('Error getting customer:', error);
@@ -398,14 +480,186 @@ export async function getCustomerAction(
 }
 
 /**
+ * List customers for tenant
+ */
+export async function listCustomersAction(options?: {
+  search?: string;
+  nationality?: string;
+  hasPassport?: boolean;
+  limit?: number;
+}): Promise<ActionResult<Customer[]>> {
+  try {
+    // Get authenticated user from session
+    const user = await requireAuthenticatedUser();
+    const tenantId = user.tenantId;
+
+    const { search, nationality, hasPassport, limit: limitCount = 100 } = options || {};
+
+    let queryRef = adminDb
+      .collection(`tenants/${tenantId}/customers`)
+      .orderBy('createdAt', 'desc')
+      .limit(limitCount);
+
+    // Add nationality filter if provided
+    if (nationality) {
+      queryRef = queryRef.where('nationality', '==', nationality);
+    }
+
+    const snapshot = await queryRef.get();
+
+    let customers = snapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    })) as Customer[];
+
+    // Client-side filtering for search and hasPassport (Firestore doesn't support full-text search)
+    if (search) {
+      const searchLower = search.toLowerCase();
+      customers = customers.filter(
+        (customer) =>
+          customer.firstName.toLowerCase().includes(searchLower) ||
+          customer.lastName.toLowerCase().includes(searchLower) ||
+          customer.email.toLowerCase().includes(searchLower) ||
+          customer.phone.includes(search)
+      );
+    }
+
+    if (hasPassport !== undefined) {
+      customers = customers.filter(
+        (customer) =>
+          hasPassport
+            ? customer.passport !== undefined
+            : customer.passport === undefined
+      );
+    }
+
+    return {
+      success: true,
+      data: (customers as unknown as Record<string, unknown>[]).map(serializeCustomer),
+    };
+  } catch (error) {
+    console.error('Error listing customers:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to list customers',
+    };
+  }
+}
+
+/**
+ * T085 [US10] Quick-add customer (simplified fields for invoice form)
+ */
+export async function quickAddCustomerAction(
+  input: {
+    firstName: string;
+    lastName: string;
+    email?: string;
+    phone?: string;
+    nationality?: string;
+  }
+): Promise<ActionResult<Customer>> {
+  try {
+    // Get authenticated user from session
+    const user = await requireAuthenticatedUser();
+    const tenantId = user.tenantId;
+
+    // Basic validation - only firstName and lastName are required
+    if (!input.firstName || !input.lastName) {
+      return {
+        success: false,
+        error: 'First name and last name are required',
+      };
+    }
+
+    // Check for duplicate email within tenant (only if email is provided)
+    if (input.email) {
+      const existingCustomer = await adminDb
+        .collection(`tenants/${tenantId}/customers`)
+        .where('email', '==', input.email)
+        .limit(1)
+        .get();
+
+      if (!existingCustomer.empty) {
+        return {
+          success: false,
+          error: 'A customer with this email already exists',
+        };
+      }
+    }
+
+    // Create customer document
+    const customerRef = adminDb.collection(`tenants/${tenantId}/customers`).doc();
+    const now = Timestamp.now();
+
+    const customer = {
+      id: customerRef.id,
+      firstName: input.firstName,
+      lastName: input.lastName,
+      email: input.email || '',
+      phone: input.phone || '',
+      nationality: input.nationality || '',
+      balance: 0,
+      documents: [],
+      createdAt: now,
+      updatedAt: now,
+    } as unknown as Customer;
+
+    await customerRef.set(customer);
+
+    // Create customer account in chart of accounts
+    try {
+      await createCustomerAccount(
+        tenantId,
+        customer.id,
+        `${customer.firstName} ${customer.lastName}`
+      );
+    } catch (accountError) {
+      console.error('Error creating customer account:', accountError);
+      // Don't fail the customer creation if account creation fails
+    }
+
+    // Create audit log
+    await adminDb
+      .collection('tenants')
+      .doc(tenantId)
+      .collection('auditLogs')
+      .add({
+        userId: user.uid,
+        userEmail: user.email || 'system',
+        userRole: user.role || 'admin',
+        action: 'create',
+        entityType: 'customer',
+        entityId: customer.id,
+        description: `Quick-added customer from invoice: ${customer.firstName} ${customer.lastName}`,
+        timestamp: FieldValue.serverTimestamp(),
+      });
+
+    revalidatePath(`/[locale]/(dashboard)/customers`);
+
+    return {
+      success: true,
+      data: serializeCustomer(customer as unknown as Record<string, unknown>),
+    };
+  } catch (error) {
+    console.error('Error quick-adding customer:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to create customer',
+    };
+  }
+}
+
+/**
  * Delete customer
  */
 export async function deleteCustomerAction(
-  tenantId: string,
-  userId: string,
   customerId: string
 ): Promise<ActionResult<void>> {
   try {
+    // Get authenticated user from session
+    const user = await requireAuthenticatedUser();
+    const tenantId = user.tenantId;
+
     const customerRef = adminDb.doc(`tenants/${tenantId}/customers/${customerId}`);
     const customerDoc = await customerRef.get();
 
@@ -434,15 +688,21 @@ export async function deleteCustomerAction(
 
     await customerRef.delete();
 
-    // Create audit log
-    await createAuditLog({
-      tenantId,
-      userId,
-      action: 'delete',
-      resource: 'customer',
-      resourceId: customerId,
-      description: `Deleted customer: ${customer.firstName} ${customer.lastName}`,
-    });
+    // Create audit log using Admin SDK
+    await adminDb
+      .collection('tenants')
+      .doc(tenantId)
+      .collection('auditLogs')
+      .add({
+        userId: user.uid,
+        userEmail: user.email || 'system',
+        userRole: user.role || 'admin',
+        action: 'delete',
+        entityType: 'customer',
+        entityId: customerId,
+        description: `Deleted customer: ${customer.firstName} ${customer.lastName}`,
+        timestamp: FieldValue.serverTimestamp(),
+      });
 
     revalidatePath(`/[locale]/(dashboard)/customers`);
 

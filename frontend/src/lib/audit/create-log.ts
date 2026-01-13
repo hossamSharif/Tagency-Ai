@@ -4,9 +4,10 @@
  * Creates audit log entries for tracking changes to important entities
  */
 
-import { serverTimestamp, Timestamp } from 'firebase/firestore';
-import { createDocument } from '@/lib/firebase/firestore';
+import { Timestamp } from 'firebase/firestore';
+import { createAdminDocument } from '@/lib/firebase/firestore-admin';
 import { UserRole } from '@/types/auth';
+import { FieldValue } from 'firebase-admin/firestore';
 
 /**
  * Audit action types
@@ -65,7 +66,7 @@ export interface AuditLogEntry {
   userAgent?: string;
 
   /** Timestamp */
-  timestamp: ReturnType<typeof serverTimestamp>;
+  timestamp: ReturnType<typeof FieldValue.serverTimestamp>;
 }
 
 /**
@@ -272,36 +273,52 @@ export async function createAuditLog(
   // Handle simplified input
   if (typeof inputOrTenantId === 'object') {
     const input = inputOrTenantId;
-    const logEntry = {
+    const logEntry: Record<string, unknown> = {
       userId: input.userId,
       userEmail: 'system',
       userRole: 'admin' as UserRole,
       action: input.action === 'duplicate' ? 'create' as AuditAction : input.action as AuditAction,
       entityType: input.resource,
       entityId: input.resourceId,
-      changes: input.changes,
-      description: input.description || (input.details ? JSON.stringify(input.details) : undefined),
-      timestamp: serverTimestamp(),
+      timestamp: FieldValue.serverTimestamp(),
     };
-    return createDocument(input.tenantId, 'auditLogs', logEntry);
+    // Only add optional fields if they have values (Firebase doesn't allow undefined)
+    if (input.changes !== undefined) {
+      logEntry.changes = input.changes;
+    }
+    if (input.description) {
+      logEntry.description = input.description;
+    } else if (input.details) {
+      logEntry.description = JSON.stringify(input.details);
+    }
+    return createAdminDocument(input.tenantId, 'auditLogs', logEntry);
   }
 
-  // Handle full input
-  const logEntry: AuditLogEntry = {
+  // Handle full input - build object without undefined values
+  const logEntry: Record<string, unknown> = {
     userId: userContext!.userId,
     userEmail: userContext!.userEmail,
     userRole: userContext!.userRole,
     action: action!,
     entityType: entityType!,
     entityId: entityId!,
-    changes: options?.changes,
-    description: options?.description,
-    ipAddress: userContext!.ipAddress,
-    userAgent: userContext!.userAgent,
-    timestamp: serverTimestamp(),
+    timestamp: FieldValue.serverTimestamp(),
   };
+  // Only add optional fields if they have values (Firebase doesn't allow undefined)
+  if (options?.changes !== undefined) {
+    logEntry.changes = options.changes;
+  }
+  if (options?.description !== undefined) {
+    logEntry.description = options.description;
+  }
+  if (userContext!.ipAddress !== undefined) {
+    logEntry.ipAddress = userContext!.ipAddress;
+  }
+  if (userContext!.userAgent !== undefined) {
+    logEntry.userAgent = userContext!.userAgent;
+  }
 
-  return createDocument(inputOrTenantId, 'auditLogs', logEntry);
+  return createAdminDocument(inputOrTenantId, 'auditLogs', logEntry);
 }
 
 /**

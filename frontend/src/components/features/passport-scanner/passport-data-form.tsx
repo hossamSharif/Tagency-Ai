@@ -79,19 +79,22 @@ export function PassportDataForm({
         dateOfBirth: '',
         expiryDate: '',
         nationality: '',
-        gender: 'M',
+        gender: 'male' as const,
         issuingCountry: '',
       };
     }
 
     const { extractedData } = initialData;
+    // Convert OCR gender from 'M'/'F' to 'male'/'female'
+    const genderValue = extractedData.gender === 'M' ? 'male' : extractedData.gender === 'F' ? 'female' : 'male';
+
     return {
       passportNumber: extractedData.passportNumber || '',
       fullName: extractedData.fullName || `${extractedData.firstName || ''} ${extractedData.lastName || ''}`.trim(),
       dateOfBirth: extractedData.dateOfBirth || '',
       expiryDate: extractedData.expiryDate || '',
       nationality: extractedData.nationality || '',
-      gender: extractedData.gender || 'M',
+      gender: genderValue as 'male' | 'female',
       issuingCountry: extractedData.issuingCountry || '',
     };
   };
@@ -290,8 +293,8 @@ export function PassportDataForm({
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="M">{t('male')}</SelectItem>
-                      <SelectItem value="F">{t('female')}</SelectItem>
+                      <SelectItem value="male">{t('male')}</SelectItem>
+                      <SelectItem value="female">{t('female')}</SelectItem>
                     </SelectContent>
                   </Select>
                   <FormMessage />

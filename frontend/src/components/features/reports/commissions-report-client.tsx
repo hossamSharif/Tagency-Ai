@@ -145,7 +145,7 @@ export function CommissionsReportClient() {
           <div className="space-y-4">
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">
-                Settled: <CurrencyDisplay amount={data?.settledCommissions || 0} currency={currency} />
+                {tReports('settled') || 'Settled'}: <CurrencyDisplay amount={data?.settledCommissions || 0} currency={currency} />
               </span>
               <span className="font-medium">{settledPercentage.toFixed(1)}%</span>
             </div>
@@ -171,12 +171,12 @@ export function CommissionsReportClient() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>{t('partner')}</TableHead>
-                  <TableHead className="text-center">Services</TableHead>
-                  <TableHead className="text-end">Total</TableHead>
-                  <TableHead className="text-end">Pending</TableHead>
-                  <TableHead className="text-end">Settled</TableHead>
-                  <TableHead>Progress</TableHead>
+                  <TableHead>{tReports('tableHeaders.partner') || t('partner')}</TableHead>
+                  <TableHead className="text-center">{tReports('tableHeaders.services') || 'Services'}</TableHead>
+                  <TableHead className="text-end">{tReports('tableHeaders.total') || 'Total'}</TableHead>
+                  <TableHead className="text-end">{tReports('tableHeaders.pending') || 'Pending'}</TableHead>
+                  <TableHead className="text-end">{tReports('tableHeaders.settled') || 'Settled'}</TableHead>
+                  <TableHead>{tReports('tableHeaders.progress') || 'Progress'}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -279,11 +279,11 @@ export function CommissionsReportClient() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Settlement #</TableHead>
-                  <TableHead>Partner</TableHead>
-                  <TableHead>Date</TableHead>
-                  <TableHead className="text-end">Amount</TableHead>
-                  <TableHead>Status</TableHead>
+                  <TableHead>{tReports('tableHeaders.settlementNumber') || 'Settlement #'}</TableHead>
+                  <TableHead>{tReports('tableHeaders.partner') || 'Partner'}</TableHead>
+                  <TableHead>{tReports('tableHeaders.date') || 'Date'}</TableHead>
+                  <TableHead className="text-end">{tReports('tableHeaders.amount') || 'Amount'}</TableHead>
+                  <TableHead>{tReports('tableHeaders.status') || 'Status'}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>

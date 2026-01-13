@@ -12,6 +12,20 @@ interface PackageDetailPageProps {
   params: Promise<{ locale: string; packageId: string }>;
 }
 
+// Helper to convert Firestore Timestamps to ISO strings for serialization
+function serializeTimestamps<T extends Record<string, unknown>>(data: T): T {
+  const result = { ...data } as Record<string, unknown>;
+  for (const [key, value] of Object.entries(result)) {
+    if (value && typeof value === 'object' && '_seconds' in value) {
+      // Convert Firestore Timestamp to ISO string
+      result[key] = new Date((value as { _seconds: number })._seconds * 1000).toISOString();
+    } else if (value && typeof value === 'object' && 'toDate' in value && typeof (value as { toDate: () => Date }).toDate === 'function') {
+      result[key] = (value as { toDate: () => Date }).toDate().toISOString();
+    }
+  }
+  return result as T;
+}
+
 async function getPackage(tenantId: string, packageId: string): Promise<PackageWithServices | null> {
   const packageRef = adminDb
     .collection('tenants')
@@ -25,7 +39,7 @@ async function getPackage(tenantId: string, packageId: string): Promise<PackageW
     return null;
   }
 
-  const packageData = packageDoc.data()!;
+  const packageData = serializeTimestamps(packageDoc.data()!);
 
   // Get services
   const servicesSnapshot = await packageRef
@@ -33,10 +47,12 @@ async function getPackage(tenantId: string, packageId: string): Promise<PackageW
     .orderBy('displayOrder', 'asc')
     .get();
 
-  const services = servicesSnapshot.docs.map((doc) => ({
-    id: doc.id,
-    ...doc.data(),
-  })) as Service[];
+  const services = servicesSnapshot.docs.map((doc) =>
+    serializeTimestamps({
+      id: doc.id,
+      ...doc.data(),
+    })
+  ) as Service[];
 
   return {
     id: packageDoc.id,

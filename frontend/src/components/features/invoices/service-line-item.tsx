@@ -24,13 +24,12 @@ import {
   CollapsibleContent,
   CollapsibleTrigger
 } from '@/components/ui/collapsible';
-import { BeneficiaryForm } from './beneficiary-form';
 import { AttachmentUploader, Attachment } from './attachment-uploader';
 import { useTranslations, useLocale } from 'next-intl';
 import { ServiceCatalogItem } from '@/types/models/service-catalog';
 import { PartnerOffice } from '@/types/models/partner-office';
-import { Trash2, ChevronDown, User, Paperclip } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { Trash2, ChevronDown, Paperclip } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
 
 interface ServiceLineItemProps {
   index: number;
@@ -50,8 +49,11 @@ export function ServiceLineItem({
   const t = useTranslations();
   const locale = useLocale();
   const form = useFormContext();
-  const [showBeneficiary, setShowBeneficiary] = useState(false);
   const [showAttachments, setShowAttachments] = useState(false);
+
+  // Track the initial serviceCatalogId to avoid overwriting prices on edit mode
+  const initialServiceIdRef = useRef<string | null>(null);
+  const isInitialLoadRef = useRef(true);
 
   const fieldPrefix = `lineItems.${index}`;
 
@@ -82,8 +84,42 @@ export function ServiceLineItem({
   });
 
   // Auto-fill service details when service is selected
+  // But skip overwriting prices on initial load in edit mode (to preserve custom prices)
   useEffect(() => {
     if (serviceCatalogId) {
+      // On first render, store the initial service ID
+      if (isInitialLoadRef.current) {
+        initialServiceIdRef.current = serviceCatalogId;
+        isInitialLoadRef.current = false;
+        // On initial load, only update service name/type fields (not price)
+        // to support display, but keep the form's existing unitPrice
+        const service = services.find(s => s.id === serviceCatalogId);
+        if (service) {
+          // Update service metadata but NOT the price (preserve invoice's custom price)
+          form.setValue(`${fieldPrefix}.serviceName`, service.name);
+          form.setValue(`${fieldPrefix}.serviceNameAr`, service.nameAr);
+          form.setValue(`${fieldPrefix}.serviceType`, service.type);
+          // Don't overwrite unitPrice, isOutsourced, partnerId, commissionPercentage on initial load
+          // These should come from the invoice's line item data
+        }
+        return;
+      }
+
+      // If the service ID hasn't changed from the initial value, don't update price
+      // This handles the case where the effect runs again due to services array reference changing
+      if (serviceCatalogId === initialServiceIdRef.current) {
+        // Only update metadata, not price fields
+        const service = services.find(s => s.id === serviceCatalogId);
+        if (service) {
+          form.setValue(`${fieldPrefix}.serviceName`, service.name);
+          form.setValue(`${fieldPrefix}.serviceNameAr`, service.nameAr);
+          form.setValue(`${fieldPrefix}.serviceType`, service.type);
+        }
+        return;
+      }
+
+      // User actually changed the service selection - auto-fill all details including price
+      initialServiceIdRef.current = serviceCatalogId; // Update the ref to the new service ID
       const service = services.find(s => s.id === serviceCatalogId);
       if (service) {
         form.setValue(`${fieldPrefix}.serviceName`, service.name);
@@ -97,10 +133,16 @@ export function ServiceLineItem({
           form.setValue(`${fieldPrefix}.partnerId`, service.defaultPartnerId);
           form.setValue(`${fieldPrefix}.partnerName`, service.defaultPartnerName);
           form.setValue(`${fieldPrefix}.commissionPercentage`, service.commissionPercentage || 0);
+        } else {
+          // Reset partner fields if service is not partner-provided
+          form.setValue(`${fieldPrefix}.isOutsourced`, false);
+          form.setValue(`${fieldPrefix}.partnerId`, '');
+          form.setValue(`${fieldPrefix}.partnerName`, '');
+          form.setValue(`${fieldPrefix}.commissionPercentage`, 0);
         }
       }
     }
-  }, [serviceCatalogId, services, form, fieldPrefix]);
+  }, [serviceCatalogId, services, fieldPrefix]);
 
   // Calculate line total
   useEffect(() => {
@@ -114,7 +156,7 @@ export function ServiceLineItem({
     } else {
       form.setValue(`${fieldPrefix}.commissionAmount`, 0);
     }
-  }, [quantity, unitPrice, discount, isOutsourced, commissionPercentage, form, fieldPrefix]);
+  }, [quantity, unitPrice, discount, isOutsourced, commissionPercentage, fieldPrefix]);
 
   const lineTotal = (quantity * unitPrice) - (discount || 0);
 
@@ -345,23 +387,6 @@ export function ServiceLineItem({
           </FormItem>
         )}
       />
-
-      {/* Beneficiary Section (Collapsible) */}
-      <Collapsible open={showBeneficiary} onOpenChange={setShowBeneficiary}>
-        <CollapsibleTrigger asChild>
-          <Button type="button" variant="outline" size="sm" className="w-full">
-            <User className="mr-2 h-4 w-4" />
-            {showBeneficiary ? t('invoices.hideBeneficiary') : t('invoices.addBeneficiary')}
-            <ChevronDown className={`ml-auto h-4 w-4 transition-transform ${showBeneficiary ? 'rotate-180' : ''}`} />
-          </Button>
-        </CollapsibleTrigger>
-        <CollapsibleContent className="mt-3">
-          <BeneficiaryForm
-            fieldPrefix={`${fieldPrefix}.beneficiary`}
-            disabled={disabled}
-          />
-        </CollapsibleContent>
-      </Collapsible>
 
       {/* Attachments Section (Collapsible) */}
       <Collapsible open={showAttachments} onOpenChange={setShowAttachments}>

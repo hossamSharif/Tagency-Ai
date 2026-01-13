@@ -54,7 +54,7 @@ export function NewInvoiceClient({
         } else {
           toast({
             title: t('common.error'),
-            description: result.error || t('invoices.createError'),
+            description: !result.success ? result.error : t('invoices.createError'),
             variant: 'destructive',
           });
         }

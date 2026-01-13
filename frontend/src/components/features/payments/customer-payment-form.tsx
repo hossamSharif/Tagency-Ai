@@ -79,6 +79,17 @@ export function CustomerPaymentForm({
     (acc) => acc.subtype === 'cash' || acc.subtype === 'bank'
   );
 
+  // Get default account (prefer cash, then bank, then first available)
+  const defaultAccount = paymentAccounts.find((acc) => acc.subtype === 'cash')
+    || paymentAccounts.find((acc) => acc.subtype === 'bank')
+    || paymentAccounts[0];
+
+  console.log('[CustomerPaymentForm] Payment accounts:', {
+    total: paymentAccounts.length,
+    accounts: paymentAccounts.map(a => ({ id: a.id, name: a.name, subtype: a.subtype })),
+    defaultAccount: defaultAccount ? { id: defaultAccount.id, name: defaultAccount.name } : null
+  });
+
   const form = useForm<CustomerPaymentFormData>({
     resolver: zodResolver(customerPaymentSchema),
     defaultValues: {
@@ -87,8 +98,8 @@ export function CustomerPaymentForm({
       invoiceId: invoiceId || '',
       amount: maxAmount || 0,
       method: 'cash',
-      accountId: paymentAccounts.find((acc) => acc.subtype === 'cash')?.id || '',
-      accountName: '',
+      accountId: defaultAccount?.id || '',
+      accountName: defaultAccount?.name || '',
       transactionReference: '',
       notes: '',
     },
@@ -104,6 +115,17 @@ export function CustomerPaymentForm({
   }, [form.watch('accountId')]);
 
   const handleSubmit = async (data: CustomerPaymentFormData) => {
+    console.log('[CustomerPaymentForm] Submit data:', {
+      accountId: data.accountId,
+      accountName: data.accountName,
+      amount: data.amount,
+      method: data.method,
+    });
+
+    if (!data.accountId) {
+      throw new Error('Payment account is required. Please select a cash or bank account.');
+    }
+
     const paymentData: CreateCustomerPaymentInput = {
       paymentType: 'customer_receipt',
       customerId: data.customerId,
@@ -118,6 +140,8 @@ export function CustomerPaymentForm({
       attachments: attachments.length > 0 ? attachments : undefined,
       notes: data.notes || undefined,
     };
+
+    console.log('[CustomerPaymentForm] Payment data being submitted:', paymentData);
 
     await onSubmit(paymentData);
   };
@@ -152,6 +176,15 @@ export function CustomerPaymentForm({
         </CardDescription>
       </CardHeader>
       <CardContent>
+        {paymentAccounts.length === 0 && (
+          <div className="mb-4 p-4 border border-red-300 bg-red-50 rounded-md">
+            <p className="text-sm text-red-800 font-medium">
+              {t('payments.noAccountsAvailable', {
+                defaultMessage: 'No payment accounts available. Please contact support to set up Cash or Bank accounts.'
+              })}
+            </p>
+          </div>
+        )}
         <Form {...form}>
           <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
             {/* Customer Info */}

@@ -57,7 +57,7 @@ export interface Customer {
   address?: Address;
 
   // Communication
-  preferredLanguage: 'ar' | 'en';
+  preferredLanguage?: 'ar' | 'en';
 
   // Financial
   balance: number; // Positive = credit, Negative = owes

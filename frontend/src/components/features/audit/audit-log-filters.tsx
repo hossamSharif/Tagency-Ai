@@ -95,14 +95,14 @@ export function AuditLogFiltersComponent({
         <div className="space-y-2">
           <Label>{t('entityType') || 'Entity Type'}</Label>
           <Select
-            value={filters.entityType || ''}
-            onValueChange={(value) => updateFilter('entityType', value as AuditEntityType)}
+            value={filters.entityType || 'all'}
+            onValueChange={(value) => updateFilter('entityType', value === 'all' ? undefined : value as AuditEntityType)}
           >
             <SelectTrigger>
               <SelectValue placeholder={t('allEntities') || 'All entities'} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">{t('allEntities') || 'All entities'}</SelectItem>
+              <SelectItem value="all">{t('allEntities') || 'All entities'}</SelectItem>
               {entityTypes.map((type) => (
                 <SelectItem key={type} value={type}>
                   {auditEntityLabels[type]?.[locale === 'ar' ? 'ar' : 'en'] || type}
@@ -116,14 +116,14 @@ export function AuditLogFiltersComponent({
         <div className="space-y-2">
           <Label>{t('action') || 'Action'}</Label>
           <Select
-            value={filters.action || ''}
-            onValueChange={(value) => updateFilter('action', value as AuditAction)}
+            value={filters.action || 'all'}
+            onValueChange={(value) => updateFilter('action', value === 'all' ? undefined : value as AuditAction)}
           >
             <SelectTrigger>
               <SelectValue placeholder={t('allActions') || 'All actions'} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">{t('allActions') || 'All actions'}</SelectItem>
+              <SelectItem value="all">{t('allActions') || 'All actions'}</SelectItem>
               {actions.map((action) => (
                 <SelectItem key={action} value={action}>
                   {auditActionLabels[action]?.[locale === 'ar' ? 'ar' : 'en'] || action}

@@ -169,15 +169,21 @@ export async function createPackageAction(
       .collection('packages')
       .add(packageData);
 
-    // Create audit log
-    await createAuditLog({
-      tenantId: user.tenantId,
-      userId: user.uid,
-      action: 'create',
-      resource: 'package',
-      resourceId: packageRef.id,
-      details: { name: data.name, type: data.type },
-    });
+    // Create audit log using Admin SDK
+    await adminDb
+      .collection('tenants')
+      .doc(user.tenantId)
+      .collection('auditLogs')
+      .add({
+        userId: user.uid,
+        userEmail: 'system',
+        userRole: 'admin',
+        action: 'create',
+        entityType: 'package',
+        entityId: packageRef.id,
+        description: JSON.stringify({ name: data.name, type: data.type }),
+        timestamp: FieldValue.serverTimestamp(),
+      });
 
     return success(
       { packageId: packageRef.id, slug },
@@ -335,15 +341,21 @@ export async function updatePackageStatusAction(
 
     await packageRef.update(updateData);
 
-    // Create audit log
-    await createAuditLog({
-      tenantId: user.tenantId,
-      userId: user.uid,
-      action: 'status_change',
-      resource: 'package',
-      resourceId: packageId,
-      details: { from: currentStatus, to: newStatus },
-    });
+    // Create audit log using Admin SDK
+    await adminDb
+      .collection('tenants')
+      .doc(user.tenantId)
+      .collection('auditLogs')
+      .add({
+        userId: user.uid,
+        userEmail: 'system',
+        userRole: 'admin',
+        action: 'status_change',
+        entityType: 'package',
+        entityId: packageId,
+        description: JSON.stringify({ from: currentStatus, to: newStatus }),
+        timestamp: FieldValue.serverTimestamp(),
+      });
 
     return success(undefined, 'Package status updated');
   } catch (err) {
@@ -392,15 +404,21 @@ export async function deletePackageAction(
     batch.delete(packageRef);
     await batch.commit();
 
-    // Create audit log
-    await createAuditLog({
-      tenantId: user.tenantId,
-      userId: user.uid,
-      action: 'delete',
-      resource: 'package',
-      resourceId: packageId,
-      details: { name: packageData.name },
-    });
+    // Create audit log using Admin SDK
+    await adminDb
+      .collection('tenants')
+      .doc(user.tenantId)
+      .collection('auditLogs')
+      .add({
+        userId: user.uid,
+        userEmail: 'system',
+        userRole: 'admin',
+        action: 'delete',
+        entityType: 'package',
+        entityId: packageId,
+        description: JSON.stringify({ name: packageData.name }),
+        timestamp: FieldValue.serverTimestamp(),
+      });
 
     return success(undefined, 'Package deleted successfully');
   } catch (err) {
@@ -480,15 +498,21 @@ export async function duplicatePackageAction(
 
     await batch.commit();
 
-    // Create audit log
-    await createAuditLog({
-      tenantId: user.tenantId,
-      userId: user.uid,
-      action: 'duplicate',
-      resource: 'package',
-      resourceId: newPackageRef.id,
-      details: { originalId: packageId, name },
-    });
+    // Create audit log using Admin SDK
+    await adminDb
+      .collection('tenants')
+      .doc(user.tenantId)
+      .collection('auditLogs')
+      .add({
+        userId: user.uid,
+        userEmail: 'system',
+        userRole: 'admin',
+        action: 'create',
+        entityType: 'package',
+        entityId: newPackageRef.id,
+        description: JSON.stringify({ originalId: packageId, name, duplicated: true }),
+        timestamp: FieldValue.serverTimestamp(),
+      });
 
     return success(
       { packageId: newPackageRef.id, slug },
@@ -812,5 +836,95 @@ export async function reorderServicesAction(
   } catch (err) {
     console.error('Reorder services error:', err);
     return error('Failed to reorder services', ErrorCodes.INTERNAL_ERROR);
+  }
+}
+
+// ==========================================
+// List Actions (for populating dropdowns)
+// ==========================================
+
+/**
+ * Serialize Firestore Timestamps to ISO strings for client components
+ */
+function serializePackage(pkg: Record<string, unknown>): Record<string, unknown> {
+  const serializeTimestamp = (ts: unknown): string | null => {
+    if (!ts) return null;
+    if (ts instanceof Timestamp) {
+      return ts.toDate().toISOString();
+    }
+    if (typeof ts === 'string') {
+      return ts;
+    }
+    return null;
+  };
+
+  return {
+    ...pkg,
+    startDate: serializeTimestamp(pkg.startDate),
+    endDate: serializeTimestamp(pkg.endDate),
+    createdAt: serializeTimestamp(pkg.createdAt),
+    updatedAt: serializeTimestamp(pkg.updatedAt),
+    publishedAt: serializeTimestamp(pkg.publishedAt),
+  };
+}
+
+/**
+ * List packages for dropdown/selection
+ */
+export async function listPackagesAction(options?: {
+  status?: PackageStatus;
+  type?: string;
+  limit?: number;
+}): Promise<ActionResult<Record<string, unknown>[]>> {
+  try {
+    const user = await requireAuthenticatedUser();
+    const { status, type, limit: limitCount = 100 } = options || {};
+
+    // Query without orderBy to avoid requiring composite index
+    // We'll sort in memory after filtering
+    const queryRef = adminDb
+      .collection('tenants')
+      .doc(user.tenantId)
+      .collection('packages');
+
+    const snapshot = await queryRef.get();
+
+    // Filter and sort in memory
+    let packages = snapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    })) as Record<string, unknown>[];
+
+    // Apply status filter
+    if (status) {
+      packages = packages.filter((pkg) => pkg.status === status);
+    }
+
+    // Apply type filter
+    if (type) {
+      packages = packages.filter((pkg) => pkg.type === type);
+    }
+
+    // Sort by createdAt descending
+    packages.sort((a, b) => {
+      const aCreatedAt = a.createdAt as { toMillis?: () => number; seconds?: number } | undefined;
+      const bCreatedAt = b.createdAt as { toMillis?: () => number; seconds?: number } | undefined;
+      const aTime = aCreatedAt?.toMillis?.() || (aCreatedAt?.seconds ?? 0) * 1000 || 0;
+      const bTime = bCreatedAt?.toMillis?.() || (bCreatedAt?.seconds ?? 0) * 1000 || 0;
+      return bTime - aTime;
+    });
+
+    // Apply limit
+    packages = packages.slice(0, limitCount);
+
+    console.log('listPackagesAction: Found', packages.length, 'packages with status:', status);
+
+    return success(
+      packages.map(serializePackage),
+      'Packages retrieved successfully'
+    );
+  } catch (err) {
+    console.error('List packages error:', err);
+    return error('Failed to list packages', ErrorCodes.INTERNAL_ERROR);
   }
 }

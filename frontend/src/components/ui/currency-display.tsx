@@ -45,7 +45,8 @@ export function CurrencyDisplay({
 
   // Determine the currency to use
   const displayCurrency = currency || tenant?.currency || 'SAR';
-  const locale = tenant?.language === 'ar' ? 'ar-SA' : 'en-US';
+  // Always use 'en-US' locale to ensure English numerals (0-9) instead of Arabic numerals
+  const locale = 'en-US';
 
   // Format the number
   const formatNumber = (num: number): string => {
@@ -128,11 +129,12 @@ export function CurrencyDisplay({
 export function formatCurrencyValue(
   amount: number,
   currency: string = 'SAR',
-  locale: string = 'ar-SA',
+  locale: string = 'en-US',
   options?: Intl.NumberFormatOptions
 ): string {
   try {
-    return new Intl.NumberFormat(locale, {
+    // Always use 'en-US' locale to ensure English numerals (0-9) instead of Arabic numerals
+    return new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency,
       minimumFractionDigits: 2,
@@ -183,7 +185,8 @@ interface PriceRangeProps {
 
 export function PriceRange({ min, max, currency, className, size = 'md' }: PriceRangeProps) {
   const { getCurrencySymbol, tenant } = useTenant();
-  const locale = tenant?.language === 'ar' ? 'ar-SA' : 'en-US';
+  // Always use 'en-US' locale to ensure English numerals (0-9) instead of Arabic numerals
+  const locale = 'en-US';
   const symbol = getCurrencySymbol();
 
   const formatNumber = (num: number): string => {
@@ -226,7 +229,8 @@ export function PercentageDisplay({
   variant = 'default',
 }: PercentageDisplayProps) {
   const { tenant } = useTenant();
-  const locale = tenant?.language === 'ar' ? 'ar-SA' : 'en-US';
+  // Always use 'en-US' locale to ensure English numerals (0-9) instead of Arabic numerals
+  const locale = 'en-US';
 
   const formatted = new Intl.NumberFormat(locale, {
     minimumFractionDigits: 0,

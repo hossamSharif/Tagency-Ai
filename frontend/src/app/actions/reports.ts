@@ -3,13 +3,14 @@
 // Report server actions
 // T259-T262 [US11] Reporting and Analytics Dashboard
 
-import { Timestamp } from 'firebase/firestore';
+import { Timestamp } from 'firebase-admin/firestore';
 import { adminDb } from '@/lib/firebase/admin';
 import { ActionResult } from '@/lib/actions/types';
 import { Invoice } from '@/types/models/invoice';
 import { Booking, BookingStatus } from '@/types/models/booking';
 import { Package } from '@/types/models/package';
 import { CurrencyCode } from '@/types/models/tenant';
+import { ServiceType } from '@/types/models/service-catalog';
 
 /**
  * Finance Dashboard Data
@@ -17,41 +18,46 @@ import { CurrencyCode } from '@/types/models/tenant';
 export interface FinanceDashboardData {
   // Summary stats
   totalRevenue: number;
-  totalBookings: number;
+  totalInvoices: number;
   totalCustomers: number;
-  totalPackages: number;
+  activeServices: number;
   pendingPayments: number;
   pendingCommissions: number;
   currency: CurrencyCode;
 
   // Period comparison
   revenueChange: number; // percentage change from previous period
-  bookingsChange: number;
+  invoicesChange: number;
   customersChange: number;
 
   // Revenue by month (for chart)
   revenueByMonth: {
     month: string;
     revenue: number;
-    bookings: number;
+    invoices: number;
   }[];
 
-  // Bookings by status
-  bookingsByStatus: Record<BookingStatus, number>;
-
-  // Top performing packages
-  topPackages: {
+  // Service analytics
+  mostUsedServices: {
     id: string;
     name: string;
-    type: string;
-    bookings: number;
-    revenue: number;
+    nameAr: string;
+    type: ServiceType;
+    usageCount: number;
   }[];
+
+  serviceRevenueByType: {
+    type: ServiceType;
+    revenue: number;
+    count: number;
+  }[];
+
+  servicesByType: Record<ServiceType, number>;
 
   // Recent activity
   recentActivity: {
     id: string;
-    type: 'booking' | 'payment' | 'invoice';
+    type: 'payment' | 'invoice';
     description: string;
     amount?: number;
     createdAt: Date;
@@ -242,13 +248,11 @@ export async function getFinanceDashboardAction(
     // Fetch all required data in parallel
     const [
       invoicesSnapshot,
-      bookingsSnapshot,
       customersSnapshot,
-      packagesSnapshot,
+      servicesSnapshot,
       paymentsSnapshot,
       settlementsSnapshot,
       prevInvoicesSnapshot,
-      prevBookingsSnapshot,
       prevCustomersSnapshot,
     ] = await Promise.all([
       // Current period
@@ -257,13 +261,11 @@ export async function getFinanceDashboardAction(
         .where('createdAt', '>=', startTimestamp)
         .where('createdAt', '<=', endTimestamp)
         .get(),
-      adminDb
-        .collection(`tenants/${tenantId}/bookings`)
-        .where('createdAt', '>=', startTimestamp)
-        .where('createdAt', '<=', endTimestamp)
-        .get(),
       adminDb.collection(`tenants/${tenantId}/customers`).get(),
-      adminDb.collection(`tenants/${tenantId}/packages`).get(),
+      adminDb
+        .collection(`tenants/${tenantId}/serviceCatalog`)
+        .where('isActive', '==', true)
+        .get(),
       adminDb
         .collection(`tenants/${tenantId}/payments`)
         .where('status', '==', 'pending')
@@ -279,11 +281,6 @@ export async function getFinanceDashboardAction(
         .where('createdAt', '<=', prevEndTimestamp)
         .get(),
       adminDb
-        .collection(`tenants/${tenantId}/bookings`)
-        .where('createdAt', '>=', prevStartTimestamp)
-        .where('createdAt', '<=', prevEndTimestamp)
-        .get(),
-      adminDb
         .collection(`tenants/${tenantId}/customers`)
         .where('createdAt', '>=', prevStartTimestamp)
         .where('createdAt', '<=', prevEndTimestamp)
@@ -292,15 +289,15 @@ export async function getFinanceDashboardAction(
 
     // Calculate current period totals
     const invoices = invoicesSnapshot.docs.map(doc => doc.data() as Invoice);
-    const bookings = bookingsSnapshot.docs.map(doc => doc.data() as Booking);
+    const services = servicesSnapshot.docs.map(doc => doc.data());
 
     const totalRevenue = invoices
       .filter(inv => inv.status !== 'cancelled')
       .reduce((sum, inv) => sum + (inv.paidAmount || 0), 0);
 
-    const totalBookings = bookings.length;
+    const totalInvoices = invoices.filter(inv => inv.status !== 'cancelled').length;
     const totalCustomers = customersSnapshot.size;
-    const totalPackages = packagesSnapshot.size;
+    const activeServices = services.length;
 
     // Calculate pending payments
     const pendingPayments = paymentsSnapshot.docs.reduce((sum, doc) => {
@@ -317,28 +314,28 @@ export async function getFinanceDashboardAction(
     const prevRevenue = prevInvoices
       .filter(inv => inv.status !== 'cancelled')
       .reduce((sum, inv) => sum + (inv.paidAmount || 0), 0);
-    const prevBookingsCount = prevBookingsSnapshot.size;
+    const prevInvoicesCount = prevInvoices.filter(inv => inv.status !== 'cancelled').length;
     const prevCustomersCount = prevCustomersSnapshot.size;
 
     // Calculate percentage changes
     const revenueChange = prevRevenue > 0
       ? ((totalRevenue - prevRevenue) / prevRevenue) * 100
       : 0;
-    const bookingsChange = prevBookingsCount > 0
-      ? ((totalBookings - prevBookingsCount) / prevBookingsCount) * 100
+    const invoicesChange = prevInvoicesCount > 0
+      ? ((totalInvoices - prevInvoicesCount) / prevInvoicesCount) * 100
       : 0;
     const customersChange = prevCustomersCount > 0
       ? ((totalCustomers - prevCustomersCount) / prevCustomersCount) * 100
       : 0;
 
     // Revenue by month
-    const revenueByMonthMap = new Map<string, { revenue: number; bookings: number }>();
+    const revenueByMonthMap = new Map<string, { revenue: number; invoices: number }>();
 
     // Initialize months
     for (let i = 0; i < 12; i++) {
       const monthDate = new Date(endDate.getFullYear(), endDate.getMonth() - i, 1);
       const key = formatMonthKey(monthDate);
-      revenueByMonthMap.set(key, { revenue: 0, bookings: 0 });
+      revenueByMonthMap.set(key, { revenue: 0, invoices: 0 });
     }
 
     // Populate with invoice data
@@ -349,18 +346,7 @@ export async function getFinanceDashboardAction(
         const existing = revenueByMonthMap.get(key);
         if (existing) {
           existing.revenue += inv.paidAmount || 0;
-        }
-      }
-    });
-
-    // Populate with booking counts
-    bookings.forEach(booking => {
-      if (booking.createdAt) {
-        const date = booking.createdAt.toDate();
-        const key = formatMonthKey(date);
-        const existing = revenueByMonthMap.get(key);
-        if (existing) {
-          existing.bookings += 1;
+          existing.invoices += 1;
         }
       }
     });
@@ -369,62 +355,55 @@ export async function getFinanceDashboardAction(
       .map(([month, data]) => ({ month, ...data }))
       .sort((a, b) => a.month.localeCompare(b.month));
 
-    // Bookings by status
-    const bookingsByStatus: Record<BookingStatus, number> = {
-      pending: 0,
-      confirmed: 0,
-      in_progress: 0,
-      completed: 0,
-      cancelled: 0,
-    };
+    // Service analytics
 
-    bookings.forEach(booking => {
-      bookingsByStatus[booking.status] = (bookingsByStatus[booking.status] || 0) + 1;
-    });
+    // Most used services (top 5 by usage count)
+    const mostUsedServices = services
+      .sort((a, b) => (b.usageCount || 0) - (a.usageCount || 0))
+      .slice(0, 5)
+      .map(service => ({
+        id: service.id,
+        name: service.name,
+        nameAr: service.nameAr,
+        type: service.type as ServiceType,
+        usageCount: service.usageCount || 0,
+      }));
 
-    // Top packages
-    const packageStats = new Map<string, { name: string; type: string; bookings: number; revenue: number }>();
+    // Service revenue by type (aggregate from invoice line items)
+    const serviceRevenueMap = new Map<ServiceType, { revenue: number; count: number }>();
 
-    bookings.forEach(booking => {
-      const existing = packageStats.get(booking.packageId);
-      if (existing) {
-        existing.bookings += 1;
-        existing.revenue += booking.totalAmount || 0;
-      } else {
-        packageStats.set(booking.packageId, {
-          name: booking.packageSnapshot?.name || 'Unknown',
-          type: booking.packageSnapshot?.type || 'custom',
-          bookings: 1,
-          revenue: booking.totalAmount || 0,
+    invoices.forEach(invoice => {
+      if (invoice.status !== 'cancelled' && invoice.lineItems) {
+        invoice.lineItems.forEach(item => {
+          const type = (item.serviceType || 'other') as ServiceType;
+          const existing = serviceRevenueMap.get(type) || { revenue: 0, count: 0 };
+          existing.revenue += item.total || 0;
+          existing.count += 1;
+          serviceRevenueMap.set(type, existing);
         });
       }
     });
 
-    const topPackages = Array.from(packageStats.entries())
-      .map(([id, data]) => ({ id, ...data }))
-      .sort((a, b) => b.revenue - a.revenue)
-      .slice(0, 5);
+    const serviceRevenueByType = Array.from(serviceRevenueMap.entries())
+      .map(([type, data]) => ({ type, ...data }))
+      .sort((a, b) => b.revenue - a.revenue);
 
-    // Recent activity (combine bookings, payments, invoices)
+    // Services by type (distribution of active services)
+    const servicesByType: Record<ServiceType, number> = {
+      visa: 0,
+      ticket: 0,
+      hotel: 0,
+      insurance: 0,
+      other: 0,
+    };
+
+    services.forEach(service => {
+      const type = service.type as ServiceType;
+      servicesByType[type] = (servicesByType[type] || 0) + 1;
+    });
+
+    // Recent activity (invoices and payments only)
     const recentActivity: FinanceDashboardData['recentActivity'] = [];
-
-    // Add recent bookings
-    bookings
-      .sort((a, b) => {
-        const dateA = a.createdAt?.toDate?.() || new Date(0);
-        const dateB = b.createdAt?.toDate?.() || new Date(0);
-        return dateB.getTime() - dateA.getTime();
-      })
-      .slice(0, 5)
-      .forEach(booking => {
-        recentActivity.push({
-          id: booking.id,
-          type: 'booking',
-          description: `New booking ${booking.bookingNumber} for ${booking.packageSnapshot?.name || 'package'}`,
-          amount: booking.totalAmount,
-          createdAt: booking.createdAt?.toDate?.() || new Date(),
-        });
-      });
 
     // Add recent invoices
     invoices
@@ -438,11 +417,29 @@ export async function getFinanceDashboardAction(
         recentActivity.push({
           id: inv.id,
           type: 'invoice',
-          description: `Invoice ${inv.invoiceNumber} ${inv.status === 'paid' ? 'paid' : 'created'}`,
+          description: `Invoice ${inv.invoiceNumber} - ${inv.customerName}`,
           amount: inv.total,
           createdAt: inv.createdAt?.toDate?.() || new Date(),
         });
       });
+
+    // Add recent payments
+    const recentPaymentsSnapshot = await adminDb
+      .collection(`tenants/${tenantId}/payments`)
+      .orderBy('createdAt', 'desc')
+      .limit(5)
+      .get();
+
+    recentPaymentsSnapshot.docs.forEach(doc => {
+      const payment = doc.data();
+      recentActivity.push({
+        id: doc.id,
+        type: 'payment',
+        description: `Payment received - ${payment.customerName || 'Customer'}`,
+        amount: payment.amount,
+        createdAt: payment.createdAt?.toDate?.() || new Date(),
+      });
+    });
 
     // Sort combined activity
     recentActivity.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
@@ -451,18 +448,19 @@ export async function getFinanceDashboardAction(
       success: true,
       data: {
         totalRevenue,
-        totalBookings,
+        totalInvoices,
         totalCustomers,
-        totalPackages,
+        activeServices,
         pendingPayments,
         pendingCommissions,
         currency,
         revenueChange: Math.round(revenueChange * 10) / 10,
-        bookingsChange: Math.round(bookingsChange * 10) / 10,
+        invoicesChange: Math.round(invoicesChange * 10) / 10,
         customersChange: Math.round(customersChange * 10) / 10,
         revenueByMonth,
-        bookingsByStatus,
-        topPackages,
+        mostUsedServices,
+        serviceRevenueByType,
+        servicesByType,
         recentActivity: recentActivity.slice(0, 10),
       },
     };
@@ -704,21 +702,33 @@ export async function getCommissionReportAction(
     // Aggregate from invoices
     validInvoices.forEach(inv => {
       inv.commissionsByPartner?.forEach(comm => {
-        const existing = partnerStatsMap.get(comm.partnerOfficeId);
+        // Ensure we have valid data to work with
+        const commAmount = Number(comm.totalAmount) || 0;
+        const partnerId = comm.partnerOfficeId;
+
+        if (!partnerId) return; // Skip if no partner ID
+
+        // Get partner name from commission data or lookup from partners collection
+        const partnerData = partnersMap.get(partnerId);
+        const partnerName = comm.partnerOfficeName ||
+          (partnerData as { name?: string })?.name ||
+          'Unknown';
+
+        const existing = partnerStatsMap.get(partnerId);
         if (existing) {
-          existing.totalAmount += comm.totalAmount;
+          existing.totalAmount += commAmount;
           if (comm.status === 'pending') {
-            existing.pendingAmount += comm.totalAmount;
+            existing.pendingAmount += commAmount;
           } else {
-            existing.settledAmount += comm.totalAmount;
+            existing.settledAmount += commAmount;
           }
           existing.servicesCount += 1;
         } else {
-          partnerStatsMap.set(comm.partnerOfficeId, {
-            partnerName: comm.partnerOfficeName || partnersMap.get(comm.partnerOfficeId)?.name || 'Unknown',
-            totalAmount: comm.totalAmount,
-            pendingAmount: comm.status === 'pending' ? comm.totalAmount : 0,
-            settledAmount: comm.status !== 'pending' ? comm.totalAmount : 0,
+          partnerStatsMap.set(partnerId, {
+            partnerName,
+            totalAmount: commAmount,
+            pendingAmount: comm.status === 'pending' ? commAmount : 0,
+            settledAmount: comm.status !== 'pending' ? commAmount : 0,
             servicesCount: 1,
           });
         }
@@ -838,7 +848,7 @@ export async function getCustomerActivityReportAction(
         .get(),
     ]);
 
-    const customers = customersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    const customers = customersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Record<string, unknown>[];
     const bookings = bookingsSnapshot.docs.map(doc => doc.data() as Booking);
 
     // Calculate summary stats
@@ -846,8 +856,9 @@ export async function getCustomerActivityReportAction(
 
     // New customers in the period
     const newCustomersThisPeriod = customers.filter(c => {
-      const createdAt = c.createdAt?.toDate?.();
-      return createdAt && createdAt >= startDate && createdAt <= endDate;
+      const createdAt = c.createdAt as { toDate?: () => Date } | undefined;
+      const dateValue = createdAt?.toDate?.();
+      return dateValue && dateValue >= startDate && dateValue <= endDate;
     }).length;
 
     // Active customers (made a booking in the period)
@@ -875,7 +886,8 @@ export async function getCustomerActivityReportAction(
 
     // Count new customers by month
     customers.forEach(c => {
-      const createdAt = c.createdAt?.toDate?.();
+      const createdAtObj = c.createdAt as { toDate?: () => Date } | undefined;
+      const createdAt = createdAtObj?.toDate?.();
       if (createdAt) {
         const key = formatMonthKey(createdAt);
         const existing = customersByMonthMap.get(key);
@@ -888,7 +900,8 @@ export async function getCustomerActivityReportAction(
     // Calculate cumulative totals
     // First, count customers before the period
     const customersBeforePeriod = customers.filter(c => {
-      const createdAt = c.createdAt?.toDate?.();
+      const createdAtObj = c.createdAt as { toDate?: () => Date } | undefined;
+      const createdAt = createdAtObj?.toDate?.();
       return createdAt && createdAt < startDate;
     }).length;
 
@@ -923,7 +936,7 @@ export async function getCustomerActivityReportAction(
     };
 
     customers.forEach(c => {
-      const spending = customerSpending.get(c.id) || 0;
+      const spending = customerSpending.get(c.id as string) || 0;
       if (spending === 0) segments['No purchases']++;
       else if (spending <= 500) segments['Low ($1-500)']++;
       else if (spending <= 2000) segments['Medium ($501-2000)']++;
@@ -959,8 +972,8 @@ export async function getCustomerActivityReportAction(
       } else {
         const customer = customers.find(c => c.id === b.customerId);
         customerStats.set(b.customerId, {
-          name: customer ? `${customer.firstName || ''} ${customer.lastName || ''}`.trim() : 'Unknown',
-          email: customer?.email || '',
+          name: customer ? `${(customer.firstName as string) || ''} ${(customer.lastName as string) || ''}`.trim() : 'Unknown',
+          email: (customer?.email as string) || '',
           bookingsCount: 1,
           totalSpent: b.totalAmount || 0,
           lastBookingDate: bookingDate,

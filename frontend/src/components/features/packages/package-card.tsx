@@ -68,9 +68,26 @@ export function PackageCard({
     }).format(price);
   };
 
-  const formatDate = (timestamp: { toDate: () => Date }) => {
+  const formatDate = (timestamp: string | Date | { toDate: () => Date } | null | undefined) => {
     try {
-      return format(timestamp.toDate(), 'dd MMM yyyy', { locale: dateLocale });
+      if (!timestamp) return '-';
+
+      let date: Date;
+      if (typeof timestamp === 'string') {
+        // ISO string from server serialization
+        date = new Date(timestamp);
+      } else if (timestamp instanceof Date) {
+        date = timestamp;
+      } else if (typeof timestamp === 'object' && 'toDate' in timestamp) {
+        // Firestore Timestamp
+        date = timestamp.toDate();
+      } else {
+        return '-';
+      }
+
+      if (isNaN(date.getTime())) return '-';
+
+      return format(date, 'dd MMM yyyy', { locale: dateLocale });
     } catch {
       return '-';
     }

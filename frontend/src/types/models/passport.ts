@@ -48,7 +48,7 @@ export interface PassportScanResult {
     dateOfBirth?: string; // ISO format YYYY-MM-DD
     expiryDate?: string; // ISO format YYYY-MM-DD
     nationality?: string;
-    gender?: 'M' | 'F';
+    gender?: 'M' | 'F'; // OCR extracts 'M'/'F' from MRZ
     issuingCountry?: string;
   };
 
@@ -66,6 +66,9 @@ export interface PassportScanResult {
   processingTime: number; // milliseconds
   imageQuality?: 'low' | 'medium' | 'high';
   warnings?: string[];
+
+  // Captured image file for automatic upload
+  capturedImage?: File;
 }
 
 // Form data for manual passport entry
@@ -75,7 +78,7 @@ export interface PassportFormData {
   dateOfBirth: string; // ISO format
   expiryDate: string; // ISO format
   nationality: string;
-  gender: 'M' | 'F';
+  gender: 'male' | 'female';
   issuingCountry: string;
   manuallyVerified?: boolean;
 }

@@ -1,5 +1,5 @@
 import { getTranslations } from 'next-intl/server';
-import { requireAuth, requireRole } from '@/lib/auth/require-role';
+import { requireRoles } from '@/lib/auth/require-role';
 import { TenantSettings } from '@/components/features/settings/tenant-settings';
 import { TenantBranding } from '@/components/features/settings/tenant-branding';
 import { Separator } from '@/components/ui/separator';
@@ -25,7 +25,7 @@ export default async function WorkspaceSettingsPage({ params }: WorkspaceSetting
   const isArabic = locale === 'ar';
 
   // Require owner or admin role to access workspace settings
-  await requireRole(locale, ['owner', 'admin']);
+  await requireRoles(['owner', 'admin'], locale);
 
   return (
     <div className="space-y-6">

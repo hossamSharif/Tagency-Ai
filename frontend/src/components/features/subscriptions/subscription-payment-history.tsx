@@ -38,7 +38,8 @@ export function SubscriptionPaymentHistory({ locale = 'en' }: SubscriptionPaymen
   const dateLocale = isArabic ? arSA : enUS;
 
   const formatCurrency = (amount: number, currency: string) => {
-    return new Intl.NumberFormat(isArabic ? 'ar-SA' : 'en-US', {
+    // Always use 'en-US' locale for English numerals
+    return new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: currency.toUpperCase(),
     }).format(amount / 100);

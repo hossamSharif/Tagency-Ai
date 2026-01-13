@@ -110,6 +110,8 @@ export function InvoicesListClient({ initialInvoices, locale }: InvoicesListClie
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
+            id="invoice-search"
+            name="search"
             placeholder={t('invoices.searchPlaceholder')}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
@@ -120,6 +122,7 @@ export function InvoicesListClient({ initialInvoices, locale }: InvoicesListClie
         <Select
           value={statusFilter}
           onValueChange={(value) => setStatusFilter(value as InvoiceStatus | 'all')}
+          name="statusFilter"
         >
           <SelectTrigger className="w-full md:w-48">
             <Filter className="mr-2 h-4 w-4" />

@@ -9,6 +9,8 @@ import {
   UserCredential,
   onAuthStateChanged,
   Unsubscribe,
+  reauthenticateWithCredential,
+  EmailAuthProvider,
 } from 'firebase/auth';
 import { auth } from './config';
 
@@ -107,4 +109,16 @@ export async function resendEmailVerification(): Promise<void> {
   const user = auth.currentUser;
   if (!user) throw new Error('No user is currently signed in');
   return sendEmailVerification(user);
+}
+
+/**
+ * Reauthenticate user with email and password
+ * Required before sensitive operations like password change
+ */
+export async function reauthenticate(password: string): Promise<UserCredential> {
+  const user = auth.currentUser;
+  if (!user || !user.email) throw new Error('No user is currently signed in');
+
+  const credential = EmailAuthProvider.credential(user.email, password);
+  return reauthenticateWithCredential(user, credential);
 }

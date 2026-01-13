@@ -8,7 +8,7 @@ import { passportDataSchema } from './customers';
 export const travelerSchema = z.object({
   firstName: z.string().min(1, 'First name is required'),
   lastName: z.string().min(1, 'Last name is required'),
-  isPrimary: z.boolean().default(false),
+  isPrimary: z.boolean(),
   passport: passportDataSchema.optional(),
 });
 
@@ -36,7 +36,7 @@ export const createBookingSchema = z.object({
     return !isNaN(date.getTime()) && date > new Date();
   }, 'Travel date must be in the future'),
   notes: z.string().max(1000, 'Notes must be less than 1000 characters').optional(),
-  source: z.enum(['web', 'walk-in', 'phone']).default('web'),
+  source: z.enum(['web', 'walk-in', 'phone']),
 });
 
 // Update booking schema

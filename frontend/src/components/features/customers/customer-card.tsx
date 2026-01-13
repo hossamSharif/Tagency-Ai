@@ -19,6 +19,7 @@ import {
   Pencil,
   Trash,
 } from 'lucide-react';
+import { useTenant } from '@/hooks/use-tenant';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -30,7 +31,6 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Customer } from '@/types/models/customer';
-import { Timestamp } from 'firebase/firestore';
 
 interface CustomerCardProps {
   customer: Customer;
@@ -48,15 +48,30 @@ export function CustomerCard({
   const t = useTranslations('customers');
   const dateLocale = locale === 'ar' ? ar : enUS;
 
-  const formatDate = (timestamp: Timestamp) => {
-    const date = timestamp.toDate();
-    return format(date, 'dd MMM yyyy', { locale: dateLocale });
+  const formatDate = (timestamp: string | { toDate?: () => Date } | Date) => {
+    try {
+      let date: Date;
+      if (typeof timestamp === 'string') {
+        date = new Date(timestamp);
+      } else if (timestamp instanceof Date) {
+        date = timestamp;
+      } else if (timestamp?.toDate) {
+        date = timestamp.toDate();
+      } else {
+        return 'N/A';
+      }
+      return format(date, 'dd MMM yyyy', { locale: dateLocale });
+    } catch {
+      return 'N/A';
+    }
   };
 
+  const { tenant } = useTenant();
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat(locale === 'ar' ? 'ar-SA' : 'en-US', {
+    // Always use 'en-US' locale for English numerals, use tenant's currency
+    return new Intl.NumberFormat('en-US', {
       style: 'currency',
-      currency: 'SAR',
+      currency: tenant?.currency || 'SAR',
     }).format(amount);
   };
 

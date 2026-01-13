@@ -1,6 +1,8 @@
 import { getTranslations } from 'next-intl/server';
 import { requireAuth } from '@/lib/auth/require-role';
 import { ProfileSettingsForm } from '@/components/forms/profile-settings-form';
+import { PasswordSettingsForm } from '@/components/forms/password-settings-form';
+import { PreferencesSettingsForm } from '@/components/forms/preferences-settings-form';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 
@@ -82,23 +84,6 @@ export default async function SettingsPage({ params }: SettingsPageProps) {
           </CardContent>
         </Card>
       </div>
-    </div>
-  );
-}
-
-// Placeholder components - to be implemented
-function PasswordSettingsForm({ locale }: { locale: string }) {
-  return (
-    <div className="text-muted-foreground text-sm">
-      {locale === 'ar' ? 'قريبا...' : 'Coming soon...'}
-    </div>
-  );
-}
-
-function PreferencesSettingsForm({ locale }: { locale: string }) {
-  return (
-    <div className="text-muted-foreground text-sm">
-      {locale === 'ar' ? 'قريبا...' : 'Coming soon...'}
     </div>
   );
 }

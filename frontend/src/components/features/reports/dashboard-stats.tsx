@@ -11,9 +11,9 @@ import {
   TrendingUp,
   TrendingDown,
   DollarSign,
-  Calendar,
+  FileText,
   Users,
-  Package,
+  Briefcase,
   Clock,
   Wallet,
 } from 'lucide-react';
@@ -30,9 +30,10 @@ interface StatCardProps {
   icon: React.ReactNode;
   isCurrency?: boolean;
   currency?: CurrencyCode;
+  periodLabel?: string;
 }
 
-function StatCard({ title, value, change, icon, isCurrency, currency }: StatCardProps) {
+function StatCard({ title, value, change, icon, isCurrency, currency, periodLabel }: StatCardProps) {
   const isPositiveChange = change && change > 0;
   const isNegativeChange = change && change < 0;
 
@@ -69,7 +70,7 @@ function StatCard({ title, value, change, icon, isCurrency, currency }: StatCard
             {!isPositiveChange && !isNegativeChange && (
               <span className="text-muted-foreground">0%</span>
             )}
-            <span className="text-muted-foreground ms-1">vs last period</span>
+            <span className="text-muted-foreground ms-1">{periodLabel}</span>
           </div>
         )}
       </CardContent>
@@ -94,28 +95,28 @@ function StatCardSkeleton() {
 
 interface DashboardStatsProps {
   totalRevenue: number;
-  totalBookings: number;
+  totalInvoices: number;
   totalCustomers: number;
-  totalPackages: number;
+  activeServices: number;
   pendingPayments: number;
   pendingCommissions: number;
   currency: CurrencyCode;
   revenueChange?: number;
-  bookingsChange?: number;
+  invoicesChange?: number;
   customersChange?: number;
   isLoading?: boolean;
 }
 
 export function DashboardStats({
   totalRevenue,
-  totalBookings,
+  totalInvoices,
   totalCustomers,
-  totalPackages,
+  activeServices,
   pendingPayments,
   pendingCommissions,
   currency,
   revenueChange,
-  bookingsChange,
+  invoicesChange,
   customersChange,
   isLoading,
 }: DashboardStatsProps) {
@@ -132,6 +133,8 @@ export function DashboardStats({
     );
   }
 
+  const periodLabel = t('vsLastPeriod') || 'vs last period';
+
   return (
     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
       <StatCard
@@ -141,23 +144,26 @@ export function DashboardStats({
         icon={<DollarSign className="h-4 w-4" />}
         isCurrency
         currency={currency}
+        periodLabel={periodLabel}
       />
       <StatCard
-        title={t('totalBookings') || 'Total Bookings'}
-        value={totalBookings}
-        change={bookingsChange}
-        icon={<Calendar className="h-4 w-4" />}
+        title={t('totalInvoices') || 'Total Invoices'}
+        value={totalInvoices}
+        change={invoicesChange}
+        icon={<FileText className="h-4 w-4" />}
+        periodLabel={periodLabel}
       />
       <StatCard
         title={t('totalCustomers') || 'Total Customers'}
         value={totalCustomers}
         change={customersChange}
         icon={<Users className="h-4 w-4" />}
+        periodLabel={periodLabel}
       />
       <StatCard
-        title={t('activePackages') || 'Active Packages'}
-        value={totalPackages}
-        icon={<Package className="h-4 w-4" />}
+        title={t('activeServices') || 'Active Services'}
+        value={activeServices}
+        icon={<Briefcase className="h-4 w-4" />}
       />
       <StatCard
         title={t('pendingPayments') || 'Pending Payments'}

@@ -6,8 +6,11 @@
  * Displays full package information with services
  */
 
-import { useState } from 'react';
+import { useState, useTransition } from 'react';
 import { useTranslations } from 'next-intl';
+import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
+import { updatePackageStatusAction, deletePackageAction, duplicatePackageAction } from '@/app/actions/packages';
 import { format } from 'date-fns';
 import { arSA, enUS } from 'date-fns/locale';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -56,11 +59,56 @@ const CATEGORY_ICONS: Record<string, typeof Plane> = {
 
 export function PackageDetails({ package: pkg, locale }: PackageDetailsProps) {
   const t = useTranslations('packages');
+  const router = useRouter();
   const isArabic = locale === 'ar';
   const dateLocale = isArabic ? arSA : enUS;
+  const [isPending, startTransition] = useTransition();
 
   const [serviceFormOpen, setServiceFormOpen] = useState(false);
   const [editingService, setEditingService] = useState<typeof pkg.services[0] | undefined>();
+
+  const handlePublish = () => {
+    startTransition(async () => {
+      const result = await updatePackageStatusAction({
+        packageId: pkg.id,
+        status: 'active',
+      });
+      if (result.success) {
+        toast.success(isArabic ? 'تم نشر الباقة بنجاح' : 'Package published successfully');
+        router.refresh();
+      } else {
+        toast.error(result.error || (isArabic ? 'فشل في نشر الباقة' : 'Failed to publish package'));
+      }
+    });
+  };
+
+  const handleDuplicate = () => {
+    startTransition(async () => {
+      const result = await duplicatePackageAction({ packageId: pkg.id });
+      if (result.success && result.data?.packageId) {
+        toast.success(isArabic ? 'تم نسخ الباقة بنجاح' : 'Package duplicated successfully');
+        router.push(`/${locale}/packages/${result.data.packageId}`);
+      } else {
+        const errorMessage = !result.success ? result.error : (isArabic ? 'فشل في نسخ الباقة' : 'Failed to duplicate package');
+        toast.error(errorMessage || (isArabic ? 'فشل في نسخ الباقة' : 'Failed to duplicate package'));
+      }
+    });
+  };
+
+  const handleDelete = () => {
+    if (!confirm(isArabic ? 'هل أنت متأكد من حذف هذه الباقة؟' : 'Are you sure you want to delete this package?')) {
+      return;
+    }
+    startTransition(async () => {
+      const result = await deletePackageAction(pkg.id);
+      if (result.success) {
+        toast.success(isArabic ? 'تم حذف الباقة بنجاح' : 'Package deleted successfully');
+        router.push(`/${locale}/packages`);
+      } else {
+        toast.error(result.error || (isArabic ? 'فشل في حذف الباقة' : 'Failed to delete package'));
+      }
+    });
+  };
 
   const statusInfo = PACKAGE_STATUS_INFO[pkg.status];
   const typeInfo = PACKAGE_TYPE_INFO[pkg.type];
@@ -74,9 +122,26 @@ export function PackageDetails({ package: pkg, locale }: PackageDetailsProps) {
     }).format(price);
   };
 
-  const formatDate = (timestamp: { toDate: () => Date }) => {
+  const formatDate = (timestamp: string | Date | { toDate: () => Date } | null | undefined) => {
     try {
-      return format(timestamp.toDate(), 'dd MMM yyyy', { locale: dateLocale });
+      if (!timestamp) return '-';
+
+      let date: Date;
+      if (typeof timestamp === 'string') {
+        // ISO string from server serialization
+        date = new Date(timestamp);
+      } else if (timestamp instanceof Date) {
+        date = timestamp;
+      } else if (typeof timestamp === 'object' && 'toDate' in timestamp) {
+        // Firestore Timestamp
+        date = timestamp.toDate();
+      } else {
+        return '-';
+      }
+
+      if (isNaN(date.getTime())) return '-';
+
+      return format(date, 'dd MMM yyyy', { locale: dateLocale });
     } catch {
       return '-';
     }
@@ -330,16 +395,16 @@ export function PackageDetails({ package: pkg, locale }: PackageDetailsProps) {
           </CardHeader>
           <CardContent className="space-y-2">
             {pkg.status === 'draft' && (
-              <Button className="w-full" variant="default">
-                {isArabic ? 'نشر الباقة' : 'Publish Package'}
+              <Button className="w-full" variant="default" onClick={handlePublish} disabled={isPending}>
+                {isPending ? (isArabic ? 'جاري النشر...' : 'Publishing...') : (isArabic ? 'نشر الباقة' : 'Publish Package')}
               </Button>
             )}
-            <Button className="w-full" variant="outline">
-              {t('duplicate')}
+            <Button className="w-full" variant="outline" onClick={handleDuplicate} disabled={isPending}>
+              {isPending ? (isArabic ? 'جاري النسخ...' : 'Duplicating...') : t('duplicate')}
             </Button>
             {pkg.currentBookings === 0 && (
-              <Button className="w-full" variant="destructive">
-                {t('delete')}
+              <Button className="w-full" variant="destructive" onClick={handleDelete} disabled={isPending}>
+                {isPending ? (isArabic ? 'جاري الحذف...' : 'Deleting...') : t('delete')}
               </Button>
             )}
           </CardContent>

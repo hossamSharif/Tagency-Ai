@@ -204,18 +204,24 @@ export function InvoiceDetailClient({ invoice: initialInvoice, paymentAccounts, 
     }
   }
 
-  function handleRecordPartnerPayment(commission: { partnerId: string; partnerName: string; amount: number; status: string }) {
+  function handleRecordPartnerPayment(commission: any) {
+    // Handle both new (partnerId/amount) and legacy (partnerOfficeId/totalAmount) field names
+    const partnerId = commission.partnerId || commission.partnerOfficeId;
+    const partnerName = commission.partnerName || commission.partnerOfficeName;
+    const commissionAmount = commission.amount ?? commission.totalAmount ?? 0;
+
     // Calculate gross amount from invoice line items for this partner
+    // Check both partnerId and partnerOfficeId in line items for compatibility
     const grossAmount = invoice.lineItems
-      .filter((item) => item.partnerOfficeId === commission.partnerId)
+      .filter((item) => item.partnerOfficeId === partnerId || item.partnerId === partnerId)
       .reduce((sum, item) => sum + item.total, 0);
 
-    const commissionPercentage = grossAmount > 0 ? (commission.amount / grossAmount) * 100 : 0;
+    const commissionPercentage = grossAmount > 0 ? (commissionAmount / grossAmount) * 100 : 0;
 
     setSelectedPartner({
-      partnerId: commission.partnerId,
-      partnerName: commission.partnerName,
-      commissionAmount: commission.amount,
+      partnerId,
+      partnerName,
+      commissionAmount,
       commissionPercentage,
       grossAmount,
     });
@@ -275,7 +281,7 @@ export function InvoiceDetailClient({ invoice: initialInvoice, paymentAccounts, 
         {/* Invoice Detail */}
         <InvoiceDetail
           invoice={invoice}
-          onEdit={invoice.status === 'draft' ? handleEdit : undefined}
+          onEdit={['draft', 'issued', 'partial', 'paid'].includes(invoice.status) ? handleEdit : undefined}
           onIssue={invoice.status === 'draft' ? handleIssue : undefined}
           onCancel={
             invoice.status !== 'cancelled' && invoice.status !== 'paid'
@@ -283,8 +289,8 @@ export function InvoiceDetailClient({ invoice: initialInvoice, paymentAccounts, 
               : undefined
           }
           onDownload={invoice.status !== 'draft' ? handleDownload : undefined}
-          onRecordPayment={invoice.status === 'issued' && invoice.balance > 0 ? handleRecordPayment : undefined}
-          onRecordPartnerPayment={invoice.status === 'issued' ? handleRecordPartnerPayment : undefined}
+          onRecordPayment={(invoice.status === 'issued' || invoice.status === 'partial') && invoice.balance > 0 ? handleRecordPayment : undefined}
+          onRecordPartnerPayment={invoice.status !== 'draft' && invoice.status !== 'cancelled' ? handleRecordPartnerPayment : undefined}
           isPending={isPending}
         />
       </div>
@@ -324,12 +330,13 @@ export function InvoiceDetailClient({ invoice: initialInvoice, paymentAccounts, 
           partnerId={selectedPartner.partnerId}
           partnerName={selectedPartner.partnerName}
           invoiceIds={[invoice.id]}
+          invoiceNumber={invoice.invoiceNumber}
           defaultGrossAmount={selectedPartner.grossAmount}
           defaultCommissionPercentage={selectedPartner.commissionPercentage}
           currency={invoice.currency}
           accounts={paymentAccounts}
           onSubmit={handlePartnerPaymentSubmit}
-          mode="invoice-based"
+          mode="single-invoice"
           locale={locale}
         />
       )}

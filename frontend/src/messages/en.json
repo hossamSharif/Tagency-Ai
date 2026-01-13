@@ -1,6 +1,6 @@
 {
   "common": {
-    "appName": "AI Agency",
+    "appName": "Agency AI",
     "save": "Save",
     "cancel": "Cancel",
     "delete": "Delete",
@@ -434,6 +434,7 @@
     "summary": "Summary",
     "create": "Create Invoice",
     "createInvoice": "Create Invoice",
+    "updateInvoice": "Update Invoice",
     "createInvoiceDescription": "Create a new invoice for services provided to a customer",
     "createFirstInvoice": "Create First Invoice",
     "listDescription": "View and manage all invoices",
@@ -689,6 +690,33 @@
       "priceRequired": "Price is required",
       "priceMin": "Price must be greater than 0"
     },
+    "editInvoice": "Edit Invoice",
+    "editInvoiceDescription": "Editing invoice {invoiceNumber}",
+    "editIssuedWarningTitle": "Editing Issued Invoice",
+    "editIssuedWarning": "You are editing an issued invoice. This will create accounting adjustment entries to maintain financial accuracy.",
+    "editPartialWarningTitle": "Editing Partially Paid Invoice",
+    "editPartialWarning": "This invoice has partial payments ({paidAmount} SDG). Total cannot be reduced below the paid amount.",
+    "editPaidWarningTitle": "Editing Paid Invoice",
+    "editPaidWarning": "This invoice is fully paid. Changes may result in overpayment that will need to be handled.",
+    "paymentInfo": "Payment Information",
+    "paidAmountDisplay": "This invoice has received {paidAmount} {currency} in payments",
+    "paidAmount": "Paid Amount",
+    "cannotReduceBelowPaid": "Cannot reduce total below paid amount",
+    "cannotReduceBelowPaidWarning": "Total cannot be reduced below {paidAmount} SDG (the amount already paid)",
+    "updateSuccess": "Invoice updated successfully",
+    "updateSuccessDescription": "Invoice has been updated",
+    "adjustmentCreated": "Invoice updated with accounting adjustments",
+    "overpaymentTitle": "Handle Overpayment",
+    "overpaymentDescription": "The edited invoice total results in an overpayment of {amount} {currency} from {customerName}. How would you like to handle this?",
+    "creditToAccount": "Credit to Customer Account",
+    "creditToAccountDescription": "Add the overpayment as credit to the customer's account for future use",
+    "createRefund": "Create Refund",
+    "createRefundDescription": "Create a refund record to return the overpayment to the customer",
+    "creditApplied": "Credit Applied",
+    "creditAppliedDescription": "{amount} {currency} has been credited to {customerName}'s account",
+    "refundCreated": "Refund Created",
+    "refundCreatedDescription": "A refund of {amount} {currency} has been created for {customerName}",
+    "overpaymentError": "Failed to handle overpayment",
     "statuses": {
       "draft": "Draft",
       "issued": "Issued",
@@ -1076,7 +1104,28 @@
     "serviceRevenueDescription": "Revenue breakdown across service categories",
     "servicesByType": "Services Distribution",
     "servicesByTypeDescription": "Active services by category",
-    "servicesUsed": "Times Used"
+    "servicesUsed": "Times Used",
+    "vsLastPeriod": "vs last period",
+    "noData": "No data available",
+    "noRevenueData": "No revenue data available",
+    "noActiveServices": "No active services",
+    "tableHeaders": {
+      "customer": "Customer",
+      "bookings": "Bookings",
+      "totalSpent": "Total Spent",
+      "date": "Date",
+      "total": "Total",
+      "paid": "Paid",
+      "status": "Status",
+      "partner": "Partner",
+      "services": "Services",
+      "pending": "Pending",
+      "settled": "Settled",
+      "progress": "Progress",
+      "settlementNumber": "Settlement #",
+      "amount": "Amount"
+    },
+    "settled": "Settled"
   },
   "audit": {
     "title": "Audit Logs",
@@ -1139,7 +1188,7 @@
   },
   "landing": {
     "header": {
-      "brand": "AI Agency",
+      "brand": "Agency AI",
       "nav": {
         "features": "Features",
         "pricing": "Pricing",
@@ -1159,7 +1208,7 @@
     },
     "features": {
       "title": "Everything You Need to Manage Your Agency",
-      "subtitle": "Integrated tools designed specifically for travel agencies in Saudi Arabia",
+      "subtitle": "Integrated tools designed specifically for travel agencies in Sudan",
       "packages": "Package Management",
       "packagesDesc": "Create and manage Hajj, Umrah, honeymoon, and custom travel packages easily",
       "customers": "Customer Management",
@@ -1251,7 +1300,7 @@
       "errorMessage": "Failed to send message. Please try again."
     },
     "footer": {
-      "brand": "AI Agency",
+      "brand": "Agency AI",
       "description": "A complete platform for travel agency management - Hajj, Umrah, honeymoon, and custom trip packages.",
       "sections": {
         "product": "Product",
@@ -1269,7 +1318,7 @@
         "terms": "Terms of Service",
         "cookies": "Cookie Policy"
       },
-      "copyright": "© {year} AI Agency. All rights reserved."
+      "copyright": "© {year} Agency AI. All rights reserved."
     }
   },
   "passport": {
@@ -1408,6 +1457,10 @@
       "deleteSuccess": "Service deleted successfully",
       "deleteError": "Cannot delete service in use",
       "duplicateError": "A service with this name already exists"
+    },
+    "status": {
+      "active": "Active",
+      "inactive": "Inactive"
     }
   },
   "statements": {

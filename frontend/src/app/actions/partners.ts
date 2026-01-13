@@ -191,6 +191,129 @@ export async function createPartnerAction(
 }
 
 /**
+ * T086 [US10] Quick-add partner (simplified fields for invoice form)
+ */
+export async function quickAddPartnerAction(
+  input: {
+    name: string;
+    code: string;
+    contactPerson: string;
+    email: string;
+    phone: string;
+    defaultCommissionPercentage: number;
+  }
+): Promise<ActionResult<{ partnerId: string; partner: any }>> {
+  try {
+    const user = await requireAuthenticatedUser();
+
+    if (!canManagePartners(user.role)) {
+      return error('You do not have permission to create partners', ErrorCodes.UNAUTHORIZED);
+    }
+
+    // Basic validation
+    if (!input.name || !input.code || !input.contactPerson || !input.email) {
+      return error('Missing required fields', ErrorCodes.VALIDATION_ERROR);
+    }
+
+    const now = Timestamp.now();
+
+    // Check for duplicate code
+    const existingCode = await adminDb
+      .collection('tenants')
+      .doc(user.tenantId)
+      .collection('partnerOffices')
+      .where('code', '==', input.code)
+      .limit(1)
+      .get();
+
+    if (!existingCode.empty) {
+      return error('Partner code already exists', ErrorCodes.ALREADY_EXISTS, {
+        code: ['A partner with this code already exists'],
+      });
+    }
+
+    // Check for duplicate email
+    const existingEmail = await adminDb
+      .collection('tenants')
+      .doc(user.tenantId)
+      .collection('partnerOffices')
+      .where('email', '==', input.email)
+      .limit(1)
+      .get();
+
+    if (!existingEmail.empty) {
+      return error('Partner email already exists', ErrorCodes.ALREADY_EXISTS, {
+        email: ['A partner with this email already exists'],
+      });
+    }
+
+    // Get tenant's currency
+    const tenantDoc = await adminDb.collection('tenants').doc(user.tenantId).get();
+    const currency = tenantDoc.data()?.currency || 'SAR';
+
+    const partnerData = {
+      name: input.name,
+      code: input.code,
+      contactPerson: input.contactPerson,
+      email: input.email,
+      phone: input.phone,
+      defaultCommissionPercentage: input.defaultCommissionPercentage,
+      status: 'active' as PartnerOfficeStatus, // Quick-add partners are active by default
+      bankAccount: null,
+      notes: null,
+      totalCommissionsEarned: 0,
+      totalCommissionsPaid: 0,
+      pendingCommissions: 0,
+      currency,
+      createdAt: now,
+      updatedAt: now,
+    };
+
+    const partnerRef = await adminDb
+      .collection('tenants')
+      .doc(user.tenantId)
+      .collection('partnerOffices')
+      .add(partnerData);
+
+    // Create partner account in chart of accounts
+    try {
+      await createPartnerAccount(
+        user.tenantId,
+        partnerRef.id,
+        input.name
+      );
+    } catch (accountError) {
+      console.error('Error creating partner account:', accountError);
+      // Don't fail the partner creation if account creation fails
+    }
+
+    // Create audit log
+    await createAuditLog({
+      tenantId: user.tenantId,
+      userId: user.uid,
+      action: 'create',
+      resource: 'partner_office',
+      resourceId: partnerRef.id,
+      details: { name: input.name, code: input.code, quickAdd: true },
+    });
+
+    // Return partner data with ID
+    const partner = {
+      id: partnerRef.id,
+      ...partnerData,
+    };
+
+    return success(
+      { partnerId: partnerRef.id, partner },
+      'Partner created successfully'
+    );
+  } catch (err) {
+    console.error('Quick-add partner error:', err);
+    return error('Failed to create partner', ErrorCodes.INTERNAL_ERROR);
+  }
+}
+
+/**
  * Update an existing partner office
  */
 export async function updatePartnerAction(
@@ -601,10 +724,15 @@ export async function listPartnersAction(options?: {
 
     const snapshot = await queryRef.get();
 
-    let partners = snapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    }));
+    let partners = snapshot.docs.map((doc) => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        ...data,
+        createdAt: data.createdAt?.toDate().toISOString() || null,
+        updatedAt: data.updatedAt?.toDate().toISOString() || null,
+      };
+    });
 
     // Client-side search filtering
     if (search) {

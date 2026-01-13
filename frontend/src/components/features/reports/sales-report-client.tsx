@@ -202,9 +202,9 @@ export function SalesReportClient() {
               <TableHeader>
                 <TableRow>
                   <TableHead>#</TableHead>
-                  <TableHead>{t('fields.customer') || 'Customer'}</TableHead>
-                  <TableHead className="text-center">Bookings</TableHead>
-                  <TableHead className="text-end">Total Spent</TableHead>
+                  <TableHead>{tReports('tableHeaders.customer') || 'Customer'}</TableHead>
+                  <TableHead className="text-center">{tReports('tableHeaders.bookings') || 'Bookings'}</TableHead>
+                  <TableHead className="text-end">{tReports('tableHeaders.totalSpent') || 'Total Spent'}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -244,11 +244,11 @@ export function SalesReportClient() {
               <TableHeader>
                 <TableRow>
                   <TableHead>{t('invoiceNumber')}</TableHead>
-                  <TableHead>Customer</TableHead>
-                  <TableHead>Date</TableHead>
-                  <TableHead className="text-end">Total</TableHead>
-                  <TableHead className="text-end">Paid</TableHead>
-                  <TableHead>Status</TableHead>
+                  <TableHead>{tReports('tableHeaders.customer') || 'Customer'}</TableHead>
+                  <TableHead>{tReports('tableHeaders.date') || 'Date'}</TableHead>
+                  <TableHead className="text-end">{tReports('tableHeaders.total') || 'Total'}</TableHead>
+                  <TableHead className="text-end">{tReports('tableHeaders.paid') || 'Paid'}</TableHead>
+                  <TableHead>{tReports('tableHeaders.status') || 'Status'}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>

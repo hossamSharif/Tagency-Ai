@@ -11,7 +11,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useState } from 'react';
 import { PartnerForm } from '@/components/features/partners/partner-form';
 import { createPartnerAction } from '@/app/actions/partners';
-import type { CreatePartnerInput } from '@/lib/validations/partners';
+import type { CreatePartnerInput, UpdatePartnerInput } from '@/lib/validations/partners';
 
 interface CreatePartnerFormProps {
   locale: string;
@@ -23,10 +23,10 @@ export function CreatePartnerForm({ locale }: CreatePartnerFormProps) {
   const isArabic = locale === 'ar';
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = async (data: CreatePartnerInput) => {
+  const handleSubmit = async (data: CreatePartnerInput | UpdatePartnerInput) => {
     setIsLoading(true);
     try {
-      const result = await createPartnerAction(data);
+      const result = await createPartnerAction(data as CreatePartnerInput);
 
       if (result.success) {
         toast({

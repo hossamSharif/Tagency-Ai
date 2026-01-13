@@ -26,6 +26,7 @@ import {
   type UploadPaymentProofInput,
   type CancelSubscriptionInput,
 } from '@/lib/validations/subscriptions';
+import type { Subscription } from '@/types/models/subscription';
 import {
   createCheckoutSession,
   createBillingPortalSession,
@@ -447,11 +448,13 @@ export async function cancelSubscriptionAction(
 
     // If Stripe subscription, cancel via Stripe
     if (subscription.stripeSubscriptionId) {
-      const stripeSubscription: Stripe.Subscription = await cancelStripeSubscription(
+      const stripeSubscription = await cancelStripeSubscription(
         subscription.stripeSubscriptionId,
         false // Cancel at period end
       );
-      accessUntil = new Date(stripeSubscription.current_period_end * 1000);
+      // Access current_period_end from the Stripe subscription response
+      const periodEnd = (stripeSubscription as unknown as { current_period_end: number }).current_period_end;
+      accessUntil = new Date(periodEnd * 1000);
     } else {
       // For trial or bank transfer, access ends immediately or at trial end
       accessUntil = subscription.trialEndsAt?.toDate() || now;

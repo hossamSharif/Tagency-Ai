@@ -34,6 +34,7 @@ import { TRIAL_DURATION_DAYS, calculateTrialEndDate } from '@/types/models/subsc
 import type { Tenant } from '@/types/models/tenant';
 import type { User } from '@/types/models/user';
 import type { Subscription } from '@/types/models/subscription';
+import { initializeDefaultAccounts } from '@/lib/accounting/default-accounts';
 
 // ==========================================
 // Helper Functions
@@ -140,6 +141,15 @@ export async function signupAction(
 
     await adminDb.collection('tenants').doc(tenantId).set(tenantData);
 
+    // T032.1 [US6] Initialize default accounts for the chart of accounts
+    try {
+      await initializeDefaultAccounts(tenantId);
+    } catch (accountError) {
+      console.error('Error initializing default accounts:', accountError);
+      // Don't fail signup if account initialization fails
+      // Accounts can be initialized manually later if needed
+    }
+
     // Create subscription document (root level)
     const subscriptionData = {
       tenantId,
@@ -229,7 +239,7 @@ export async function loginAction(
     // Verify the ID token
     const decodedToken = await adminAuth.verifyIdToken(idToken);
 
-    // Create session cookie (5 days expiry)
+    // Create session cookie (5 days)
     const expiresIn = 60 * 60 * 24 * 5 * 1000; // 5 days
     const sessionCookie = await adminAuth.createSessionCookie(idToken, { expiresIn });
 
@@ -348,6 +358,59 @@ export async function updatePasswordAction(
   } catch (err) {
     console.error('Update password error:', err);
     return error('Failed to update password. Please try again.', ErrorCodes.INTERNAL_ERROR);
+  }
+}
+
+// ==========================================
+// Get User Profile Action
+// ==========================================
+
+export interface UserProfile {
+  displayName: string;
+  email: string;
+  phone: string;
+  language: string;
+  theme: string;
+  emailNotifications: boolean;
+  role: string;
+}
+
+/**
+ * Get the current user's profile
+ */
+export async function getUserProfileAction(): Promise<ActionResult<UserProfile>> {
+  try {
+    const currentUser = await getCurrentUser();
+    if (!currentUser) {
+      return error('You must be logged in', ErrorCodes.UNAUTHENTICATED);
+    }
+
+    // Fetch user document from Firestore
+    const userDoc = await adminDb
+      .collection('tenants')
+      .doc(currentUser.tenantId)
+      .collection('users')
+      .doc(currentUser.uid)
+      .get();
+
+    if (!userDoc.exists) {
+      return error('User profile not found', ErrorCodes.NOT_FOUND);
+    }
+
+    const userData = userDoc.data();
+
+    return success({
+      displayName: userData?.displayName || '',
+      email: userData?.email || '',
+      phone: userData?.phone || '',
+      language: userData?.language || 'ar',
+      theme: userData?.theme || 'system',
+      emailNotifications: userData?.emailNotifications ?? true,
+      role: userData?.role || currentUser.role,
+    });
+  } catch (err) {
+    console.error('Get user profile error:', err);
+    return error('Failed to fetch profile', ErrorCodes.INTERNAL_ERROR);
   }
 }
 
@@ -526,7 +589,8 @@ export async function verifySessionAction(): Promise<ActionResult<SessionData | 
       return success(null);
     }
 
-    const decodedToken = await adminAuth.verifySessionCookie(sessionCookie.value);
+    // Verify session cookie using Firebase Admin SDK
+    const decodedToken = await adminAuth.verifySessionCookie(sessionCookie.value, true);
 
     return success({
       userId: decodedToken.uid,
@@ -536,7 +600,7 @@ export async function verifySessionAction(): Promise<ActionResult<SessionData | 
       emailVerified: decodedToken.email_verified || false,
     });
   } catch {
-    // Invalid or expired session
+    // Invalid or expired session - clear cookie
     const cookieStore = await cookies();
     cookieStore.delete('session');
     return success(null);

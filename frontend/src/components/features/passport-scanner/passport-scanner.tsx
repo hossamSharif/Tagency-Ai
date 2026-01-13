@@ -2,13 +2,16 @@
 
 // PassportScanner component with camera capture
 // T107 [US2] Create PassportScanner component
+// Client-side OCR using Tesseract.js
 
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import { useTranslations } from 'next-intl';
 import { Camera, Upload, Loader2, AlertCircle, CheckCircle } from 'lucide-react';
+import Tesseract from 'tesseract.js';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { PassportScanResult } from '@/types/models/passport';
+import { extractPassportData } from '@/lib/ocr/passport-parser';
 
 interface PassportScannerProps {
   onScanComplete: (result: PassportScanResult) => void;
@@ -21,16 +24,79 @@ export function PassportScanner({ onScanComplete, onError }: PassportScannerProp
   const [preview, setPreview] = useState<string | null>(null);
   const [cameraActive, setCameraActive] = useState(false);
   const [scanResult, setScanResult] = useState<PassportScanResult | null>(null);
+  const [workerReady, setWorkerReady] = useState(false);
+  const [initProgress, setInitProgress] = useState(0);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  const workerRef = useRef<Tesseract.Worker | null>(null);
 
-  // Handle file upload
+  // Initialize Tesseract worker on mount
+  useEffect(() => {
+    let isMounted = true;
+
+    const initWorker = async () => {
+      try {
+        console.log('[PassportScanner] Initializing Tesseract worker...');
+
+        const worker = await Tesseract.createWorker('eng', 1, {
+          logger: (m: any) => {
+            if (m.status === 'loading tesseract core' ||
+                m.status === 'initializing tesseract' ||
+                m.status === 'loading language traineddata') {
+              const progress = Math.round((m.progress || 0) * 100);
+              console.log(`[Tesseract] ${m.status}: ${progress}%`);
+              if (isMounted) {
+                setInitProgress(progress);
+              }
+            }
+          },
+        });
+
+        // Configure for passport MRZ recognition
+        await worker.setParameters({
+          tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789< ',
+        });
+
+        if (isMounted) {
+          workerRef.current = worker;
+          setWorkerReady(true);
+          console.log('[PassportScanner] Tesseract worker ready');
+        } else {
+          // Component unmounted during initialization
+          await worker.terminate();
+        }
+      } catch (error) {
+        console.error('[PassportScanner] Worker initialization error:', error);
+        if (isMounted) {
+          onError?.('Failed to initialize OCR engine');
+        }
+      }
+    };
+
+    initWorker();
+
+    return () => {
+      isMounted = false;
+      if (workerRef.current) {
+        console.log('[PassportScanner] Terminating worker...');
+        workerRef.current.terminate();
+        workerRef.current = null;
+      }
+    };
+  }, [onError]);
+
+  // Handle file upload with client-side OCR
   const handleFileUpload = useCallback(async (file: File) => {
     if (!file.type.startsWith('image/')) {
       onError?.('Please upload an image file');
+      return;
+    }
+
+    if (!workerRef.current || !workerReady) {
+      onError?.('OCR engine not ready. Please wait...');
       return;
     }
 
@@ -41,34 +107,46 @@ export function PassportScanner({ onScanComplete, onError }: PassportScannerProp
     };
     reader.readAsDataURL(file);
 
-    // Send to OCR API
+    // Perform client-side OCR
     setIsScanning(true);
     setScanResult(null);
 
     try {
-      const formData = new FormData();
-      formData.append('image', file);
+      console.log('[PassportScanner] Starting OCR recognition...');
+      const startTime = Date.now();
 
-      const response = await fetch('/api/ocr/passport', {
-        method: 'POST',
-        body: formData,
-      });
+      const { data } = await workerRef.current.recognize(file);
+      const ocrTime = Date.now() - startTime;
 
-      const result = await response.json();
+      console.log('[PassportScanner] OCR completed in', ocrTime, 'ms');
+      console.log('[PassportScanner] Confidence:', data.confidence);
 
-      if (result.success) {
-        setScanResult(result.data);
-        onScanComplete(result.data);
-      } else {
-        onError?.(result.error || 'OCR processing failed');
-      }
+      // Extract passport data
+      const textLines = data.text.split('\n').filter((line: string) => line.trim());
+      const result: PassportScanResult = extractPassportData(
+        data.text,
+        textLines,
+        data.confidence,
+        ocrTime
+      );
+
+      console.log('[PassportScanner] MRZ detected:', result.mrzDetected);
+
+      // Assess image quality
+      result.imageQuality = data.confidence >= 80 ? 'high' : data.confidence >= 50 ? 'medium' : 'low';
+
+      // Store the original file for automatic upload
+      result.capturedImage = file;
+
+      setScanResult(result);
+      onScanComplete(result);
     } catch (error) {
-      console.error('OCR error:', error);
+      console.error('[PassportScanner] OCR error:', error);
       onError?.('Failed to process passport image');
     } finally {
       setIsScanning(false);
     }
-  }, [onScanComplete, onError]);
+  }, [workerReady, onScanComplete, onError]);
 
   // Handle file input change
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -80,30 +158,73 @@ export function PassportScanner({ onScanComplete, onError }: PassportScannerProp
 
   // Start camera
   const startCamera = async () => {
+    console.log('[PassportScanner] Starting camera...');
+
     try {
+      // First, set camera active to render the video element
+      setCameraActive(true);
+
+      // Small delay to ensure DOM is updated
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      console.log('[PassportScanner] Requesting camera permission...');
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'environment' },
+        video: {
+          facingMode: 'environment',
+          width: { ideal: 1280 },
+          height: { ideal: 720 }
+        },
       });
 
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        streamRef.current = stream;
-        setCameraActive(true);
+      console.log('[PassportScanner] Camera permission granted, stream:', stream);
+
+      if (!videoRef.current) {
+        console.error('[PassportScanner] Video ref is null!');
+        setCameraActive(false);
+        onError?.('Failed to initialize video element');
+        return;
       }
+
+      console.log('[PassportScanner] Setting video srcObject...');
+      videoRef.current.srcObject = stream;
+      streamRef.current = stream;
+
+      // Ensure video plays
+      try {
+        await videoRef.current.play();
+        console.log('[PassportScanner] Video playing successfully');
+      } catch (playError) {
+        console.error('[PassportScanner] Video play error:', playError);
+      }
+
     } catch (error) {
-      console.error('Camera access error:', error);
+      console.error('[PassportScanner] Camera access error:', error);
       onError?.('Failed to access camera');
+      setCameraActive(false);
     }
   };
 
   // Stop camera
   const stopCamera = () => {
+    console.log('[PassportScanner] Stopping camera...');
     if (streamRef.current) {
       streamRef.current.getTracks().forEach((track) => track.stop());
       streamRef.current = null;
     }
+    if (videoRef.current) {
+      videoRef.current.srcObject = null;
+    }
     setCameraActive(false);
   };
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach((track) => track.stop());
+      }
+    };
+  }, []);
 
   // Capture photo from camera
   const capturePhoto = () => {
@@ -149,14 +270,43 @@ export function PassportScanner({ onScanComplete, onError }: PassportScannerProp
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
+          {/* Worker initialization loading */}
+          {!workerReady && (
+            <div className="aspect-[3/2] bg-muted rounded-lg flex flex-col items-center justify-center gap-4 border-2 border-dashed">
+              <Loader2 className="h-12 w-12 text-primary animate-spin" />
+              <div className="text-center">
+                <p className="font-medium">{t('initializing')}</p>
+                <p className="text-sm text-muted-foreground mt-2">
+                  {initProgress > 0 ? `${initProgress}%` : t('pleaseWait')}
+                </p>
+              </div>
+            </div>
+          )}
+
           {/* Preview or Camera */}
-          {cameraActive ? (
+          {workerReady && cameraActive ? (
             <div className="relative aspect-[3/2] bg-black rounded-lg overflow-hidden">
               <video
                 ref={videoRef}
                 autoPlay
                 playsInline
+                muted
                 className="w-full h-full object-cover"
+                style={{ transform: 'scaleX(-1)' }}
+                onLoadedMetadata={(e) => {
+                  console.log('[PassportScanner] Video metadata loaded');
+                  const video = e.currentTarget;
+                  video.play().catch(err => console.error('[PassportScanner] Play error:', err));
+                }}
+                onCanPlay={() => {
+                  console.log('[PassportScanner] Video can play');
+                }}
+                onPlay={() => {
+                  console.log('[PassportScanner] Video is playing');
+                }}
+                onError={(e) => {
+                  console.error('[PassportScanner] Video error:', e);
+                }}
               />
               <div className="absolute inset-0 border-4 border-dashed border-white/50 m-8 rounded pointer-events-none" />
               <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
@@ -169,7 +319,7 @@ export function PassportScanner({ onScanComplete, onError }: PassportScannerProp
                 </Button>
               </div>
             </div>
-          ) : preview ? (
+          ) : workerReady && preview ? (
             <div className="relative aspect-[3/2] bg-muted rounded-lg overflow-hidden">
               <img
                 src={preview}
@@ -185,7 +335,7 @@ export function PassportScanner({ onScanComplete, onError }: PassportScannerProp
                 </div>
               )}
             </div>
-          ) : (
+          ) : workerReady && (
             <div className="aspect-[3/2] bg-muted rounded-lg flex flex-col items-center justify-center gap-4 border-2 border-dashed">
               <Camera className="h-12 w-12 text-muted-foreground" />
               <p className="text-muted-foreground text-center">
@@ -207,7 +357,7 @@ export function PassportScanner({ onScanComplete, onError }: PassportScannerProp
           />
 
           {/* Action buttons */}
-          {!cameraActive && !isScanning && (
+          {workerReady && !cameraActive && !isScanning && (
             <div className="flex gap-2">
               <Button
                 onClick={() => fileInputRef.current?.click()}

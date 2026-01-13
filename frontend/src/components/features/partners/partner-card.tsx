@@ -62,7 +62,8 @@ export function PartnerCard({
   const statusInfo = PARTNER_STATUS_INFO[partner.status];
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat(isArabic ? 'ar-SA' : 'en-US', {
+    // Always use 'en-US' locale for English numerals
+    return new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: partner.currency,
       minimumFractionDigits: 0,

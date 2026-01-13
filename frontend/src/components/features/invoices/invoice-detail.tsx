@@ -26,7 +26,7 @@ interface InvoiceDetailProps {
   onCancel?: () => void;
   onDownload?: () => void;
   onRecordPayment?: () => void;
-  onRecordPartnerPayment?: (commission: { partnerId: string; partnerName: string; amount: number; status: string }) => void;
+  onRecordPartnerPayment?: (commission: any) => void;
   isPending?: boolean;
 }
 
@@ -95,7 +95,7 @@ export function InvoiceDetail({
         </div>
 
         <div className="flex gap-2">
-          {onEdit && invoice.status === 'draft' && (
+          {onEdit && ['draft', 'issued', 'partial', 'paid'].includes(invoice.status) && (
             <Button variant="outline" onClick={onEdit}>
               <Edit className="h-4 w-4 mr-2" />
               {t('common.edit')}
@@ -107,16 +107,29 @@ export function InvoiceDetail({
               {isPending ? t('common.processing') : t('invoices.issueInvoice')}
             </Button>
           )}
+          {onRecordPayment && (invoice.status === 'issued' || invoice.status === 'partial') && invoice.balance > 0 && (
+            <Button onClick={onRecordPayment}>
+              <DollarSign className="h-4 w-4 mr-2" />
+              {t('payments.receiveFromCustomer')}
+            </Button>
+          )}
+          {/* Partner Payment Buttons */}
+          {onRecordPartnerPayment && invoice.status !== 'draft' && invoice.status !== 'cancelled' && invoice.commissionsByPartner
+            .filter(comm => comm.status === 'pending')
+            .map((comm) => (
+              <Button
+                key={comm.partnerId || comm.partnerOfficeId}
+                variant="outline"
+                onClick={() => onRecordPartnerPayment(comm as any)}
+              >
+                <DollarSign className="h-4 w-4 me-2" />
+                {t('payments.payPartner')} - {comm.partnerName || comm.partnerOfficeName}
+              </Button>
+            ))}
           {onDownload && invoice.status !== 'draft' && (
             <Button variant="outline" onClick={onDownload}>
               <Download className="h-4 w-4 mr-2" />
               {t('common.download')}
-            </Button>
-          )}
-          {onRecordPayment && invoice.status === 'issued' && invoice.balance > 0 && (
-            <Button onClick={onRecordPayment}>
-              <DollarSign className="h-4 w-4 mr-2" />
-              {t('payments.recordPayment')}
             </Button>
           )}
           {onCancel && invoice.status !== 'cancelled' && invoice.status !== 'paid' && (
@@ -318,17 +331,6 @@ export function InvoiceDetail({
                       <Badge variant={comm.status === 'settled' ? 'default' : 'secondary'}>
                         {t(`invoices.commissionStatus.${comm.status}`)}
                       </Badge>
-                      {/* Pay Partner Button */}
-                      {comm.status === 'pending' && invoice.status === 'issued' && onRecordPartnerPayment && (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => onRecordPartnerPayment(comm)}
-                        >
-                          <DollarSign className="h-3 w-3 me-1" />
-                          {t('payments.payPartner')}
-                        </Button>
-                      )}
                     </div>
                   </div>
                 ))}

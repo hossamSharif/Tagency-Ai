@@ -64,7 +64,7 @@ export async function submitContactFormAction(
 
     if (err instanceof z.ZodError) {
       const fieldErrors: Record<string, string[]> = {};
-      err.errors.forEach((e) => {
+      err.issues.forEach((e) => {
         const path = e.path.join('.');
         if (!fieldErrors[path]) {
           fieldErrors[path] = [];

@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import Image from 'next/image';
 import { getTranslations } from 'next-intl/server';
 
 interface PublicLayoutProps {
@@ -19,14 +20,17 @@ export default async function PublicLayout({ children, params }: PublicLayoutPro
         <div className="container mx-auto px-4 lg:px-6">
           <div className="flex items-center justify-between h-16">
             {/* Logo */}
-            <Link href={`/${locale}`} className="flex items-center gap-2">
-              <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
-                <span className="text-primary-foreground font-bold text-xl">
-                  {isArabic ? 'و' : 'T'}
-                </span>
-              </div>
+            <Link href={`/${locale}`} className="flex items-center gap-3">
+              <Image
+                src="/logo.svg"
+                alt="Agency AI"
+                width={40}
+                height={40}
+                className="flex-shrink-0"
+                priority
+              />
               <span className="text-xl font-bold text-foreground">
-                {isArabic ? 'وكالة السفر' : 'Travel Agency'}
+                Agency AI
               </span>
             </Link>
 
@@ -89,14 +93,16 @@ export default async function PublicLayout({ children, params }: PublicLayoutPro
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
             {/* Brand */}
             <div className="md:col-span-2">
-              <Link href={`/${locale}`} className="flex items-center gap-2 mb-4">
-                <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
-                  <span className="text-primary-foreground font-bold text-xl">
-                    {isArabic ? 'و' : 'T'}
-                  </span>
-                </div>
+              <Link href={`/${locale}`} className="flex items-center gap-3 mb-4">
+                <Image
+                  src="/logo.svg"
+                  alt="Agency AI"
+                  width={40}
+                  height={40}
+                  className="flex-shrink-0"
+                />
                 <span className="text-xl font-bold text-foreground">
-                  {isArabic ? 'وكالة السفر' : 'Travel Agency'}
+                  Agency AI
                 </span>
               </Link>
               <p className="text-sm text-muted-foreground max-w-md">
@@ -164,7 +170,7 @@ export default async function PublicLayout({ children, params }: PublicLayoutPro
           <div className="mt-8 pt-8 border-t text-center text-sm text-muted-foreground">
             <p>
               &copy; {new Date().getFullYear()}{' '}
-              {isArabic ? 'وكالة السفر. جميع الحقوق محفوظة.' : 'Travel Agency. All rights reserved.'}
+              Agency AI. {isArabic ? 'جميع الحقوق محفوظة.' : 'All rights reserved.'}
             </p>
           </div>
         </div>

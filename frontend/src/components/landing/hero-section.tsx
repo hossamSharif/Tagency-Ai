@@ -21,6 +21,7 @@ export function HeroSection({ className }: HeroSectionProps) {
   const t = useTranslations('landing.hero');
   const params = useParams();
   const locale = params.locale as string;
+  const isArabic = locale === 'ar';
 
   return (
     <section
@@ -45,13 +46,25 @@ export function HeroSection({ className }: HeroSectionProps) {
           </div>
 
           {/* Headline */}
-          <h1 className="text-4xl font-bold tracking-tight sm:text-5xl md:text-6xl lg:text-7xl">
-            <span className="block">{t('headline')}</span>
+          <h1
+            className={cn(
+              'text-4xl font-bold sm:text-5xl md:text-6xl lg:text-7xl',
+              isArabic
+                ? 'tracking-wide leading-relaxed [word-spacing:0.15em]'
+                : 'tracking-tight'
+            )}
+          >
+            <span className={cn('block', isArabic && 'mb-4')}>{t('headline')}</span>
             <span className="block text-primary">{t('headlineHighlight')}</span>
           </h1>
 
           {/* Description */}
-          <p className="mx-auto mt-6 max-w-2xl text-lg text-muted-foreground sm:text-xl">
+          <p
+            className={cn(
+              'mx-auto mt-6 max-w-2xl text-lg text-muted-foreground sm:text-xl',
+              isArabic && 'leading-loose [word-spacing:0.08em]'
+            )}
+          >
             {t('description')}
           </p>
 

@@ -73,7 +73,7 @@ export function LoginForm({ locale }: LoginFormProps) {
         }
 
         // Redirect to dashboard
-        router.push(`/${locale}`);
+        router.push(`/${locale}/dashboard`);
         router.refresh();
       } catch (err) {
         console.error('Login error:', err);

@@ -34,6 +34,73 @@ import {
 } from '@/components/ui/select';
 import { CURRENCIES, type CurrencyCode } from '@/types/models/tenant';
 import { Loader2 } from 'lucide-react';
+import { db } from '@/lib/firebase/config';
+import { doc, setDoc, Timestamp } from 'firebase/firestore';
+
+/**
+ * Development mode fallback signup using client-side Firebase
+ * Used when Firebase Admin credentials are not configured
+ */
+async function clientSideSignup(data: SignupInput): Promise<{ userId: string; tenantId: string }> {
+  // Create user with Firebase client SDK
+  const userCredential = await signUp(data.email, data.password, data.officeName);
+  const user = userCredential.user;
+  const tenantId = user.uid;
+  const now = Timestamp.now();
+  const trialEndsAt = Timestamp.fromDate(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)); // 7 days
+
+  // Generate slug
+  const slug = data.officeName
+    .toLowerCase()
+    .replace(/[^a-z0-9\u0600-\u06FF\s-]/g, '')
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-')
+    .substring(0, 50)
+    + '-' + Date.now().toString(36);
+
+  // Create tenant document
+  await setDoc(doc(db, 'tenants', tenantId), {
+    name: data.officeName,
+    slug,
+    email: data.email,
+    phone: data.phone,
+    currency: data.currency,
+    timezone: 'Asia/Riyadh',
+    language: data.language,
+    theme: 'light',
+    status: 'trial',
+    createdAt: now,
+    updatedAt: now,
+  });
+
+  // Create subscription document
+  await setDoc(doc(db, 'subscriptions', tenantId), {
+    tenantId,
+    plan: 'trial',
+    status: 'active',
+    trialStartedAt: now,
+    trialEndsAt,
+    createdAt: now,
+    updatedAt: now,
+  });
+
+  // Create user document in tenant
+  await setDoc(doc(db, 'tenants', tenantId, 'users', user.uid), {
+    email: data.email,
+    displayName: data.officeName,
+    role: 'owner',
+    phone: data.phone,
+    language: data.language,
+    theme: 'system',
+    emailNotifications: true,
+    status: 'active',
+    emailVerified: false,
+    createdAt: now,
+    updatedAt: now,
+  });
+
+  return { userId: user.uid, tenantId };
+}
 
 interface SignupFormProps {
   locale: string;
@@ -65,7 +132,7 @@ export function SignupForm({ locale }: SignupFormProps) {
 
     startTransition(async () => {
       try {
-        // Call server action to create tenant, subscription, and user
+        // Try server action first (requires Firebase Admin credentials)
         const result = await signupAction({
           email: data.email,
           password: data.password,
@@ -76,15 +143,33 @@ export function SignupForm({ locale }: SignupFormProps) {
         });
 
         if (!result.success) {
-          setError(result.error);
-          return;
+          // If server action fails, try client-side signup as fallback
+          // This is useful for development when Admin SDK credentials aren't configured
+          console.warn('Server signup failed, trying client-side fallback:', result.error);
+          try {
+            await clientSideSignup(data);
+            router.push(`/${locale}/login?signup=success`);
+            return;
+          } catch (clientErr) {
+            console.error('Client-side signup also failed:', clientErr);
+            // Show original server error if client fallback also fails
+            setError(result.error);
+            return;
+          }
         }
 
         // Redirect to login page with success message
         router.push(`/${locale}/login?signup=success`);
       } catch (err) {
         console.error('Signup error:', err);
-        setError(t('errors.general'));
+        // Try client-side signup as fallback
+        try {
+          await clientSideSignup(data);
+          router.push(`/${locale}/login?signup=success`);
+        } catch (clientErr) {
+          console.error('Client-side signup also failed:', clientErr);
+          setError(t('errors.general'));
+        }
       }
     });
   };

@@ -6,8 +6,8 @@
  * Server actions for creating, reading, and managing notifications.
  */
 
-import { cookies } from 'next/headers';
-import { adminDb, verifySessionCookie, getCurrentUserFromCookie } from '@/lib/firebase/admin';
+import { adminDb } from '@/lib/firebase/admin';
+import { getSessionUser, type SessionUser } from '@/lib/auth/require-role';
 import { Timestamp, FieldValue } from 'firebase-admin/firestore';
 import {
   ActionResult,
@@ -29,7 +29,7 @@ import { sendNotificationEmail } from '@/lib/email/send-email';
 // ==========================================
 
 /**
- * Get authenticated user context from cookie
+ * Get authenticated user context from session
  */
 async function getAuthContext(): Promise<{
   userId: string;
@@ -38,19 +38,17 @@ async function getAuthContext(): Promise<{
   role: string;
 } | null> {
   try {
-    const cookieStore = await cookies();
-    const sessionCookie = cookieStore.get('session')?.value;
+    const user = await getSessionUser();
 
-    if (!sessionCookie) {
+    if (!user) {
       return null;
     }
 
-    const decodedToken = await verifySessionCookie(sessionCookie);
     return {
-      userId: decodedToken.uid,
-      tenantId: decodedToken.tenantId as string,
-      email: decodedToken.email as string,
-      role: decodedToken.role as string,
+      userId: user.uid,
+      tenantId: user.tenantId,
+      email: user.email,
+      role: user.role,
     };
   } catch {
     return null;

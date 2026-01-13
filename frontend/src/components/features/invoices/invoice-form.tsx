@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { useForm, useFieldArray, FormProvider } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -32,6 +33,13 @@ import { Customer } from '@/types/models/customer';
 import { ServiceCatalogItem } from '@/types/models/service-catalog';
 import { PartnerOffice } from '@/types/models/partner-office';
 import { Invoice } from '@/types/models/invoice';
+import { QuickAddCustomerModal } from './quick-add-modals/customer-modal';
+import { QuickAddPartnerModal } from './quick-add-modals/partner-modal';
+import { QuickAddServiceModal } from './quick-add-modals/service-modal';
+import { quickAddCustomerAction } from '@/app/actions/customers';
+import { quickAddPartnerAction } from '@/app/actions/partners';
+import { quickAddServiceAction } from '@/app/actions/services-catalog';
+import { toast } from 'sonner';
 
 interface InvoiceFormProps {
   invoice?: Invoice;
@@ -42,6 +50,10 @@ interface InvoiceFormProps {
   onCancel?: () => void;
   isPending?: boolean;
   mode?: 'create' | 'edit';
+  /** Invoice status for edit mode (affects validation and UI) */
+  status?: 'draft' | 'issued' | 'partial' | 'paid' | 'cancelled' | 'overdue';
+  /** Amount already paid (for partial/paid invoices) */
+  paidAmount?: number;
 }
 
 // Schema will be validated on submit
@@ -72,16 +84,23 @@ const defaultLineItem = {
 
 export function InvoiceForm({
   invoice,
-  customers,
-  services,
-  partners,
+  customers: initialCustomers,
+  services: initialServices,
+  partners: initialPartners,
   onSubmit,
   onCancel,
   isPending,
-  mode = 'create'
+  mode = 'create',
+  status,
+  paidAmount = 0,
 }: InvoiceFormProps) {
   const t = useTranslations();
   const locale = useLocale();
+
+  // T088 [US10] State for dynamic lists (can be updated via quick-add)
+  const [customers, setCustomers] = useState<Customer[]>(initialCustomers);
+  const [services, setServices] = useState<ServiceCatalogItem[]>(initialServices);
+  const [partners, setPartners] = useState<PartnerOffice[]>(initialPartners);
 
   const form = useForm({
     defaultValues: invoice
@@ -143,6 +162,9 @@ export function InvoiceForm({
 
   const totalCommissions = commissionsByPartner.reduce((sum, c) => sum + c.amount, 0);
 
+  // Check if total would go below paid amount (for partial invoices)
+  const isBelowPaidAmount = status === 'partial' && total < paidAmount;
+
   function handleAddLineItem() {
     append({
       ...defaultLineItem,
@@ -151,6 +173,12 @@ export function InvoiceForm({
   }
 
   async function handleSubmit(data: any) {
+    // Validate partial invoice constraint
+    if (isBelowPaidAmount) {
+      toast.error(t('invoices.cannotReduceBelowPaid'));
+      return;
+    }
+
     // Add calculated fields
     const formData = {
       ...data,
@@ -167,6 +195,43 @@ export function InvoiceForm({
     await onSubmit(formData);
   }
 
+  // T088 [US10] Quick-add handlers
+  async function handleQuickAddCustomer(data: any) {
+    const result = await quickAddCustomerAction(data);
+    if (result.success && result.data) {
+      setCustomers(prev => [...prev, result.data!]);
+      toast.success(t('invoices.customerAdded'));
+      return result.data;
+    } else {
+      toast.error(result.error || t('invoices.customerAddFailed'));
+      throw new Error(result.error);
+    }
+  }
+
+  async function handleQuickAddPartner(data: any) {
+    const result = await quickAddPartnerAction(data);
+    if (result.success && result.data?.partner) {
+      setPartners(prev => [...prev, result.data!.partner]);
+      toast.success(t('invoices.partnerAdded'));
+      return result.data.partner;
+    } else {
+      toast.error(result.message || t('invoices.partnerAddFailed'));
+      throw new Error(result.message);
+    }
+  }
+
+  async function handleQuickAddService(data: any) {
+    const result = await quickAddServiceAction(data);
+    if (result.success && result.data) {
+      setServices(prev => [...prev, result.data!]);
+      toast.success(t('invoices.serviceAdded'));
+      return result.data;
+    } else {
+      toast.error(result.error || t('invoices.serviceAddFailed'));
+      throw new Error(result.error);
+    }
+  }
+
   return (
     <FormProvider {...form}>
       <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
@@ -176,40 +241,51 @@ export function InvoiceForm({
             <CardTitle>{t('invoices.customerInfo')}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <FormField
-              control={form.control}
-              name="customerId"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{t('invoices.selectCustomer')}</FormLabel>
-                  <Select
-                    onValueChange={(value) => {
-                      field.onChange(value);
-                      const customer = customers.find(c => c.id === value);
-                      if (customer) {
-                        // Could pre-fill customer details if needed
-                      }
-                    }}
-                    defaultValue={field.value}
-                    disabled={isPending || mode === 'edit'}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder={t('invoices.selectCustomerPlaceholder')} />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {customers.map((customer) => (
-                        <SelectItem key={customer.id} value={customer.id}>
-                          {customer.firstName} {customer.lastName} - {customer.email}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
+            <div className="space-y-2">
+              <FormField
+                control={form.control}
+                name="customerId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{t('invoices.selectCustomer')}</FormLabel>
+                    <Select
+                      onValueChange={(value) => {
+                        field.onChange(value);
+                        const customer = customers.find(c => c.id === value);
+                        if (customer) {
+                          // Could pre-fill customer details if needed
+                        }
+                      }}
+                      defaultValue={field.value}
+                      disabled={isPending || mode === 'edit'}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder={t('invoices.selectCustomerPlaceholder')} />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {customers.map((customer) => (
+                          <SelectItem key={customer.id} value={customer.id}>
+                            {customer.firstName} {customer.lastName} - {customer.email}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              {/* T088 [US10] Quick-add customer button */}
+              {mode === 'create' && (
+                <QuickAddCustomerModal
+                  onCustomerAdded={(customer) => {
+                    form.setValue('customerId', customer.id);
+                  }}
+                  onCreateCustomer={handleQuickAddCustomer}
+                />
               )}
-            />
+            </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <FormField
@@ -258,16 +334,31 @@ export function InvoiceForm({
           <CardHeader>
             <div className="flex items-center justify-between">
               <CardTitle>{t('invoices.services')}</CardTitle>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={handleAddLineItem}
-                disabled={isPending}
-              >
-                <Plus className="mr-2 h-4 w-4" />
-                {t('invoices.addService')}
-              </Button>
+              <div className="flex gap-2">
+                {/* T088 [US10] Quick-add buttons */}
+                <QuickAddServiceModal
+                  onServiceAdded={(service) => {
+                    // Service added to list automatically
+                  }}
+                  onCreateService={handleQuickAddService}
+                />
+                <QuickAddPartnerModal
+                  onPartnerAdded={(partner) => {
+                    // Partner added to list automatically
+                  }}
+                  onCreatePartner={handleQuickAddPartner}
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleAddLineItem}
+                  disabled={isPending}
+                >
+                  <Plus className="mr-2 h-4 w-4" />
+                  {t('invoices.addService')}
+                </Button>
+              </div>
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -371,8 +462,25 @@ export function InvoiceForm({
             {/* Total */}
             <div className="flex justify-between items-center text-2xl font-bold">
               <span>{t('invoices.total')}:</span>
-              <span>{total.toFixed(2)}</span>
+              <span className={isBelowPaidAmount ? 'text-red-600' : ''}>{total.toFixed(2)}</span>
             </div>
+
+            {/* Paid Amount Display for partial/paid invoices */}
+            {(status === 'partial' || status === 'paid') && paidAmount > 0 && (
+              <div className="flex justify-between items-center text-lg text-green-600 dark:text-green-400">
+                <span>{t('invoices.paidAmount')}:</span>
+                <span>{paidAmount.toFixed(2)}</span>
+              </div>
+            )}
+
+            {/* Warning when total is below paid amount */}
+            {isBelowPaidAmount && (
+              <div className="p-3 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 rounded-lg">
+                <p className="text-sm text-red-600 dark:text-red-400">
+                  {t('invoices.cannotReduceBelowPaidWarning', { paidAmount: paidAmount.toFixed(2) })}
+                </p>
+              </div>
+            )}
 
             {/* Commission Summary */}
             {commissionsByPartner.length > 0 && (

@@ -100,7 +100,8 @@ export function BookingForm({
   };
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('ar-SA', {
+    // Always use 'en-US' locale for English numerals
+    return new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: selectedPackage?.currency || 'SAR',
     }).format(amount);
@@ -219,7 +220,7 @@ export function BookingForm({
             {/* Travelers */}
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <h3 className="font-medium">{t('travelers')}</h3>
+                <h3 className="font-medium">{t('travelersTitle')}</h3>
                 <Button
                   type="button"
                   variant="outline"

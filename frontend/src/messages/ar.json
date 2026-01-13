@@ -1,6 +1,6 @@
 {
   "common": {
-    "appName": "وكالة AI",
+    "appName": "Agency AI",
     "save": "حفظ",
     "cancel": "إلغاء",
     "delete": "حذف",
@@ -434,6 +434,7 @@
     "summary": "الملخص",
     "create": "إنشاء فاتورة",
     "createInvoice": "إنشاء فاتورة",
+    "updateInvoice": "تحديث الفاتورة",
     "createInvoiceDescription": "إنشاء فاتورة جديدة للخدمات المقدمة للعميل",
     "createFirstInvoice": "إنشاء أول فاتورة",
     "listDescription": "عرض وإدارة جميع الفواتير",
@@ -629,7 +630,34 @@
       "conflict": "تم تعديل هذه الفاتورة بواسطة مستخدم آخر",
       "reload": "إعادة التحميل",
       "reloadPrompt": "يرجى إعادة التحميل لرؤية آخر التغييرات"
-    }
+    },
+    "editInvoice": "تعديل الفاتورة",
+    "editInvoiceDescription": "تعديل الفاتورة {invoiceNumber}",
+    "editIssuedWarningTitle": "تعديل فاتورة صادرة",
+    "editIssuedWarning": "أنت تقوم بتعديل فاتورة صادرة. سيتم إنشاء قيود محاسبية تصحيحية للحفاظ على الدقة المالية.",
+    "editPartialWarningTitle": "تعديل فاتورة مدفوعة جزئيًا",
+    "editPartialWarning": "هذه الفاتورة لديها دفعات جزئية ({paidAmount} جنيه). لا يمكن تقليل الإجمالي عن المبلغ المدفوع.",
+    "editPaidWarningTitle": "تعديل فاتورة مدفوعة بالكامل",
+    "editPaidWarning": "هذه الفاتورة مدفوعة بالكامل. قد تؤدي التغييرات إلى دفعة زائدة تحتاج للمعالجة.",
+    "paymentInfo": "معلومات الدفع",
+    "paidAmountDisplay": "تلقت هذه الفاتورة {paidAmount} {currency} كمدفوعات",
+    "paidAmount": "المبلغ المدفوع",
+    "cannotReduceBelowPaid": "لا يمكن تقليل الإجمالي عن المبلغ المدفوع",
+    "cannotReduceBelowPaidWarning": "لا يمكن تقليل الإجمالي عن {paidAmount} جنيه (المبلغ المدفوع بالفعل)",
+    "updateSuccess": "تم تحديث الفاتورة بنجاح",
+    "updateSuccessDescription": "تم تحديث الفاتورة",
+    "adjustmentCreated": "تم تحديث الفاتورة مع تعديلات محاسبية",
+    "overpaymentTitle": "معالجة الدفعة الزائدة",
+    "overpaymentDescription": "أدى تعديل الفاتورة إلى دفعة زائدة بقيمة {amount} {currency} من {customerName}. كيف تريد معالجة هذا؟",
+    "creditToAccount": "إضافة رصيد لحساب العميل",
+    "creditToAccountDescription": "إضافة الدفعة الزائدة كرصيد لحساب العميل للاستخدام المستقبلي",
+    "createRefund": "إنشاء استرداد",
+    "createRefundDescription": "إنشاء سجل استرداد لإعادة الدفعة الزائدة للعميل",
+    "creditApplied": "تم تطبيق الرصيد",
+    "creditAppliedDescription": "تم إضافة {amount} {currency} إلى حساب {customerName}",
+    "refundCreated": "تم إنشاء الاسترداد",
+    "refundCreatedDescription": "تم إنشاء استرداد بقيمة {amount} {currency} لـ {customerName}",
+    "overpaymentError": "فشل في معالجة الدفعة الزائدة"
   },
   "payments": {
     "title": "المدفوعات",
@@ -1007,7 +1035,28 @@
     "serviceRevenueDescription": "توزيع الإيرادات عبر فئات الخدمات",
     "servicesByType": "توزيع الخدمات",
     "servicesByTypeDescription": "الخدمات النشطة حسب الفئة",
-    "servicesUsed": "مرات الاستخدام"
+    "servicesUsed": "مرات الاستخدام",
+    "vsLastPeriod": "مقارنة بالفترة السابقة",
+    "noData": "لا توجد بيانات متاحة",
+    "noRevenueData": "لا توجد بيانات إيرادات متاحة",
+    "noActiveServices": "لا توجد خدمات نشطة",
+    "tableHeaders": {
+      "customer": "العميل",
+      "bookings": "الحجوزات",
+      "totalSpent": "إجمالي الإنفاق",
+      "date": "التاريخ",
+      "total": "الإجمالي",
+      "paid": "المدفوع",
+      "status": "الحالة",
+      "partner": "الشريك",
+      "services": "الخدمات",
+      "pending": "معلقة",
+      "settled": "مسددة",
+      "progress": "التقدم",
+      "settlementNumber": "رقم التسوية",
+      "amount": "المبلغ"
+    },
+    "settled": "مسدد"
   },
   "audit": {
     "title": "سجلات المراجعة",
@@ -1070,7 +1119,7 @@
   },
   "landing": {
     "header": {
-      "brand": "وكالة AI",
+      "brand": "Agency AI",
       "nav": {
         "features": "المميزات",
         "pricing": "الأسعار",
@@ -1090,7 +1139,7 @@
     },
     "features": {
       "title": "كل ما تحتاجه لإدارة وكالتك",
-      "subtitle": "أدوات متكاملة صُممت خصيصاً لوكالات السفر في المملكة العربية السعودية",
+      "subtitle": "أدوات متكاملة صُممت خصيصاً لوكالات السفر في السودان",
       "packages": "إدارة الباقات",
       "packagesDesc": "أنشئ وأدر باقات الحج والعمرة وشهر العسل والرحلات المخصصة بسهولة",
       "customers": "إدارة العملاء",
@@ -1182,7 +1231,7 @@
       "errorMessage": "فشل إرسال الرسالة. يرجى المحاولة مرة أخرى."
     },
     "footer": {
-      "brand": "وكالة AI",
+      "brand": "Agency AI",
       "description": "منصة متكاملة لإدارة وكالات السفر - باقات الحج والعمرة وشهر العسل والرحلات المخصصة.",
       "sections": {
         "product": "المنتج",
@@ -1200,7 +1249,7 @@
         "terms": "الشروط والأحكام",
         "cookies": "سياسة الكوكيز"
       },
-      "copyright": "© {year} وكالة AI. جميع الحقوق محفوظة."
+      "copyright": "© {year} Agency AI. جميع الحقوق محفوظة."
     }
   },
   "passport": {
@@ -1339,6 +1388,10 @@
       "deleteSuccess": "تم حذف الخدمة بنجاح",
       "deleteError": "لا يمكن حذف خدمة قيد الاستخدام",
       "duplicateError": "توجد خدمة بهذا الاسم بالفعل"
+    },
+    "status": {
+      "active": "نشط",
+      "inactive": "غير نشط"
     }
   },
   "statements": {

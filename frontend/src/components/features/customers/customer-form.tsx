@@ -2,11 +2,13 @@
 
 // CustomerForm component
 // T110 [US2] Create CustomerForm component
+// Enhanced with passport scanning/OCR integration
 
+import { useState, useRef, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useTranslations } from 'next-intl';
-import { Loader2, Save, User } from 'lucide-react';
+import { Loader2, Save, User, Camera, ChevronDown, ChevronUp, CheckCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -25,9 +27,18 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { createCustomerSchema, CreateCustomerInput } from '@/lib/validations/customers';
 import { Customer } from '@/types/models/customer';
+import { PassportScanResult } from '@/types/models/passport';
+import { PassportQuickScan } from '../passport-scanner/passport-quick-scan';
+import { mapPassportToCustomer } from '@/lib/utils/passport-mapper';
+import { toast } from 'sonner';
 
 // Common country codes
 const COUNTRIES = [
@@ -53,7 +64,7 @@ const COUNTRIES = [
 
 interface CustomerFormProps {
   customer?: Customer;
-  onSubmit: (data: CreateCustomerInput) => Promise<void>;
+  onSubmit: (data: CreateCustomerInput, passportImage?: File) => Promise<void>;
   onCancel?: () => void;
   isLoading?: boolean;
 }
@@ -65,6 +76,17 @@ export function CustomerForm({
   isLoading,
 }: CustomerFormProps) {
   const t = useTranslations('customers');
+  const tPassport = useTranslations('passport');
+
+  // State for collapsible passport scanner section
+  const [showScanner, setShowScanner] = useState(false);
+  const [hasScanned, setHasScanned] = useState(false);
+
+  // State for passport image file to be uploaded
+  const [passportImageFile, setPassportImageFile] = useState<File | null>(null);
+
+  // Refs for auto-focus after scan
+  const emailInputRef = useRef<HTMLInputElement>(null);
 
   const form = useForm<CreateCustomerInput>({
     resolver: zodResolver(createCustomerSchema),
@@ -75,7 +97,6 @@ export function CustomerForm({
       phone: customer?.phone || '',
       nationality: customer?.nationality || '',
       nationalId: customer?.nationalId || '',
-      preferredLanguage: customer?.preferredLanguage || 'ar',
       notes: customer?.notes || '',
       tags: customer?.tags || [],
       address: customer?.address || undefined,
@@ -83,7 +104,61 @@ export function CustomerForm({
   });
 
   const handleSubmit = async (data: CreateCustomerInput) => {
-    await onSubmit(data);
+    await onSubmit(data, passportImageFile || undefined);
+  };
+
+  // Handle passport scan auto-fill
+  const handlePassportAutoFill = (scanResult: PassportScanResult) => {
+    const mappedData = mapPassportToCustomer(scanResult);
+
+    // Store the passport image file for automatic upload
+    if (scanResult.capturedImage) {
+      setPassportImageFile(scanResult.capturedImage);
+    }
+
+    // Auto-fill form fields with staggered animation
+    const fieldsToFill = [
+      { name: 'firstName' as const, value: mappedData.firstName },
+      { name: 'lastName' as const, value: mappedData.lastName },
+      { name: 'nationality' as const, value: mappedData.nationality },
+      { name: 'passport' as const, value: mappedData.passport },
+    ];
+
+    let delay = 0;
+    fieldsToFill.forEach(({ name, value }) => {
+      if (value) {
+        setTimeout(() => {
+          form.setValue(name, value as any);
+          // Trigger field highlight animation
+          const fieldElement = document.querySelector(`[name="${name}"]`);
+          if (fieldElement) {
+            fieldElement.classList.add('field-auto-filled');
+            setTimeout(() => fieldElement.classList.remove('field-auto-filled'), 1000);
+          }
+        }, delay);
+        delay += 100;
+      }
+    });
+
+    // Show success toast
+    toast.success(tPassport('autoFillSuccess'), {
+      description: tPassport('reviewAndComplete'),
+    });
+
+    // Mark as scanned and collapse scanner
+    setHasScanned(true);
+    setShowScanner(false);
+
+    // Auto-focus email field after animation completes
+    setTimeout(() => {
+      emailInputRef.current?.focus();
+    }, delay + 200);
+  };
+
+  const handleScanError = (error: string) => {
+    toast.error(tPassport('scanFailed'), {
+      description: error,
+    });
   };
 
   return (
@@ -97,6 +172,60 @@ export function CustomerForm({
       <Form {...form}>
         <form onSubmit={form.handleSubmit(handleSubmit)}>
           <CardContent className="space-y-4">
+            {/* Passport Scanner Section (Only for new customers) */}
+            {!customer && (
+              <Collapsible open={showScanner} onOpenChange={setShowScanner}>
+                <Card className="border-2 border-dashed border-primary/30 bg-primary/5">
+                  <CardContent className="pt-4">
+                    <CollapsibleTrigger asChild>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="w-full justify-between gap-2 h-auto py-3"
+                      >
+                        <div className="flex items-center gap-2">
+                          <Camera className="h-5 w-5 text-primary" />
+                          <div className="text-start">
+                            <div className="font-semibold">{tPassport('scanPassportOptional')}</div>
+                            <div className="text-xs text-muted-foreground font-normal">
+                              {tPassport('autoFillDescription')}
+                            </div>
+                          </div>
+                        </div>
+                        {showScanner ? (
+                          <ChevronUp className="h-4 w-4" />
+                        ) : (
+                          <ChevronDown className="h-4 w-4" />
+                        )}
+                      </Button>
+                    </CollapsibleTrigger>
+
+                    <CollapsibleContent className="mt-4">
+                      <PassportQuickScan
+                        onAutoFill={handlePassportAutoFill}
+                        onScanError={handleScanError}
+                      />
+                    </CollapsibleContent>
+                  </CardContent>
+                </Card>
+              </Collapsible>
+            )}
+
+            {/* Visual indicator when passport image is captured */}
+            {!customer && passportImageFile && (
+              <div className="p-3 bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800 rounded-lg flex items-center gap-2">
+                <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-500 flex-shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-green-900 dark:text-green-100">
+                    {tPassport('imageWillBeSaved')}
+                  </p>
+                  <p className="text-xs text-green-700 dark:text-green-400 truncate">
+                    {passportImageFile.name} ({(passportImageFile.size / 1024).toFixed(0)} KB)
+                  </p>
+                </div>
+              </div>
+            )}
+
             {/* Personal Information */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <FormField
@@ -137,7 +266,13 @@ export function CustomerForm({
                   <FormItem>
                     <FormLabel>{t('email')}</FormLabel>
                     <FormControl>
-                      <Input {...field} type="email" placeholder="email@example.com" />
+                      <Input
+                        {...field}
+                        ref={emailInputRef}
+                        type="email"
+                        placeholder="email@example.com"
+                        className={hasScanned && !field.value ? 'ring-2 ring-primary/50 animate-pulse-slow' : ''}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -203,32 +338,6 @@ export function CustomerForm({
                 )}
               />
             </div>
-
-            {/* Preferred Language */}
-            <FormField
-              control={form.control}
-              name="preferredLanguage"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{t('preferredLanguage')}</FormLabel>
-                  <Select
-                    onValueChange={field.onChange}
-                    defaultValue={field.value}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="ar">{t('arabic')}</SelectItem>
-                      <SelectItem value="en">{t('english')}</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
 
             {/* Address */}
             <div className="space-y-4">

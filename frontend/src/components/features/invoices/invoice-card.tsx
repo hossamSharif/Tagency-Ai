@@ -33,7 +33,8 @@ function getStatusColor(status: InvoiceStatus): string {
 }
 
 function formatCurrency(amount: number, locale: string = 'en'): string {
-  return new Intl.NumberFormat(locale === 'ar' ? 'ar-SA' : 'en-US', {
+  // Always use 'en-US' locale for English numerals
+  return new Intl.NumberFormat('en-US', {
     style: 'decimal',
     minimumFractionDigits: 2,
     maximumFractionDigits: 2
@@ -85,7 +86,7 @@ export function InvoiceCard({ invoice, onView, onEdit, onDownload }: InvoiceCard
         <div className="text-sm">
           <span className="text-muted-foreground">{t('invoices.services')}:</span>
           <span className="ml-2 font-medium">
-            {invoice.lineItems.length} {invoice.lineItems.length === 1 ? t('invoices.service') : t('invoices.services')}
+            {invoice.lineItems?.length || 0} {(invoice.lineItems?.length || 0) === 1 ? t('invoices.service') : t('invoices.services')}
           </span>
         </div>
 

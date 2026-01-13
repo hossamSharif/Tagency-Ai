@@ -6,8 +6,8 @@ import { z } from 'zod';
 // Address schema
 export const addressSchema = z.object({
   street: z.string().optional(),
-  city: z.string().min(1, 'City is required'),
-  country: z.string().min(2, 'Country is required'),
+  city: z.string().optional(),
+  country: z.string().optional(),
   postalCode: z.string().optional(),
 });
 
@@ -24,9 +24,9 @@ export const passportDataSchema = z.object({
     return !isNaN(date.getTime());
   }, 'Invalid expiry date'),
   nationality: z.string().length(3, 'Nationality must be a 3-letter country code'),
-  gender: z.enum(['M', 'F']),
+  gender: z.enum(['male', 'female']),
   issuingCountry: z.string().length(3, 'Issuing country must be a 3-letter country code'),
-  manuallyVerified: z.boolean().default(false),
+  manuallyVerified: z.boolean().optional(),
 });
 
 // Customer document schema
@@ -48,17 +48,16 @@ export const createCustomerSchema = z.object({
     .string()
     .min(2, 'Last name must be at least 2 characters')
     .max(50, 'Last name must be less than 50 characters'),
-  email: z.string().email('Invalid email address'),
+  email: z.string().email('Invalid email address').optional().or(z.literal('')),
   phone: z
     .string()
-    .min(8, 'Phone number must be at least 8 digits')
-    .max(20, 'Phone number must be less than 20 digits')
-    .regex(/^[\d\s+()-]+$/, 'Invalid phone number format'),
-  nationality: z.string().min(2, 'Nationality is required'),
+    .regex(/^[\d\s+()-]*$/, 'Invalid phone number format')
+    .optional()
+    .or(z.literal('')),
+  nationality: z.string().optional().or(z.literal('')),
   nationalId: z.string().optional(),
   passport: passportDataSchema.optional(),
   address: addressSchema.optional(),
-  preferredLanguage: z.enum(['ar', 'en']).default('ar'),
   notes: z.string().max(1000, 'Notes must be less than 1000 characters').optional(),
   tags: z.array(z.string()).max(10, 'Maximum 10 tags allowed').optional(),
 });
@@ -73,9 +72,9 @@ export const updatePassportSchema = z.object({
   dateOfBirth: z.string(),
   expiryDate: z.string(),
   nationality: z.string().length(3, 'Nationality must be a 3-letter country code'),
-  gender: z.enum(['M', 'F']),
+  gender: z.enum(['male', 'female']),
   issuingCountry: z.string().length(3, 'Issuing country must be a 3-letter country code'),
-  manuallyVerified: z.boolean().default(false),
+  manuallyVerified: z.boolean().optional(),
 });
 
 // Upload document schema

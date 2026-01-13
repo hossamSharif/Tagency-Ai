@@ -38,7 +38,8 @@ export function CommissionSummary({
     });
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat(isArabic ? 'ar-SA' : 'en-US', {
+    // Always use 'en-US' locale for English numerals
+    return new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency,
       minimumFractionDigits: 0,

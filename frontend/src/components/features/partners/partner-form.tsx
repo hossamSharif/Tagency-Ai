@@ -98,7 +98,7 @@ export function PartnerForm({
               name="code"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>{isArabic ? 'الرمز' : 'Code'}</FormLabel>
+                  <FormLabel>{isArabic ? 'الرمز (اختياري)' : 'Code (Optional)'}</FormLabel>
                   <FormControl>
                     <Input
                       placeholder="PTR-001"
@@ -132,7 +132,7 @@ export function PartnerForm({
               name="contactPerson"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>{isArabic ? 'اسم جهة الاتصال' : 'Contact Person'}</FormLabel>
+                  <FormLabel>{isArabic ? 'اسم جهة الاتصال (اختياري)' : 'Contact Person (Optional)'}</FormLabel>
                   <FormControl>
                     <Input
                       placeholder={isArabic ? 'أحمد محمد' : 'Ahmed Mohammed'}
@@ -149,7 +149,7 @@ export function PartnerForm({
               name="email"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>{isArabic ? 'البريد الإلكتروني' : 'Email'}</FormLabel>
+                  <FormLabel>{isArabic ? 'البريد الإلكتروني (اختياري)' : 'Email (Optional)'}</FormLabel>
                   <FormControl>
                     <div className="relative">
                       <Mail className="absolute start-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -193,7 +193,7 @@ export function PartnerForm({
               name="defaultCommissionPercentage"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>{isArabic ? 'نسبة العمولة الافتراضية' : 'Default Commission %'}</FormLabel>
+                  <FormLabel>{isArabic ? 'نسبة العمولة الافتراضية (اختياري)' : 'Default Commission % (Optional)'}</FormLabel>
                   <FormControl>
                     <div className="relative">
                       <Percent className="absolute start-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -225,7 +225,7 @@ export function PartnerForm({
         <div>
           <h3 className="text-lg font-medium mb-4 flex items-center gap-2">
             <Landmark className="h-5 w-5" />
-            {isArabic ? 'التفاصيل البنكية' : 'Bank Account Details'}
+            {isArabic ? 'التفاصيل البنكية (اختياري)' : 'Bank Account Details (Optional)'}
           </h3>
           <div className="grid gap-4 md:grid-cols-2">
             <FormField
@@ -311,7 +311,7 @@ export function PartnerForm({
           name="notes"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>{isArabic ? 'ملاحظات' : 'Notes'}</FormLabel>
+              <FormLabel>{isArabic ? 'ملاحظات (اختياري)' : 'Notes (Optional)'}</FormLabel>
               <FormControl>
                 <Textarea
                   placeholder={isArabic ? 'ملاحظات إضافية...' : 'Additional notes...'}

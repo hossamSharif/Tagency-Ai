@@ -54,17 +54,42 @@ async function getInvoices(options?: {
       return ts;
     };
 
+    const serializeAttachment = (att: any) => {
+      if (!att) return att;
+      return {
+        ...att,
+        uploadedAt: serializeTimestamp(att.uploadedAt),
+      };
+    };
+
+    const serializeLineItem = (item: any) => {
+      return {
+        ...item,
+        attachments: item.attachments?.map(serializeAttachment),
+      };
+    };
+
     const invoices = snapshot.docs.map((doc) => {
       const data = doc.data();
       return {
+        id: doc.id,
         ...data,
+        // Map legacy field names to new schema
+        total: data.total ?? data.netAmount ?? 0,
+        balance: data.balance ?? data.remainingBalance ?? 0,
+        totalCommissions: data.totalCommissions ?? data.totalCommission ?? 0,
+        // Serialize timestamps
         createdAt: serializeTimestamp(data.createdAt),
         updatedAt: serializeTimestamp(data.updatedAt),
         invoiceDate: serializeTimestamp(data.invoiceDate),
         dueDate: serializeTimestamp(data.dueDate),
-        issuedAt: serializeTimestamp(data.issuedAt),
+        issueDate: serializeTimestamp(data.issueDate),
+        paidDate: serializeTimestamp(data.paidDate),
         cancelledAt: serializeTimestamp(data.cancelledAt),
-      } as Invoice;
+        attachments: data.attachments?.map(serializeAttachment) || [],
+        lineItems: (data.lineItems ?? data.items ?? []).map(serializeLineItem),
+        commissionsByPartner: data.commissionsByPartner || [],
+      } as unknown as Invoice;
     });
 
     return invoices;

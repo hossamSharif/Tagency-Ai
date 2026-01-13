@@ -12,28 +12,30 @@ const firebaseConfig = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
 
-// Initialize Firebase (singleton pattern)
-let app: FirebaseApp;
-let auth: Auth;
-let db: Firestore;
-let storage: FirebaseStorage;
+/**
+ * Initialize Firebase (singleton pattern)
+ */
+function initializeFirebase(): { app: FirebaseApp; auth: Auth; db: Firestore; storage: FirebaseStorage } {
+  const existingApps = getApps();
 
-function initializeFirebase() {
-  if (getApps().length === 0) {
-    app = initializeApp(firebaseConfig);
-  } else {
-    app = getApps()[0];
-  }
+  const app = existingApps.length === 0
+    ? initializeApp(firebaseConfig)
+    : existingApps[0];
 
-  auth = getAuth(app);
-  db = getFirestore(app);
-  storage = getStorage(app);
-
-  return { app, auth, db, storage };
+  return {
+    app,
+    auth: getAuth(app),
+    db: getFirestore(app),
+    storage: getStorage(app),
+  };
 }
 
-// Initialize on module load
+// Initialize on module load and export
 const firebase = initializeFirebase();
 
-export const { app: firebaseApp, auth, db, storage } = firebase;
+export const firebaseApp = firebase.app;
+export const auth = firebase.auth;
+export const db = firebase.db;
+export const storage = firebase.storage;
+
 export default firebase;

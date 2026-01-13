@@ -21,6 +21,7 @@ import {
 } from '@/lib/validations/payments';
 import { Payment, PaymentTransactionStatus } from '@/types/models/payment';
 import { Invoice } from '@/types/models/invoice';
+import { CurrencyCode } from '@/types/models/tenant';
 import { updateInvoicePaymentStatus } from './invoices';
 import {
   triggerPaymentReceivedNotification,
@@ -98,7 +99,21 @@ export async function createPaymentAction(
   input: CreateCashPaymentInput
 ): Promise<ActionResult<Payment>> {
   try {
+    console.log('[createPaymentAction] Input received:', {
+      invoiceId: input.invoiceId,
+      amount: input.amount,
+      accountId: input.accountId,
+      method: input.method,
+    });
+
     const validatedData = createCashPaymentSchema.parse(input);
+
+    console.log('[createPaymentAction] After validation:', {
+      invoiceId: validatedData.invoiceId,
+      amount: validatedData.amount,
+      accountId: validatedData.accountId,
+      method: validatedData.method,
+    });
 
     // Get invoice
     const invoiceDoc = await adminDb
@@ -126,45 +141,43 @@ export async function createPaymentAction(
     // Generate payment number
     const paymentNumber = await generatePaymentNumber(tenantId);
 
-    // Get account information
-    const accountId = (validatedData as any).accountId || 'cash-default';
-    let accountName = (validatedData as any).accountName || 'Cash';
+    // Get account information from validated data
+    const accountId = validatedData.accountId;
+    const accountName = validatedData.accountName || 'Cash';
 
-    // If account ID provided, verify it exists
-    if ((validatedData as any).accountId) {
-      const accountDoc = await adminDb
-        .doc(`tenants/${tenantId}/accounts/${(validatedData as any).accountId}`)
-        .get();
-
-      if (accountDoc.exists) {
-        accountName = accountDoc.data()?.name || accountName;
-      }
-    }
+    console.log('[createPaymentAction] Account info:', {
+      tenantId,
+      accountId,
+      accountName,
+      accountPath: `tenants/${tenantId}/accounts/${accountId}`
+    });
 
     // Create payment
     const paymentRef = adminDb.collection(`tenants/${tenantId}/payments`).doc();
     const now = Timestamp.now();
 
-    const payment: Payment = {
+    // Note: Using admin SDK types which are compatible at runtime but differ in TypeScript definitions
+    const payment = {
       id: paymentRef.id,
       paymentNumber,
-      paymentType: 'customer_receipt',
+      paymentType: 'customer_receipt' as const,
       invoiceId: invoice.id,
       customerId: invoice.customerId,
       customerName: invoice.customerName,
       amount: validatedData.amount,
       currency: invoice.currency,
-      method: (validatedData as any).method || 'cash',
+      method: validatedData.method || 'cash',
       accountId,
       accountName,
-      status: 'completed',
+      status: 'completed' as const,
       paymentDate: now,
       processedAt: now,
       ...(validatedData.notes && { notes: validatedData.notes }),
+      ...(validatedData.transactionReference && { transactionReference: validatedData.transactionReference }),
       createdBy: userId,
       createdAt: now,
       updatedAt: now,
-    };
+    } as unknown as Payment;
 
     // Create journal entry for customer payment
     // Debit: Cash/Bank account (increase asset)
@@ -174,14 +187,18 @@ export async function createPaymentAction(
     // Get payment account
     const paymentAccount = await adminDb.doc(`tenants/${tenantId}/accounts/${accountId}`).get();
     if (!paymentAccount.exists) {
-      return { success: false, error: 'Payment account not found' };
+      return {
+        success: false,
+        error: `Payment account with ID '${accountId}' not found. Please select a valid cash or bank account.`
+      };
     }
 
     // Get or create customer receivable account
+    // Use linkedEntityType and linkedEntityId for consistency with createCustomerAccount()
     const customerAccounts = await adminDb
       .collection(`tenants/${tenantId}/accounts`)
-      .where('subtype', '==', 'accounts_receivable')
-      .where('customerId', '==', invoice.customerId)
+      .where('linkedEntityType', '==', 'customer')
+      .where('linkedEntityId', '==', invoice.customerId)
       .limit(1)
       .get();
 
@@ -190,16 +207,38 @@ export async function createPaymentAction(
       customerAccountData = customerAccounts.docs[0].data();
     } else {
       // Create customer receivable account if not exists
+      // Use consistent field names with createCustomerAccount() in default-accounts.ts
       const arAccountRef = adminDb.collection(`tenants/${tenantId}/accounts`).doc();
+
+      // Generate proper account code (sequential 2xxx series)
+      const lastCustomerAccount = await adminDb
+        .collection(`tenants/${tenantId}/accounts`)
+        .where('type', '==', 'asset')
+        .where('subtype', '==', 'receivable')
+        .orderBy('code', 'desc')
+        .limit(1)
+        .get();
+
+      let nextCode = 2001;
+      if (!lastCustomerAccount.empty) {
+        const lastCode = parseInt(lastCustomerAccount.docs[0].data().code);
+        if (!isNaN(lastCode) && lastCode >= 2000) {
+          nextCode = lastCode + 1;
+        }
+      }
+
       customerAccountData = {
         id: arAccountRef.id,
-        code: `2001-${invoice.customerId.substring(0, 8)}`,
+        code: nextCode.toString(),
         name: `Accounts Receivable - ${invoice.customerName}`,
+        nameAr: `حسابات القبض - ${invoice.customerName}`,
         type: 'asset',
-        subtype: 'accounts_receivable',
-        customerId: invoice.customerId,
+        subtype: 'receivable',
+        linkedEntityType: 'customer',
+        linkedEntityId: invoice.customerId,
         balance: 0,
         currency: invoice.currency,
+        isSystem: false,
         isActive: true,
         createdAt: now,
         updatedAt: now,
@@ -299,7 +338,10 @@ export async function createPaymentAction(
     revalidatePath(`/[locale]/(dashboard)/invoices/${invoice.id}`);
     revalidatePath(`/[locale]/(dashboard)/payments`);
 
-    return { success: true, data: payment };
+    // Serialize payment to convert Timestamp objects to ISO strings for client
+    const serializedPayment = serializePayment(payment);
+
+    return { success: true, data: serializedPayment };
   } catch (error) {
     console.error('Error creating payment:', error);
     return {
@@ -370,21 +412,21 @@ export async function createStripeCheckoutAction(
     const paymentRef = adminDb.collection(`tenants/${tenantId}/payments`).doc();
     const now = Timestamp.now();
 
-    const payment: Payment = {
+    const payment = {
       id: paymentRef.id,
       paymentNumber,
       invoiceId: invoice.id,
       customerId: invoice.customerId,
       amount,
       currency: invoice.currency,
-      method: 'stripe',
-      status: 'pending',
+      method: 'stripe' as const,
+      status: 'pending' as const,
       stripeCheckoutSessionId: session.id,
       paymentDate: now,
       createdBy: userId,
       createdAt: now,
       updatedAt: now,
-    };
+    } as unknown as Payment;
 
     await paymentRef.set(payment);
 
@@ -437,15 +479,15 @@ export async function uploadBankTransferProofAction(
     const paymentRef = adminDb.collection(`tenants/${tenantId}/payments`).doc();
     const now = Timestamp.now();
 
-    const payment: Payment = {
+    const payment = {
       id: paymentRef.id,
       paymentNumber,
       invoiceId: invoice.id,
       customerId: invoice.customerId,
       amount: validatedData.amount,
       currency: invoice.currency,
-      method: 'bank_transfer',
-      status: 'pending',
+      method: 'bank_transfer' as const,
+      status: 'pending' as const,
       bankTransfer: {
         transactionReference: validatedData.transactionReference,
         proofDocumentUrl: validatedData.proofDocumentUrl,
@@ -456,7 +498,7 @@ export async function uploadBankTransferProofAction(
       createdBy: userId,
       createdAt: now,
       updatedAt: now,
-    };
+    } as unknown as Payment;
 
     await paymentRef.set(payment);
 
@@ -472,7 +514,10 @@ export async function uploadBankTransferProofAction(
     revalidatePath(`/[locale]/(dashboard)/invoices/${invoice.id}`);
     revalidatePath(`/[locale]/(dashboard)/payments`);
 
-    return { success: true, data: payment };
+    // Serialize payment to convert Timestamp objects to ISO strings for client
+    const serializedPayment = serializePayment(payment);
+
+    return { success: true, data: serializedPayment };
   } catch (error) {
     console.error('Error uploading bank transfer proof:', error);
     return {
@@ -513,8 +558,8 @@ export async function approveBankTransferAction(
     const now = Timestamp.now();
 
     // Update payment status
-    const updateData: Partial<Payment> = {
-      status: 'completed',
+    const updateData = {
+      status: 'completed' as const,
       processedAt: now,
       bankTransfer: {
         ...payment.bankTransfer!,
@@ -526,13 +571,15 @@ export async function approveBankTransferAction(
 
     await paymentRef.update(updateData);
 
-    // Update invoice payment status
-    const currentPaid = await getTotalPaidAmount(tenantId, payment.invoiceId);
-    await updateInvoicePaymentStatus(tenantId, payment.invoiceId, currentPaid + payment.amount);
+    // Update invoice payment status (if payment has invoice)
+    if (payment.invoiceId) {
+      const currentPaid = await getTotalPaidAmount(tenantId, payment.invoiceId);
+      await updateInvoicePaymentStatus(tenantId, payment.invoiceId, currentPaid + payment.amount);
+    }
 
     // Update customer and booking (similar to cash payment)
-    const invoiceDoc = await adminDb.doc(`tenants/${tenantId}/invoices/${payment.invoiceId}`).get();
-    if (invoiceDoc.exists) {
+    const invoiceDoc = payment.invoiceId ? await adminDb.doc(`tenants/${tenantId}/invoices/${payment.invoiceId}`).get() : null;
+    if (invoiceDoc?.exists) {
       const invoice = invoiceDoc.data() as Invoice;
 
       const customerRef = adminDb.doc(`tenants/${tenantId}/customers/${invoice.customerId}`);
@@ -575,21 +622,29 @@ export async function approveBankTransferAction(
     });
 
     // Trigger payment approved notification for the customer
-    try {
-      await triggerPaymentApprovedNotification(tenantId, payment.customerId, {
-        paymentNumber: payment.paymentNumber,
-        amount: payment.amount,
-        currency: payment.currency,
-        invoiceId: payment.invoiceId,
-      });
-    } catch (notificationError) {
-      console.error('Failed to send payment approved notification:', notificationError);
+    if (payment.customerId && payment.invoiceId) {
+      try {
+        await triggerPaymentApprovedNotification(tenantId, payment.customerId, {
+          paymentNumber: payment.paymentNumber,
+          amount: payment.amount,
+          currency: payment.currency,
+          invoiceId: payment.invoiceId,
+        });
+      } catch (notificationError) {
+        console.error('Failed to send payment approved notification:', notificationError);
+      }
     }
 
     revalidatePath(`/[locale]/(dashboard)/payments`);
-    revalidatePath(`/[locale]/(dashboard)/invoices/${payment.invoiceId}`);
+    if (payment.invoiceId) {
+      revalidatePath(`/[locale]/(dashboard)/invoices/${payment.invoiceId}`);
+    }
 
-    return { success: true, data: { ...payment, ...updateData } as Payment };
+    // Serialize payment to convert Timestamp objects to ISO strings for client
+    const mergedPayment = { ...payment, ...updateData } as Payment;
+    const serializedPayment = serializePayment(mergedPayment);
+
+    return { success: true, data: serializedPayment };
   } catch (error) {
     console.error('Error approving bank transfer:', error);
     return {
@@ -629,8 +684,8 @@ export async function rejectBankTransferAction(
 
     const now = Timestamp.now();
 
-    const updateData: Partial<Payment> = {
-      status: 'failed',
+    const updateData = {
+      status: 'failed' as const,
       processedAt: now,
       bankTransfer: {
         ...payment.bankTransfer!,
@@ -654,21 +709,27 @@ export async function rejectBankTransferAction(
     });
 
     // Trigger payment rejected notification for the customer
-    try {
-      await triggerPaymentRejectedNotification(tenantId, payment.customerId, {
-        paymentNumber: payment.paymentNumber,
-        amount: payment.amount,
-        currency: payment.currency,
-        rejectionReason: validatedData.rejectionReason,
-        invoiceId: payment.invoiceId,
-      });
-    } catch (notificationError) {
-      console.error('Failed to send payment rejected notification:', notificationError);
+    if (payment.customerId && payment.invoiceId) {
+      try {
+        await triggerPaymentRejectedNotification(tenantId, payment.customerId, {
+          paymentNumber: payment.paymentNumber,
+          amount: payment.amount,
+          currency: payment.currency,
+          rejectionReason: validatedData.rejectionReason,
+          invoiceId: payment.invoiceId,
+        });
+      } catch (notificationError) {
+        console.error('Failed to send payment rejected notification:', notificationError);
+      }
     }
 
     revalidatePath(`/[locale]/(dashboard)/payments`);
 
-    return { success: true, data: { ...payment, ...updateData } as Payment };
+    // Serialize payment to convert Timestamp objects to ISO strings for client
+    const mergedPayment = { ...payment, ...updateData } as Payment;
+    const serializedPayment = serializePayment(mergedPayment);
+
+    return { success: true, data: serializedPayment };
   } catch (error) {
     console.error('Error rejecting bank transfer:', error);
     return {
@@ -774,7 +835,7 @@ export async function recordCustomerPaymentAction(
 ): Promise<ActionResult<Payment>> {
   try {
     const { createJournalEntry, createSimpleEntry } = await import('@/lib/accounting/journal-entries');
-    const { CurrencyCode } = await import('@/types/models/tenant');
+    // CurrencyCode is imported at the top of the file
 
     // Get tenant currency (simplified - in production, fetch from tenant settings)
     const tenantDoc = await adminDb.doc(`tenants/${tenantId}`).get();
@@ -791,7 +852,7 @@ export async function recordCustomerPaymentAction(
         return { success: false, error: 'Invoice not found' };
       }
 
-      invoice = invoiceDoc.data();
+      invoice = invoiceDoc.data() as Invoice;
 
       if (['paid', 'cancelled'].includes(invoice.status)) {
         return { success: false, error: 'Cannot add payment to a paid or cancelled invoice' };
@@ -810,10 +871,13 @@ export async function recordCustomerPaymentAction(
       .get();
 
     if (!paymentAccountDoc.exists) {
-      return { success: false, error: 'Payment account not found' };
+      return {
+        success: false,
+        error: 'Payment account not found. Please ensure Cash or Bank accounts are set up in your workspace.'
+      };
     }
 
-    const paymentAccount = paymentAccountDoc.data();
+    const paymentAccount = paymentAccountDoc.data()!;
 
     // Get customer receivable account
     const customerAccountsQuery = await adminDb
@@ -827,7 +891,7 @@ export async function recordCustomerPaymentAction(
       return { success: false, error: 'Customer account not found' };
     }
 
-    const customerAccount = customerAccountsQuery.docs[0].data();
+    const customerAccount = customerAccountsQuery.docs[0].data()!;
 
     // Generate payment number
     const paymentNumber = await generatePaymentNumber(tenantId);
@@ -837,10 +901,10 @@ export async function recordCustomerPaymentAction(
     const now = Timestamp.now();
     const paymentDate = data.paymentDate ? Timestamp.fromDate(data.paymentDate) : now;
 
-    const payment: Payment = {
+    const payment = {
       id: paymentRef.id,
       paymentNumber,
-      paymentType: 'customer_receipt',
+      paymentType: 'customer_receipt' as const,
       customerId: data.customerId,
       customerName: data.customerName,
       invoiceId: data.invoiceId,
@@ -850,14 +914,14 @@ export async function recordCustomerPaymentAction(
       accountId: data.accountId,
       accountName: data.accountName,
       ...(data.transactionReference && { transactionReference: data.transactionReference }),
-      status: 'completed',
+      status: 'completed' as const,
       paymentDate,
       processedAt: now,
       ...(data.notes && { notes: data.notes }),
       createdBy: userId,
       createdAt: now,
       updatedAt: now,
-    };
+    } as unknown as Payment;
 
     // T049 [US3] Create journal entry for customer payment
     // Debit: Cash/Bank account (increase asset)
@@ -930,7 +994,10 @@ export async function recordCustomerPaymentAction(
     }
     revalidatePath(`/[locale]/(dashboard)/customers/${data.customerId}`);
 
-    return { success: true, data: payment };
+    // Serialize payment to convert Timestamp objects to ISO strings for client
+    const serializedPayment = serializePayment(payment);
+
+    return { success: true, data: serializedPayment };
   } catch (error) {
     console.error('Error recording customer payment:', error);
     return {
@@ -1005,7 +1072,7 @@ export async function recordPartnerPaymentAction(
 ): Promise<ActionResult<Payment>> {
   try {
     const { createJournalEntry } = await import('@/lib/accounting/journal-entries');
-    const { CurrencyCode } = await import('@/types/models/tenant');
+    // CurrencyCode is imported at the top of the file
 
     // Get tenant currency
     const tenantDoc = await adminDb.doc(`tenants/${tenantId}`).get();
@@ -1035,10 +1102,13 @@ export async function recordPartnerPaymentAction(
       .get();
 
     if (!paymentAccountDoc.exists) {
-      return { success: false, error: 'Payment account not found' };
+      return {
+        success: false,
+        error: 'Payment account not found. Please ensure Cash or Bank accounts are set up in your workspace.'
+      };
     }
 
-    const paymentAccount = paymentAccountDoc.data();
+    const paymentAccount = paymentAccountDoc.data()!;
 
     // Get partner payable account
     const partnerAccountsQuery = await adminDb
@@ -1052,7 +1122,7 @@ export async function recordPartnerPaymentAction(
       return { success: false, error: 'Partner account not found' };
     }
 
-    const partnerAccount = partnerAccountsQuery.docs[0].data();
+    const partnerAccount = partnerAccountsQuery.docs[0].data()!;
 
     // Generate payment number
     const paymentNumber = await generatePaymentNumber(tenantId);
@@ -1062,10 +1132,10 @@ export async function recordPartnerPaymentAction(
     const now = Timestamp.now();
     const paymentDate = data.paymentDate ? Timestamp.fromDate(data.paymentDate) : now;
 
-    const payment: Payment = {
+    const payment = {
       id: paymentRef.id,
       paymentNumber,
-      paymentType: 'partner_payment',
+      paymentType: 'partner_payment' as const,
       partnerId: data.partnerId,
       partnerName: data.partnerName,
       invoiceIds: data.invoiceIds,
@@ -1078,41 +1148,27 @@ export async function recordPartnerPaymentAction(
       accountId: data.accountId,
       accountName: data.accountName,
       ...(data.transactionReference && { transactionReference: data.transactionReference }),
-      status: 'completed',
+      status: 'completed' as const,
       paymentDate,
       processedAt: now,
       ...(data.notes && { notes: data.notes }),
       createdBy: userId,
       createdAt: now,
       updatedAt: now,
-    };
+    } as unknown as Payment;
 
     // T057 [US4] Create journal entry for partner payment
-    // This is a compound entry with 3 lines:
-    // Debit: Partner Payable account (decrease liability) - full gross amount
+    // CORRECTED: Simple 2-line entry since commission was already recorded at invoice creation
+    // The AP balance represents the NET amount we owe the partner (gross - commission)
+    // Debit: Partner Payable account (decrease liability) - net amount we owe
     // Credit: Cash/Bank account (decrease asset) - net amount paid
-    // Credit: Commission Revenue account (increase income) - commission retained
-
-    // Get commission revenue account
-    const revenueAccountsQuery = await adminDb
-      .collection(`tenants/${tenantId}/accounts`)
-      .where('type', '==', 'income')
-      .where('subtype', '==', 'revenue')
-      .limit(1)
-      .get();
-
-    if (revenueAccountsQuery.empty) {
-      return { success: false, error: 'Revenue account not found' };
-    }
-
-    const revenueAccount = revenueAccountsQuery.docs[0].data();
 
     const journalLines = [
       {
         accountId: partnerAccount.id,
         accountName: partnerAccount.name,
         accountCode: partnerAccount.code,
-        debit: data.grossAmount,
+        debit: data.netAmount,  // Clear the net liability (what we actually owe)
         credit: 0,
       },
       {
@@ -1120,20 +1176,13 @@ export async function recordPartnerPaymentAction(
         accountName: paymentAccount.name,
         accountCode: paymentAccount.code,
         debit: 0,
-        credit: data.netAmount,
-      },
-      {
-        accountId: revenueAccount.id,
-        accountName: revenueAccount.name,
-        accountCode: revenueAccount.code,
-        debit: 0,
-        credit: data.commissionAmount,
+        credit: data.netAmount,  // Cash paid out
       },
     ];
 
     const journalEntry = await createJournalEntry({
       tenantId,
-      description: `Partner payment ${paymentNumber} to ${data.partnerName} (Gross: ${data.grossAmount}, Commission: ${data.commissionAmount}, Net: ${data.netAmount})`,
+      description: `Partner payment ${paymentNumber} to ${data.partnerName} (Net: ${data.netAmount})`,
       type: 'partner_payment',
       lines: journalLines,
       sourceType: 'payment',
@@ -1197,7 +1246,10 @@ export async function recordPartnerPaymentAction(
     }
     revalidatePath(`/[locale]/(dashboard)/partners/${data.partnerId}`);
 
-    return { success: true, data: payment };
+    // Serialize payment to convert Timestamp objects to ISO strings for client
+    const serializedPayment = serializePayment(payment);
+
+    return { success: true, data: serializedPayment };
   } catch (error) {
     console.error('Error recording partner payment:', error);
     return {
@@ -1250,22 +1302,53 @@ export async function getPartnerBalanceAction(
 }
 
 /**
+ * Serialize Account object for client component consumption
+ * Converts Firestore Timestamps to ISO strings
+ */
+function serializeAccount(data: any): any {
+  const account = { ...data };
+
+  // Convert Timestamp objects to ISO strings
+  if (account.lastUpdated?._seconds !== undefined) {
+    account.lastUpdated = new Date(account.lastUpdated._seconds * 1000).toISOString();
+  } else if (account.lastUpdated?.toDate) {
+    account.lastUpdated = account.lastUpdated.toDate().toISOString();
+  }
+
+  if (account.createdAt?._seconds !== undefined) {
+    account.createdAt = new Date(account.createdAt._seconds * 1000).toISOString();
+  } else if (account.createdAt?.toDate) {
+    account.createdAt = account.createdAt.toDate().toISOString();
+  }
+
+  if (account.updatedAt?._seconds !== undefined) {
+    account.updatedAt = new Date(account.updatedAt._seconds * 1000).toISOString();
+  } else if (account.updatedAt?.toDate) {
+    account.updatedAt = account.updatedAt.toDate().toISOString();
+  }
+
+  return account;
+}
+
+/**
  * Get payment accounts (cash and bank accounts for payment recording)
  */
 export async function getPaymentAccountsAction(
   tenantId: string
 ): Promise<ActionResult<any[]>> {
   try {
+    // Fetch all active accounts and filter in JS to avoid compound query index issues
     const accountsSnapshot = await adminDb
       .collection(`tenants/${tenantId}/accounts`)
       .where('isActive', '==', true)
-      .where('subtype', 'in', ['cash', 'bank'])
       .get();
 
-    const accounts = accountsSnapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    }));
+    const accounts = accountsSnapshot.docs
+      .map((doc) => serializeAccount({
+        id: doc.id,
+        ...doc.data(),
+      }))
+      .filter((acc: any) => acc.subtype === 'cash' || acc.subtype === 'bank');
 
     return {
       success: true,

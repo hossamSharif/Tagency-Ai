@@ -64,7 +64,8 @@ export function SettlementList({
   const dateLocale = isArabic ? arSA : enUS;
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat(isArabic ? 'ar-SA' : 'en-US', {
+    // Always use 'en-US' locale for English numerals
+    return new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency,
       minimumFractionDigits: 0,

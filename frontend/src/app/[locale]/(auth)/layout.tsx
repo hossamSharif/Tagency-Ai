@@ -1,6 +1,9 @@
-import { useTranslations } from 'next-intl';
-import { getTranslations } from 'next-intl/server';
+import { getTranslations, setRequestLocale } from 'next-intl/server';
 import Link from 'next/link';
+import Image from 'next/image';
+
+// Force dynamic rendering for auth pages
+export const dynamic = 'force-dynamic';
 
 interface AuthLayoutProps {
   children: React.ReactNode;
@@ -18,20 +21,27 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
 
 export default async function AuthLayout({ children, params }: AuthLayoutProps) {
   const { locale } = await params;
+
+  // Enable static rendering for this page
+  setRequestLocale(locale);
+
   const isArabic = locale === 'ar';
 
   return (
     <div className="min-h-screen bg-muted flex flex-col">
       {/* Header */}
       <header className="py-4 px-6">
-        <Link href={`/${locale}`} className="flex items-center gap-2">
-          <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
-            <span className="text-primary-foreground font-bold text-xl">
-              {isArabic ? 'و' : 'T'}
-            </span>
-          </div>
+        <Link href={`/${locale}`} className="flex items-center gap-3">
+          <Image
+            src="/logo.svg"
+            alt="Agency AI"
+            width={40}
+            height={40}
+            className="flex-shrink-0"
+            priority
+          />
           <span className="text-xl font-bold text-foreground">
-            {isArabic ? 'وكالة السفر' : 'Travel Agency'}
+            Agency AI
           </span>
         </Link>
       </header>
@@ -47,7 +57,7 @@ export default async function AuthLayout({ children, params }: AuthLayoutProps) 
       <footer className="py-4 px-6 text-center text-sm text-muted-foreground">
         <p>
           &copy; {new Date().getFullYear()}{' '}
-          {isArabic ? 'وكالة السفر. جميع الحقوق محفوظة.' : 'Travel Agency. All rights reserved.'}
+Agency AI. {isArabic ? 'جميع الحقوق محفوظة.' : 'All rights reserved.'}
         </p>
       </footer>
     </div>

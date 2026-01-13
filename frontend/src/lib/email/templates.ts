@@ -327,7 +327,7 @@ export const englishTemplates: Record<string, EmailTemplate> = {
 <head>
   <meta charset="UTF-8">
   <style>
-    body { font-family: 'Inter', Arial, sans-serif; }
+    body { font-family: 'Noto Kufi Arabic', Arial, sans-serif; }
     .container { max-width: 600px; margin: 0 auto; padding: 20px; }
     .header { background: #1E5631; color: white; padding: 20px; text-align: center; }
     .content { padding: 30px; background: #f9f9f9; }
@@ -372,7 +372,7 @@ export const englishTemplates: Record<string, EmailTemplate> = {
 <head>
   <meta charset="UTF-8">
   <style>
-    body { font-family: 'Inter', Arial, sans-serif; }
+    body { font-family: 'Noto Kufi Arabic', Arial, sans-serif; }
     .container { max-width: 600px; margin: 0 auto; padding: 20px; }
     .header { background: #1E5631; color: white; padding: 20px; text-align: center; }
     .content { padding: 30px; background: #f9f9f9; }
@@ -417,7 +417,7 @@ export const englishTemplates: Record<string, EmailTemplate> = {
 <head>
   <meta charset="UTF-8">
   <style>
-    body { font-family: 'Inter', Arial, sans-serif; }
+    body { font-family: 'Noto Kufi Arabic', Arial, sans-serif; }
     .container { max-width: 600px; margin: 0 auto; padding: 20px; }
     .header { background: #1E5631; color: white; padding: 20px; text-align: center; }
     .content { padding: 30px; background: #f9f9f9; }
@@ -458,7 +458,7 @@ export const englishTemplates: Record<string, EmailTemplate> = {
 <head>
   <meta charset="UTF-8">
   <style>
-    body { font-family: 'Inter', Arial, sans-serif; }
+    body { font-family: 'Noto Kufi Arabic', Arial, sans-serif; }
     .container { max-width: 600px; margin: 0 auto; padding: 20px; }
     .header { background: #D4AF37; color: white; padding: 20px; text-align: center; }
     .content { padding: 30px; background: #f9f9f9; }
@@ -500,7 +500,7 @@ export const englishTemplates: Record<string, EmailTemplate> = {
 <head>
   <meta charset="UTF-8">
   <style>
-    body { font-family: 'Inter', Arial, sans-serif; }
+    body { font-family: 'Noto Kufi Arabic', Arial, sans-serif; }
     .container { max-width: 600px; margin: 0 auto; padding: 20px; }
     .header { background: #1E5631; color: white; padding: 20px; text-align: center; }
     .content { padding: 30px; background: #f9f9f9; }

@@ -8,6 +8,13 @@ export const createCashPaymentSchema = z.object({
   invoiceId: z.string().min(1, 'Invoice ID is required'),
   amount: z.number().positive('Amount must be greater than 0'),
   notes: z.string().max(500, 'Notes must be less than 500 characters').optional(),
+  // Additional fields for service-based invoices
+  customerId: z.string().optional(),
+  currency: z.string().optional(),
+  method: z.enum(['cash', 'bank']).optional(),
+  accountId: z.string().min(1, 'Payment account is required'),
+  accountName: z.string().optional(),
+  transactionReference: z.string().optional(),
 });
 
 // Create bank transfer payment schema

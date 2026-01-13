@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { CustomerBalanceData } from '@/hooks/use-customer-balance';
+import { useTenant } from '@/hooks/use-tenant';
 
 interface CustomerBalanceCardProps {
   data: CustomerBalanceData;
@@ -26,16 +27,20 @@ interface CustomerBalanceCardProps {
 
 export function CustomerBalanceCard({
   data,
-  currency = 'USD',
+  currency,
   locale = 'ar',
 }: CustomerBalanceCardProps) {
   const t = useTranslations('payments');
+  const { tenant } = useTenant();
   const dateLocale = locale === 'ar' ? ar : enUS;
+  // Use tenant's currency if currency prop is not provided
+  const effectiveCurrency = currency || tenant?.currency || 'SAR';
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat(locale === 'ar' ? 'ar-SA' : 'en-US', {
+    // Always use 'en-US' locale for English numerals
+    return new Intl.NumberFormat('en-US', {
       style: 'currency',
-      currency,
+      currency: effectiveCurrency,
     }).format(amount);
   };
 
