@@ -159,15 +159,15 @@
 
 ### Implementation for User Story 4
 
-- [ ] T053 [P] [US4] Create partner-payment-form component in frontend/src/components/features/payments/partner-payment-form.tsx
-- [ ] T054 [P] [US4] Create partner-balance-card component in frontend/src/components/features/payments/partner-balance-card.tsx
-- [ ] T055 [US4] Add recordPartnerPayment server action in frontend/src/app/actions/payments.ts
-- [ ] T056 [US4] Add getPartnerBalance server action in frontend/src/app/actions/payments.ts
-- [ ] T057 [US4] Add journal entry creation on partner payment in frontend/src/app/actions/payments.ts
-- [ ] T058 [US4] Add partner payments section to payments page in frontend/src/app/[locale]/(dashboard)/payments/page.tsx
-- [ ] T059 [US4] Update invoice commission status when partner is paid in frontend/src/app/actions/payments.ts
+- [X] T053 [P] [US4] Create partner-payment-form component in frontend/src/components/features/payments/partner-payment-form.tsx
+- [X] T054 [P] [US4] Create partner-balance-card component in frontend/src/components/features/payments/partner-balance-card.tsx
+- [X] T055 [US4] Add recordPartnerPayment server action in frontend/src/app/actions/payments.ts
+- [X] T056 [US4] Add getPartnerBalance server action in frontend/src/app/actions/payments.ts
+- [X] T057 [US4] Add journal entry creation on partner payment in frontend/src/app/actions/payments.ts
+- [X] T058 [US4] Add partner payments section to payments page in frontend/src/app/[locale]/(dashboard)/payments/page.tsx
+- [X] T059 [US4] Update invoice commission status when partner is paid in frontend/src/app/actions/payments.ts
 
-**Checkpoint**: Partner payment recording is fully functional - commission calculations work and partner balances are accurate
+**Checkpoint**: ✅ Partner payment recording is fully functional - commission calculations work and partner balances are accurate
 
 ---
 
@@ -179,14 +179,14 @@
 
 ### Implementation for User Story 5
 
-- [ ] T060 [P] [US5] Create statement server actions in frontend/src/app/actions/statements.ts
-- [ ] T061 [P] [US5] Create statement-view component in frontend/src/components/features/statements/statement-view.tsx
-- [ ] T062 [P] [US5] Create statement-filters component in frontend/src/components/features/statements/statement-filters.tsx
-- [ ] T063 [P] [US5] Create statement PDF template in frontend/src/lib/pdf/statement-template.tsx
-- [ ] T064 [US5] Create statements page in frontend/src/app/[locale]/(dashboard)/statements/page.tsx
-- [ ] T065 [US5] Add statement export functionality (PDF download) in frontend/src/components/features/statements/statement-view.tsx
+- [X] T060 [P] [US5] Create statement server actions in frontend/src/app/actions/statements.ts
+- [X] T061 [P] [US5] Create statement-view component in frontend/src/components/features/statements/statement-view.tsx
+- [X] T062 [P] [US5] Create statement-filters component in frontend/src/components/features/statements/statement-filters.tsx
+- [X] T063 [P] [US5] Create statement PDF template in frontend/src/lib/pdf/statement-template.tsx
+- [X] T064 [US5] Create statements page in frontend/src/app/[locale]/(dashboard)/statements/page.tsx
+- [X] T065 [US5] Add statement export functionality (PDF download) in frontend/src/components/features/statements/statement-view.tsx
 
-**Checkpoint**: Account statements are fully functional - staff can view and export customer/partner statements
+**Checkpoint**: ✅ Account statements are fully functional - staff can view and export customer/partner statements
 
 ---
 
@@ -198,13 +198,13 @@
 
 ### Implementation for User Story 7
 
-- [ ] T066 [P] [US7] Create journal-table component in frontend/src/components/features/accounting/journal-table.tsx
-- [ ] T067 [P] [US7] Create journal-filters component in frontend/src/components/features/accounting/journal-filters.tsx
-- [ ] T068 [P] [US7] Create journal-entry-detail component in frontend/src/components/features/accounting/journal-entry-detail.tsx
-- [ ] T069 [US7] Add getJournalEntry server action in frontend/src/app/actions/accounting.ts
-- [ ] T070 [US7] Create journal entries page in frontend/src/app/[locale]/(dashboard)/accounting/journal/page.tsx
+- [X] T066 [P] [US7] Create journal-table component in frontend/src/components/features/accounting/journal-table.tsx
+- [X] T067 [P] [US7] Create journal-filters component in frontend/src/components/features/accounting/journal-filters.tsx
+- [X] T068 [P] [US7] Create journal-entry-detail component in frontend/src/components/features/accounting/journal-entry-detail.tsx
+- [X] T069 [US7] Add getJournalEntry server action in frontend/src/app/actions/accounting.ts
+- [X] T070 [US7] Create journal entries page in frontend/src/app/[locale]/(dashboard)/accounting/journal/page.tsx
 
-**Checkpoint**: Journal view is fully functional - staff can view and filter all financial transactions
+**Checkpoint**: ✅ Journal view is fully functional - staff can view and filter all financial transactions
 
 ---
 
@@ -216,12 +216,12 @@
 
 ### Implementation for User Story 8
 
-- [ ] T071 [P] [US8] Create expense server actions in frontend/src/app/actions/expenses.ts
-- [ ] T072 [P] [US8] Create expense-form component in frontend/src/components/features/expenses/expense-form.tsx
-- [ ] T073 [P] [US8] Create expense-list component in frontend/src/components/features/expenses/expense-list.tsx
-- [ ] T074 [P] [US8] Create expense-card component in frontend/src/components/features/expenses/expense-card.tsx
-- [ ] T075 [US8] Create expenses page in frontend/src/app/[locale]/(dashboard)/accounting/expenses/page.tsx
-- [ ] T076 [US8] Add journal entry creation on expense recording in frontend/src/app/actions/expenses.ts
+- [X] T071 [P] [US8] Create expense server actions in frontend/src/app/actions/expenses.ts
+- [X] T072 [P] [US8] Create expense-form component in frontend/src/components/features/expenses/expense-form.tsx
+- [X] T073 [P] [US8] Create expense-list component in frontend/src/components/features/expenses/expense-list.tsx
+- [X] T074 [P] [US8] Create expense-card component in frontend/src/components/features/expenses/expense-card.tsx
+- [X] T075 [US8] Create expenses page in frontend/src/app/[locale]/(dashboard)/accounting/expenses/page.tsx
+- [X] T076 [US8] Add journal entry creation on expense recording in frontend/src/app/actions/expenses.ts
 
 **Checkpoint**: Business expense recording is fully functional - expenses create journal entries and update account balances
 
@@ -235,13 +235,13 @@
 
 ### Implementation for User Story 9
 
-- [ ] T077 [P] [US9] Create cancel-invoice-dialog component in frontend/src/components/features/invoices/cancel-invoice-dialog.tsx
-- [ ] T078 [US9] Add cancelInvoice server action in frontend/src/app/actions/invoices.ts
-- [ ] T079 [US9] Add reversal journal entry creation on cancel in frontend/src/app/actions/invoices.ts
-- [ ] T080 [US9] Add cancellation UI to invoice detail page in frontend/src/app/[locale]/(dashboard)/invoices/[invoiceId]/page.tsx
-- [ ] T081 [US9] Handle partial payments on cancellation (refund decision UI) in frontend/src/components/features/invoices/cancel-invoice-dialog.tsx
+- [X] T077 [P] [US9] Create cancel-invoice-dialog component in frontend/src/components/features/invoices/cancel-invoice-dialog.tsx
+- [X] T078 [US9] Add cancelInvoice server action in frontend/src/app/actions/invoices.ts
+- [X] T079 [US9] Add reversal journal entry creation on cancel in frontend/src/app/actions/invoices.ts
+- [X] T080 [US9] Add cancellation UI to invoice detail page in frontend/src/app/[locale]/(dashboard)/invoices/[invoiceId]/page.tsx
+- [X] T081 [US9] Handle partial payments on cancellation (refund decision UI) in frontend/src/components/features/invoices/cancel-invoice-dialog.tsx
 
-**Checkpoint**: Invoice cancellation is fully functional - financial entries are properly reversed
+**Checkpoint**: ✅ Invoice cancellation is fully functional - financial entries are properly reversed
 
 ---
 
@@ -253,15 +253,15 @@
 
 ### Implementation for User Story 10
 
-- [ ] T082 [P] [US10] Create quick-add customer modal in frontend/src/components/features/invoices/quick-add-modals/customer-modal.tsx
-- [ ] T083 [P] [US10] Create quick-add partner modal in frontend/src/components/features/invoices/quick-add-modals/partner-modal.tsx
-- [ ] T084 [P] [US10] Create quick-add service modal in frontend/src/components/features/invoices/quick-add-modals/service-modal.tsx
-- [ ] T085 [US10] Add quickAddCustomer server action in frontend/src/app/actions/customers.ts
-- [ ] T086 [US10] Add quickAddPartner server action in frontend/src/app/actions/partners.ts
-- [ ] T087 [US10] Add quickAddService server action in frontend/src/app/actions/services-catalog.ts
-- [ ] T088 [US10] Integrate quick-add modals into invoice-form component in frontend/src/components/features/invoices/invoice-form.tsx
+- [X] T082 [P] [US10] Create quick-add customer modal in frontend/src/components/features/invoices/quick-add-modals/customer-modal.tsx
+- [X] T083 [P] [US10] Create quick-add partner modal in frontend/src/components/features/invoices/quick-add-modals/partner-modal.tsx
+- [X] T084 [P] [US10] Create quick-add service modal in frontend/src/components/features/invoices/quick-add-modals/service-modal.tsx
+- [X] T085 [US10] Add quickAddCustomer server action in frontend/src/app/actions/customers.ts
+- [X] T086 [US10] Add quickAddPartner server action in frontend/src/app/actions/partners.ts
+- [X] T087 [US10] Add quickAddService server action in frontend/src/app/actions/services-catalog.ts
+- [X] T088 [US10] Integrate quick-add modals into invoice-form component in frontend/src/components/features/invoices/invoice-form.tsx
 
-**Checkpoint**: Quick-add functionality is complete - staff can create entities without leaving the invoice page
+**Checkpoint**: ✅ Quick-add functionality is complete - staff can create entities without leaving the invoice page
 
 ---
 
@@ -269,15 +269,15 @@
 
 **Purpose**: Improvements that affect multiple user stories
 
-- [ ] T089 [P] Implement optimistic locking error handling in invoice updates
-- [ ] T090 [P] Add version conflict UI (reload prompt) across all forms
-- [ ] T091 [P] Add loading states and error boundaries to all pages
-- [ ] T092 [P] Add empty states for all list views
-- [ ] T093 [P] Ensure RTL support for Arabic locale in all new components
-- [ ] T094 [P] Add responsive design for mobile views
-- [ ] T095 Validate all navigation links and breadcrumbs
-- [ ] T096 Run quickstart.md validation checklist with Chrome MCP
-- [ ] T097 Performance review - ensure invoice creation < 5 min, payment recording < 1 min
+- [X] T089 [P] Implement optimistic locking error handling in invoice updates
+- [X] T090 [P] Add version conflict UI (reload prompt) across all forms
+- [X] T091 [P] Add loading states and error boundaries to all pages
+- [X] T092 [P] Add empty states for all list views
+- [X] T093 [P] Ensure RTL support for Arabic locale in all new components
+- [X] T094 [P] Add responsive design for mobile views
+- [X] T095 Validate all navigation links and breadcrumbs
+- [ ] T096 Run quickstart.md validation checklist with Chrome MCP (manual testing required)
+- [ ] T097 Performance review - ensure invoice creation < 5 min, payment recording < 1 min (manual testing required)
 
 ---
 

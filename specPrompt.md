@@ -1,4 +1,4 @@
-/spec
+ 
 Build a SaaS web application for travel agencies to manage tourism packages, services, customers, and partner offices. The app must be mobile responsive, support Arabic (default) and English, and include dark/light themes.
 
 ### Core Purpose

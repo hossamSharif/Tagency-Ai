@@ -1,627 +1,455 @@
 # TEST-PLAN: Service-Based Invoice & Accounting System
 
-Generated: 2026-01-05 20:45
-Spec Source: specs/001-service-invoice-accounting/spec.md
-Executed By: Claude Code + Ralph Wiggum
+Generated: 2026-01-10
+Spec Source: specs/001-service-invoice-accounting/
+Database: Firebase
+App URL: http://localhost:3001
+Branch: 001-service-invoice-accounting
 
 ---
 
-## 🔧 Environment
+## Previously Tested Modules (Skipping)
 
-| Setting | Value |
-|---------|-------|
-| App URL | http://localhost:3002 |
-| Database | Firebase |
-| Auth Account | hossamsharif1990@gmail.com |
-| Viewports | Desktop (1920x1080), Mobile (375x812) |
-
----
-
-## 🔐 Pre-Test: Authentication
-
-| ID | Test | Steps | Expected | Tool |
-|----|------|-------|----------|------|
-| AUTH-1 | Login | Navigate to /login → Enter hossamsharif1990@gmail.com / Hossam1990@ → Submit | Redirect to dashboard | Chrome MCP |
-| AUTH-2 | Session | Refresh page | Stay logged in | Chrome MCP |
-
-### **HARD STOP** - Authentication Checkpoint
-- [x] Logged in successfully
-- [x] Correct user role
-- [x] Session persisted
+The following modules have already been tested with passing results:
+- Customers (TEST-REPORT-Customers.md) - 87% pass rate
+- Partners (TEST-REPORT-Partners.md) - 100% pass rate
+- Payments (TEST-REPORT-Payments.md) - 96% pass rate
+- Accounts (TEST-REPORT-Accounts.md) - 98% pass rate
+- Settings (TEST-REPORT-Settings.md) - 82% pass rate
 
 ---
 
-## 📄 Page: /services (User Story 2)
+## Pre-Test: Authentication
 
-### UI Tests
 | ID | Test | Steps | Expected | Tool | Status |
 |----|------|-------|----------|------|--------|
-| SVC-UI-1 | Page Load | Navigate to /services | Page renders, no errors | Chrome | [ ] |
-| SVC-UI-2 | Elements | Check all elements | All visible: title, "Add Service" button, service list/table | Chrome | [ ] |
-| SVC-UI-3 | Empty State | If no services exist | Empty state message displayed | Chrome | [ ] |
-| SVC-UI-4 | Loading State | Refresh page | Loading indicator appears briefly | Chrome | [ ] |
+| AUTH-1 | Login with primary account | Navigate to /login → Enter hossamsharif1990@gmail.com / Hossam1990@ → Submit | Redirect to dashboard | Chrome MCP | [ ] |
+| AUTH-2 | Verify session persists | Navigate to /services | Page loads without redirect to login | Chrome MCP | [ ] |
 
-### i18n Tests
-| ID | Test | Steps | Expected | Tool | Status |
-|----|------|-------|----------|------|--------|
-| SVC-i18n-1 | Translations EN | Set locale to English, scan page text | No keys like "services.title" visible | Chrome | [ ] |
-| SVC-i18n-2 | Translations AR | Set locale to Arabic, scan page text | No keys like "services.title" visible | Chrome | [ ] |
-| SVC-i18n-3 | RTL EN | English locale | Left-to-right layout | Chrome | [ ] |
-| SVC-i18n-4 | RTL AR | Arabic locale | Right-to-left layout | Chrome | [ ] |
-
-### CRUD Tests
-| ID | Test | Steps | Expected | Tool | Status |
-|----|------|-------|----------|------|--------|
-| SVC-CRUD-1 | List Services | Load page with existing services | All services displayed with name, price, type | Chrome + Firebase | [ ] |
-| SVC-CRUD-2 | Navigate to Create | Click "Add Service" button | Redirect to /services/new | Chrome | [ ] |
-| SVC-CRUD-3 | Navigate to Edit | Click on a service card/row | Redirect to /services/[serviceId] | Chrome | [ ] |
-| SVC-CRUD-4 | Delete Prevention | Attempt to delete service used in invoices | Warning shown, deletion prevented | Chrome + Firebase | [ ] |
-
-### Mobile Tests
-| ID | Test | Steps | Expected | Tool | Status |
-|----|------|-------|----------|------|--------|
-| SVC-MOB-1 | Layout | Set viewport 375x812 | Responsive layout, no horizontal scroll | Chrome | [ ] |
-| SVC-MOB-2 | RTL Mobile | Arabic locale, 375x812 | Correct RTL alignment | Chrome | [ ] |
-
-### **HARD STOP** - Services List Page Complete
-- [ ] All UI tests pass
-- [ ] All i18n resolved
-- [ ] All CRUD verified in Firebase
-- [ ] Mobile tested
+### **HARD STOP** - Auth Checkpoint
+- [ ] Logged in successfully
+- [ ] Can access dashboard
 
 ---
 
-## 📄 Page: /services/new (User Story 2)
+## Module 1: Services Catalog (User Story 2)
 
-### UI Tests
+### Page: /services - List View
+
+#### UI Tests
 | ID | Test | Steps | Expected | Tool | Status |
 |----|------|-------|----------|------|--------|
-| SVC-NEW-UI-1 | Page Load | Navigate to /services/new | Form renders with all fields | Chrome | [ ] |
-| SVC-NEW-UI-2 | Form Fields | Check form | Name, price, type dropdown, provider option visible | Chrome | [ ] |
-| SVC-NEW-UI-3 | Partner Fields | Select "Partner" provider | Commission percentage field appears | Chrome | [ ] |
+| SVC-UI-1 | Page loads | Navigate to /services | Services list page renders | Chrome MCP | [ ] |
+| SVC-UI-2 | Page title displays | Check page header | Shows "Services" or Arabic equivalent | Chrome MCP | [ ] |
+| SVC-UI-3 | Create button visible | Look for add/create button | "Add Service" or "+" button visible | Chrome MCP | [ ] |
+| SVC-UI-4 | Empty state (if no services) | Check list when empty | Shows empty state message | Chrome MCP | [ ] |
+| SVC-UI-5 | Service cards display | Check list with services | Each service shows name, price, type | Chrome MCP | [ ] |
 
-### i18n Tests
+#### i18n Tests
 | ID | Test | Steps | Expected | Tool | Status |
 |----|------|-------|----------|------|--------|
-| SVC-NEW-i18n-1 | Translations EN | English locale | All labels translated correctly | Chrome | [ ] |
-| SVC-NEW-i18n-2 | Translations AR | Arabic locale | All labels translated correctly | Chrome | [ ] |
-| SVC-NEW-i18n-3 | RTL AR | Arabic locale | Form labels right-aligned | Chrome | [ ] |
+| SVC-i18n-1 | Page title translated | Check EN and AR | No raw translation keys | Chrome MCP | [ ] |
+| SVC-i18n-2 | Service types translated | Check service type labels | Visa, Ticket, Hotel, Insurance display properly | Chrome MCP | [ ] |
+| SVC-i18n-3 | Button labels translated | Check all buttons | No raw keys visible | Chrome MCP | [ ] |
 
-### CRUD Tests
+#### CRUD Tests - Create
 | ID | Test | Steps | Expected | Tool | Status |
 |----|------|-------|----------|------|--------|
-| SVC-NEW-CRUD-1 | Create Office Service | Fill name="Test Service", price=100, type="Visa", provider="Office" → Submit | New service created in Firebase, redirect to /services | Chrome + Firebase | [ ] |
-| SVC-NEW-CRUD-2 | Create Partner Service | Fill form with partner provider, commission=10% → Submit | Service created with commission field | Chrome + Firebase | [ ] |
+| SVC-CR-1 | Navigate to create form | Click "Add Service" | Create service form opens | Chrome MCP | [ ] |
+| SVC-CR-2 | Form fields present | Check form | Name, Price, Type, Provider type fields visible | Chrome MCP | [ ] |
+| SVC-CR-3 | Create office service | Fill form with office provider → Submit | Service created successfully | Chrome MCP | [ ] |
+| SVC-CR-4 | Create partner service | Fill form with partner provider → Submit | Service created with commission field | Chrome MCP | [ ] |
+| SVC-CR-5 | Commission field required | Select partner provider, leave commission empty | Validation error shown | Chrome MCP | [ ] |
+| SVC-CR-6 | Validation errors | Submit empty form | Required field errors shown | Chrome MCP | [ ] |
 
-### Validation Tests
+#### CRUD Tests - Read
 | ID | Test | Steps | Expected | Tool | Status |
 |----|------|-------|----------|------|--------|
-| SVC-NEW-VAL-1 | Required Name | Leave name empty → Submit | Error: "Name is required" | Chrome | [ ] |
-| SVC-NEW-VAL-2 | Required Price | Leave price empty → Submit | Error: "Price is required" | Chrome | [ ] |
-| SVC-NEW-VAL-3 | Required Commission | Select partner without commission → Submit | Error: "Commission is required for partner services" | Chrome | [ ] |
-| SVC-NEW-VAL-4 | Positive Price | Enter negative price → Submit | Error: "Price must be positive" | Chrome | [ ] |
+| SVC-RD-1 | View service detail | Click on service card | Service detail page/modal opens | Chrome MCP | [ ] |
+| SVC-RD-2 | All fields displayed | Check detail view | Shows name, price, type, provider, commission | Chrome MCP | [ ] |
 
-### Mobile Tests
+#### CRUD Tests - Update
 | ID | Test | Steps | Expected | Tool | Status |
 |----|------|-------|----------|------|--------|
-| SVC-NEW-MOB-1 | Layout | Set viewport 375x812 | Form fields stack vertically | Chrome | [ ] |
-| SVC-NEW-MOB-2 | RTL Mobile | Arabic locale, 375x812 | Correct RTL form layout | Chrome | [ ] |
+| SVC-UP-1 | Edit button visible | View service detail | Edit button present | Chrome MCP | [ ] |
+| SVC-UP-2 | Edit form pre-populated | Click edit | Form shows current values | Chrome MCP | [ ] |
+| SVC-UP-3 | Update service | Modify price → Save | Price updated in list | Chrome MCP | [ ] |
 
-### **HARD STOP** - Create Service Page Complete
-- [ ] All UI tests pass
-- [ ] All i18n resolved
-- [ ] Service creation works in Firebase
-- [ ] Validation works correctly
-- [ ] Mobile tested
+#### CRUD Tests - Delete
+| ID | Test | Steps | Expected | Tool | Status |
+|----|------|-------|----------|------|--------|
+| SVC-DL-1 | Delete button visible | View service detail | Delete button present | Chrome MCP | [ ] |
+| SVC-DL-2 | Delete confirmation | Click delete | Confirmation dialog shown | Chrome MCP | [ ] |
+| SVC-DL-3 | Delete unused service | Confirm delete | Service removed from list | Chrome MCP | [ ] |
+| SVC-DL-4 | Cannot delete service in use | Try to delete service used in invoice | Warning/error shown | Chrome MCP | [ ] |
+
+#### Mobile Tests
+| ID | Test | Steps | Expected | Tool | Status |
+|----|------|-------|----------|------|--------|
+| SVC-MOB-1 | Responsive layout | Set viewport 375x812 | List displays properly | Chrome MCP | [ ] |
+| SVC-MOB-2 | Touch targets | Check buttons | Buttons are tappable size | Chrome MCP | [ ] |
+
+### **HARD STOP** - Services Module Complete
+- [ ] All CRUD operations work
+- [ ] i18n is correct
+- [ ] No console errors
 
 ---
 
-## 📄 Page: /services/[serviceId] (User Story 2)
+## Module 2: Invoices (User Story 1, 9, 10)
 
-### UI Tests
+### Page: /invoices - List View
+
+#### UI Tests
 | ID | Test | Steps | Expected | Tool | Status |
 |----|------|-------|----------|------|--------|
-| SVC-EDIT-UI-1 | Page Load | Navigate to existing service detail | Form pre-filled with service data | Chrome | [ ] |
-| SVC-EDIT-UI-2 | All Fields Editable | Check form | All fields editable | Chrome | [ ] |
+| INV-UI-1 | Page loads | Navigate to /invoices | Invoice list page renders | Chrome MCP | [ ] |
+| INV-UI-2 | Page title displays | Check page header | Shows "Invoices" or Arabic equivalent | Chrome MCP | [ ] |
+| INV-UI-3 | Create button visible | Look for add/create button | "Create Invoice" button visible | Chrome MCP | [ ] |
+| INV-UI-4 | Invoice cards display | Check list | Each invoice shows number, customer, total, status | Chrome MCP | [ ] |
+| INV-UI-5 | Status badges | Check invoice statuses | Draft, Issued, Paid, Cancelled badges styled | Chrome MCP | [ ] |
+| INV-UI-6 | Filter controls | Check filter options | Status filter, date filter visible | Chrome MCP | [ ] |
 
-### i18n Tests
+#### i18n Tests
 | ID | Test | Steps | Expected | Tool | Status |
 |----|------|-------|----------|------|--------|
-| SVC-EDIT-i18n-1 | Translations EN | English locale | All labels translated | Chrome | [ ] |
-| SVC-EDIT-i18n-2 | Translations AR | Arabic locale | All labels translated | Chrome | [ ] |
+| INV-i18n-1 | Page title translated | Check EN and AR | No raw translation keys | Chrome MCP | [ ] |
+| INV-i18n-2 | Status labels translated | Check status badges | Draft/Issued/Paid/Cancelled proper | Chrome MCP | [ ] |
+| INV-i18n-3 | Filter labels translated | Check filters | All labels translated | Chrome MCP | [ ] |
 
-### CRUD Tests
+### Page: /invoices/new - Create Invoice
+
+#### UI Tests
 | ID | Test | Steps | Expected | Tool | Status |
 |----|------|-------|----------|------|--------|
-| SVC-EDIT-CRUD-1 | Update Service | Change price → Submit | Service updated in Firebase | Chrome + Firebase | [ ] |
-| SVC-EDIT-CRUD-2 | Update Type | Change service type → Submit | Type updated in Firebase | Chrome + Firebase | [ ] |
-| SVC-EDIT-CRUD-3 | Update Commission | Change commission % → Submit | Commission updated in Firebase | Chrome + Firebase | [ ] |
+| INV-NEW-1 | Form loads | Navigate to /invoices/new | Create invoice form renders | Chrome MCP | [ ] |
+| INV-NEW-2 | Customer dropdown | Check customer field | Dropdown with customers visible | Chrome MCP | [ ] |
+| INV-NEW-3 | Quick-add customer button | Look for "+" next to customer | Button visible and clickable | Chrome MCP | [ ] |
+| INV-NEW-4 | Add service button | Look for "Add Service" | Button visible | Chrome MCP | [ ] |
+| INV-NEW-5 | Service line item | Add a service | Service row with price appears | Chrome MCP | [ ] |
+| INV-NEW-6 | Beneficiary fields | Add ticket/visa service | Beneficiary fields appear | Chrome MCP | [ ] |
+| INV-NEW-7 | Attachment upload | Check attachment area | Upload button visible | Chrome MCP | [ ] |
+| INV-NEW-8 | Total calculation | Add multiple services | Total updates automatically | Chrome MCP | [ ] |
+| INV-NEW-9 | Discount field | Check discount input | Discount field present | Chrome MCP | [ ] |
 
-### Mobile Tests
+#### Quick-Add Tests (User Story 10)
 | ID | Test | Steps | Expected | Tool | Status |
 |----|------|-------|----------|------|--------|
-| SVC-EDIT-MOB-1 | Layout | Set viewport 375x812 | Responsive form layout | Chrome | [ ] |
+| INV-QA-1 | Quick-add customer modal | Click "+" next to customer | Modal opens with customer form | Chrome MCP | [ ] |
+| INV-QA-2 | Create customer in modal | Fill and submit | Customer created and selected | Chrome MCP | [ ] |
+| INV-QA-3 | Quick-add partner modal | Click "+" next to partner in service | Modal opens with partner form | Chrome MCP | [ ] |
+| INV-QA-4 | Quick-add service modal | Click "+" next to service dropdown | Modal opens with service form | Chrome MCP | [ ] |
 
-### **HARD STOP** - Edit Service Page Complete
-- [ ] All UI tests pass
-- [ ] All i18n resolved
-- [ ] Service updates work in Firebase
-- [ ] Mobile tested
-
----
-
-## 📄 Page: /accounting/accounts (User Story 6)
-
-### UI Tests
+#### CRUD Tests - Create
 | ID | Test | Steps | Expected | Tool | Status |
 |----|------|-------|----------|------|--------|
-| ACC-UI-1 | Page Load | Navigate to /accounting/accounts | Chart of accounts page renders | Chrome | [ ] |
-| ACC-UI-2 | Default Accounts | Check account list | Default accounts exist: Cash, Bank, Expenses | Chrome | [ ] |
-| ACC-UI-3 | Account Categories | Check display | Accounts grouped by category (Assets, Liabilities, Income, Expenses) | Chrome | [ ] |
+| INV-CR-1 | Create draft invoice | Select customer, add services → Save as Draft | Invoice saved with Draft status | Chrome MCP | [ ] |
+| INV-CR-2 | Create issued invoice | Fill form → Issue | Invoice saved with Issued status | Chrome MCP | [ ] |
+| INV-CR-3 | Invoice number generated | Create invoice | Unique invoice number assigned | Chrome MCP | [ ] |
+| INV-CR-4 | Validation errors | Submit without customer | Required field error shown | Chrome MCP | [ ] |
+| INV-CR-5 | Commission calculated | Add partner service | Commission amount shown | Chrome MCP | [ ] |
+| INV-CR-6 | Beneficiary info saved | Add beneficiary to service → Save | Beneficiary data persists | Chrome MCP | [ ] |
 
-### i18n Tests
+### Page: /invoices/[id] - Invoice Detail
+
+#### UI Tests
 | ID | Test | Steps | Expected | Tool | Status |
 |----|------|-------|----------|------|--------|
-| ACC-i18n-1 | Translations EN | English locale | No translation keys visible | Chrome | [ ] |
-| ACC-i18n-2 | Translations AR | Arabic locale | No translation keys visible | Chrome | [ ] |
-| ACC-i18n-3 | RTL AR | Arabic locale | Right-aligned layout | Chrome | [ ] |
+| INV-DET-1 | Detail page loads | Click on invoice | Detail page renders | Chrome MCP | [ ] |
+| INV-DET-2 | Invoice info displayed | Check header | Number, date, customer, status visible | Chrome MCP | [ ] |
+| INV-DET-3 | Line items displayed | Check services section | All services with prices listed | Chrome MCP | [ ] |
+| INV-DET-4 | Beneficiary info displayed | Check service details | Beneficiary name/ID shown | Chrome MCP | [ ] |
+| INV-DET-5 | Totals displayed | Check totals section | Subtotal, discount, total visible | Chrome MCP | [ ] |
+| INV-DET-6 | Action buttons | Check actions | Edit, Cancel, Print/PDF buttons | Chrome MCP | [ ] |
 
-### CRUD Tests
+#### Update Tests
 | ID | Test | Steps | Expected | Tool | Status |
 |----|------|-------|----------|------|--------|
-| ACC-CRUD-1 | View Accounts | Load page | All accounts displayed with name, type, balance | Chrome + Firebase | [ ] |
-| ACC-CRUD-2 | Create Account | Click "Add Account", fill form → Submit | New account created in Firebase | Chrome + Firebase | [ ] |
-| ACC-CRUD-3 | Customer Account Auto-Create | Create a new customer | Customer account automatically created in chart | Chrome + Firebase | [ ] |
-| ACC-CRUD-4 | Partner Account Auto-Create | Create a new partner | Partner account automatically created in chart | Chrome + Firebase | [ ] |
+| INV-UP-1 | Edit invoice | Click edit → Modify → Save | Changes saved | Chrome MCP | [ ] |
+| INV-UP-2 | Edit issued invoice | Edit an issued invoice | Can edit with warning | Chrome MCP | [ ] |
+| INV-UP-3 | Add service to existing | Edit → Add service → Save | New service added | Chrome MCP | [ ] |
 
-### Mobile Tests
+#### Cancel Tests (User Story 9)
 | ID | Test | Steps | Expected | Tool | Status |
 |----|------|-------|----------|------|--------|
-| ACC-MOB-1 | Layout | Set viewport 375x812 | Responsive account list | Chrome | [ ] |
+| INV-CAN-1 | Cancel button visible | View invoice | Cancel button present | Chrome MCP | [ ] |
+| INV-CAN-2 | Cancel dialog opens | Click cancel | Confirmation dialog with reason field | Chrome MCP | [ ] |
+| INV-CAN-3 | Cancel draft invoice | Confirm cancel | Invoice status = Cancelled | Chrome MCP | [ ] |
+| INV-CAN-4 | Cancel invoice with payments | Try to cancel | Shows payment status and refund options | Chrome MCP | [ ] |
+| INV-CAN-5 | Balance reversed | Cancel issued invoice | Customer balance adjusted | Chrome MCP | [ ] |
 
-### **HARD STOP** - Chart of Accounts Page Complete
-- [ ] All UI tests pass
-- [ ] All i18n resolved
-- [ ] Default accounts exist
-- [ ] Auto-creation works
-- [ ] Mobile tested
-
----
-
-## 📄 Page: /invoices (User Story 1)
-
-### UI Tests
+#### PDF Tests
 | ID | Test | Steps | Expected | Tool | Status |
 |----|------|-------|----------|------|--------|
-| INV-UI-1 | Page Load | Navigate to /invoices | Invoices list page renders | Chrome | [ ] |
-| INV-UI-2 | Elements | Check all elements | Title, "New Invoice" button, filter controls, invoice list visible | Chrome | [ ] |
-| INV-UI-3 | Empty State | If no invoices exist | Empty state message displayed | Chrome | [ ] |
+| INV-PDF-1 | PDF download button | Check action buttons | Print/Download PDF button visible | Chrome MCP | [ ] |
+| INV-PDF-2 | Generate PDF | Click download | PDF file downloads | Chrome MCP | [ ] |
 
-### i18n Tests
+#### Mobile Tests
 | ID | Test | Steps | Expected | Tool | Status |
 |----|------|-------|----------|------|--------|
-| INV-i18n-1 | Translations EN | English locale | No translation keys visible | Chrome | [ ] |
-| INV-i18n-2 | Translations AR | Arabic locale | No translation keys visible | Chrome | [ ] |
-| INV-i18n-3 | RTL AR | Arabic locale | Right-aligned layout | Chrome | [ ] |
+| INV-MOB-1 | List responsive | Set viewport 375x812 | List displays properly | Chrome MCP | [ ] |
+| INV-MOB-2 | Form responsive | View create form on mobile | Form fields stack properly | Chrome MCP | [ ] |
+| INV-MOB-3 | Detail responsive | View detail on mobile | All info visible | Chrome MCP | [ ] |
 
-### CRUD Tests
-| ID | Test | Steps | Expected | Tool | Status |
-|----|------|-------|----------|------|--------|
-| INV-CRUD-1 | List Invoices | Load page with existing invoices | All invoices displayed with number, customer, date, total, status | Chrome + Firebase | [ ] |
-| INV-CRUD-2 | Filter by Status | Select status filter | Invoices filtered correctly | Chrome | [ ] |
-| INV-CRUD-3 | Navigate to Create | Click "New Invoice" button | Redirect to /invoices/new | Chrome | [ ] |
-| INV-CRUD-4 | Navigate to Detail | Click on an invoice | Redirect to /invoices/[invoiceId] | Chrome | [ ] |
-
-### Mobile Tests
-| ID | Test | Steps | Expected | Tool | Status |
-|----|------|-------|----------|------|--------|
-| INV-MOB-1 | Layout | Set viewport 375x812 | Responsive invoice list | Chrome | [ ] |
-
-### **HARD STOP** - Invoices List Page Complete
-- [ ] All UI tests pass
-- [ ] All i18n resolved
-- [ ] Invoice listing works
-- [ ] Mobile tested
-
----
-
-## 📄 Page: /invoices/new (User Story 1)
-
-### UI Tests
-| ID | Test | Steps | Expected | Tool | Status |
-|----|------|-------|----------|------|--------|
-| INV-NEW-UI-1 | Page Load | Navigate to /invoices/new | Invoice form renders | Chrome | [ ] |
-| INV-NEW-UI-2 | Form Fields | Check form | Customer dropdown, date picker, "Add Service" button visible | Chrome | [ ] |
-| INV-NEW-UI-3 | Quick-Add Buttons | Check form | "+" buttons next to customer, partner, service dropdowns (US10) | Chrome | [ ] |
-
-### i18n Tests
-| ID | Test | Steps | Expected | Tool | Status |
-|----|------|-------|----------|------|--------|
-| INV-NEW-i18n-1 | Translations EN | English locale | All labels translated | Chrome | [ ] |
-| INV-NEW-i18n-2 | Translations AR | Arabic locale | All labels translated | Chrome | [ ] |
-| INV-NEW-i18n-3 | RTL AR | Arabic locale | Right-aligned form layout | Chrome | [ ] |
-
-### CRUD Tests
-| ID | Test | Steps | Expected | Tool | Status |
-|----|------|-------|----------|------|--------|
-| INV-NEW-CRUD-1 | Create Simple Invoice | Select customer, add 1 service → Submit | Invoice created in Firebase, redirect to detail | Chrome + Firebase | [ ] |
-| INV-NEW-CRUD-2 | Create Multi-Service Invoice | Select customer, add 3 services → Submit | Invoice created with all 3 services | Chrome + Firebase | [ ] |
-| INV-NEW-CRUD-3 | Add Beneficiary | Add service requiring beneficiary, fill beneficiary fields | Beneficiary data saved with service line item | Chrome + Firebase | [ ] |
-| INV-NEW-CRUD-4 | Attach Document | Add service, upload document | Document uploaded to Firebase Storage, linked to service | Chrome + Firebase | [ ] |
-| INV-NEW-CRUD-5 | Total Calculation | Add services with prices 100, 200, 50 | Total displays 350 | Chrome | [ ] |
-| INV-NEW-CRUD-6 | Partner Service | Add partner-provided service | Partner selected, commission recorded | Chrome + Firebase | [ ] |
-| INV-NEW-CRUD-7 | Journal Entry on Issue | Create and issue invoice | Journal entry created (DR: Customer, CR: Income) | Chrome + Firebase | [ ] |
-
-### Validation Tests
-| ID | Test | Steps | Expected | Tool | Status |
-|----|------|-------|----------|------|--------|
-| INV-NEW-VAL-1 | Required Customer | Leave customer empty → Submit | Error: "Customer is required" | Chrome | [ ] |
-| INV-NEW-VAL-2 | Required Service | Try to submit without services | Error: "At least one service required" | Chrome | [ ] |
-
-### Quick-Add Tests (User Story 10)
-| ID | Test | Steps | Expected | Tool | Status |
-|----|------|-------|----------|------|--------|
-| INV-NEW-QA-1 | Quick-Add Customer | Click "+" next to customer dropdown | Modal opens with customer form | Chrome | [ ] |
-| INV-NEW-QA-2 | Quick-Add Customer Save | Fill customer form in modal → Save | Modal closes, new customer auto-selected | Chrome + Firebase | [ ] |
-| INV-NEW-QA-3 | Quick-Add Partner | Click "+" next to partner dropdown | Modal opens with partner form | Chrome | [ ] |
-| INV-NEW-QA-4 | Quick-Add Service | Click "+" next to service dropdown | Modal opens with service form | Chrome | [ ] |
-
-### Mobile Tests
-| ID | Test | Steps | Expected | Tool | Status |
-|----|------|-------|----------|------|--------|
-| INV-NEW-MOB-1 | Layout | Set viewport 375x812 | Responsive form layout | Chrome | [ ] |
-| INV-NEW-MOB-2 | Service Line Items | Mobile view | Service line items stack vertically | Chrome | [ ] |
-
-### **HARD STOP** - Create Invoice Page Complete
-- [ ] All UI tests pass
-- [ ] All i18n resolved
-- [ ] Invoice creation works in Firebase
-- [ ] Journal entries created correctly
+### **HARD STOP** - Invoices Module Complete
+- [ ] Can create invoice with services
 - [ ] Quick-add modals work
-- [ ] Validation works
-- [ ] Mobile tested
-
----
-
-## 📄 Page: /invoices/[invoiceId] (User Story 1, 9)
-
-### UI Tests
-| ID | Test | Steps | Expected | Tool | Status |
-|----|------|-------|----------|------|--------|
-| INV-DTL-UI-1 | Page Load | Navigate to existing invoice | Invoice detail renders with all data | Chrome | [ ] |
-| INV-DTL-UI-2 | All Fields Display | Check display | Customer, date, services, beneficiaries, attachments, total shown | Chrome | [ ] |
-| INV-DTL-UI-3 | Edit Mode | Click "Edit" button | Form becomes editable | Chrome | [ ] |
-| INV-DTL-UI-4 | Cancel Button | Check for cancel button (US9) | "Cancel Invoice" button visible | Chrome | [ ] |
-| INV-DTL-UI-5 | PDF Download | Check for PDF button | "Download PDF" button visible | Chrome | [ ] |
-
-### i18n Tests
-| ID | Test | Steps | Expected | Tool | Status |
-|----|------|-------|----------|------|--------|
-| INV-DTL-i18n-1 | Translations EN | English locale | No translation keys visible | Chrome | [ ] |
-| INV-DTL-i18n-2 | Translations AR | Arabic locale | No translation keys visible | Chrome | [ ] |
-| INV-DTL-i18n-3 | RTL AR | Arabic locale | Right-aligned layout | Chrome | [ ] |
-
-### CRUD Tests
-| ID | Test | Steps | Expected | Tool | Status |
-|----|------|-------|----------|------|--------|
-| INV-DTL-CRUD-1 | View Invoice | Load invoice detail | All invoice data displays correctly | Chrome + Firebase | [ ] |
-| INV-DTL-CRUD-2 | Edit Invoice | Change service quantity/price → Save | Invoice updated in Firebase | Chrome + Firebase | [ ] |
-| INV-DTL-CRUD-3 | Status Display | Check status badge | Correct status (Draft, Issued, Paid, etc.) | Chrome | [ ] |
-| INV-DTL-CRUD-4 | Cancel Invoice (US9) | Click "Cancel Invoice" → Confirm with reason | Invoice status = "Cancelled", balance reversed | Chrome + Firebase | [ ] |
-| INV-DTL-CRUD-5 | Cancel with Payments (US9) | Cancel invoice with partial payments | Refund decision UI shown, handled correctly | Chrome + Firebase | [ ] |
-| INV-DTL-CRUD-6 | Cancelled Display (US9) | View cancelled invoice | Clearly marked with cancellation date and reason | Chrome | [ ] |
-| INV-DTL-CRUD-7 | PDF Generation | Click "Download PDF" | PDF generated and downloaded | Chrome | [ ] |
-
-### Validation Tests
-| ID | Test | Steps | Expected | Tool | Status |
-|----|------|-------|----------|------|--------|
-| INV-DTL-VAL-1 | Optimistic Locking | Simulate concurrent edit (modify version in Firebase) → Save | Error: "Data Updated" dialog, reload prompt | Chrome | [ ] |
-
-### Mobile Tests
-| ID | Test | Steps | Expected | Tool | Status |
-|----|------|-------|----------|------|--------|
-| INV-DTL-MOB-1 | Layout | Set viewport 375x812 | Responsive invoice detail | Chrome | [ ] |
-
-### **HARD STOP** - Invoice Detail Page Complete
-- [ ] All UI tests pass
-- [ ] All i18n resolved
-- [ ] Invoice viewing/editing works
-- [ ] Cancel functionality works (US9)
+- [ ] Can cancel invoice
 - [ ] PDF generation works
-- [ ] Optimistic locking works
-- [ ] Mobile tested
+- [ ] i18n is correct
 
 ---
 
-## 📄 Page: /payments (User Story 3, 4)
+## Module 3: Statements (User Story 5)
 
-### UI Tests
+### Page: /statements
+
+#### UI Tests
 | ID | Test | Steps | Expected | Tool | Status |
 |----|------|-------|----------|------|--------|
-| PAY-UI-1 | Page Load | Navigate to /payments | Payments page renders | Chrome | [ ] |
-| PAY-UI-2 | Elements | Check all elements | "Record Payment" button, payment list, filters visible | Chrome | [ ] |
-| PAY-UI-3 | Customer Payments Section | Check display | Customer payments section visible | Chrome | [ ] |
-| PAY-UI-4 | Partner Payments Section | Check display | Partner payments section visible (US4) | Chrome | [ ] |
+| STM-UI-1 | Page loads | Navigate to /statements | Statements page renders | Chrome MCP | [ ] |
+| STM-UI-2 | Account type selector | Check selector | Customer/Partner tabs or dropdown | Chrome MCP | [ ] |
+| STM-UI-3 | Account selector | Check account dropdown | List of accounts available | Chrome MCP | [ ] |
+| STM-UI-4 | Date range filter | Check date inputs | From/To date pickers visible | Chrome MCP | [ ] |
+| STM-UI-5 | Generate button | Check actions | Generate statement button visible | Chrome MCP | [ ] |
 
-### i18n Tests
+#### Statement View Tests
 | ID | Test | Steps | Expected | Tool | Status |
 |----|------|-------|----------|------|--------|
-| PAY-i18n-1 | Translations EN | English locale | No translation keys visible | Chrome | [ ] |
-| PAY-i18n-2 | Translations AR | Arabic locale | No translation keys visible | Chrome | [ ] |
-| PAY-i18n-3 | RTL AR | Arabic locale | Right-aligned layout | Chrome | [ ] |
+| STM-VW-1 | Statement displays | Select account → Generate | Statement view renders | Chrome MCP | [ ] |
+| STM-VW-2 | Opening balance | Check statement | Opening balance shown | Chrome MCP | [ ] |
+| STM-VW-3 | Transactions listed | Check rows | Invoices and payments listed | Chrome MCP | [ ] |
+| STM-VW-4 | Running balance | Check balance column | Running balance calculated | Chrome MCP | [ ] |
+| STM-VW-5 | Closing balance | Check bottom | Closing balance shown | Chrome MCP | [ ] |
+| STM-VW-6 | Date range applied | Use date filter | Only transactions in range shown | Chrome MCP | [ ] |
 
-### CRUD Tests - Customer Payments (User Story 3)
+#### Customer Statement Tests
 | ID | Test | Steps | Expected | Tool | Status |
 |----|------|-------|----------|------|--------|
-| PAY-CUST-CRUD-1 | List Payments | Load page | All customer payments displayed | Chrome + Firebase | [ ] |
-| PAY-CUST-CRUD-2 | Record Payment | Click "Record Payment", select customer, amount=100, method=Cash → Submit | Payment recorded, customer balance updated | Chrome + Firebase | [ ] |
-| PAY-CUST-CRUD-3 | Balance Update | Record payment | Customer account credited, cash account debited | Chrome + Firebase | [ ] |
-| PAY-CUST-CRUD-4 | Transaction Number | Record payment | Unique transaction number generated | Chrome + Firebase | [ ] |
-| PAY-CUST-CRUD-5 | Attach Receipt | Record payment with attachment | Document stored with payment record | Chrome + Firebase | [ ] |
-| PAY-CUST-CRUD-6 | Payment History | View customer payments | All payments listed with dates, amounts, methods, running balance | Chrome + Firebase | [ ] |
-| PAY-CUST-CRUD-7 | Invoice Status Update | Pay full invoice amount | Invoice status changes to "Paid" | Chrome + Firebase | [ ] |
-| PAY-CUST-CRUD-8 | Partial Payment | Pay partial amount | Invoice status changes to "Partially Paid" | Chrome + Firebase | [ ] |
-| PAY-CUST-CRUD-9 | Journal Entry | Record payment | Journal entry created (DR: Cash/Bank, CR: Customer Account) | Chrome + Firebase | [ ] |
+| STM-CUST-1 | Customer statement | Select customer account | Shows customer invoices and payments | Chrome MCP | [ ] |
+| STM-CUST-2 | Invoice entries | Check debits | Invoice amounts as debits | Chrome MCP | [ ] |
+| STM-CUST-3 | Payment entries | Check credits | Payment amounts as credits | Chrome MCP | [ ] |
 
-### CRUD Tests - Partner Payments (User Story 4)
+#### Partner Statement Tests
 | ID | Test | Steps | Expected | Tool | Status |
 |----|------|-------|----------|------|--------|
-| PAY-PART-CRUD-1 | View Outstanding | Navigate to partner payments | Outstanding amounts owed to each partner displayed | Chrome + Firebase | [ ] |
-| PAY-PART-CRUD-2 | Record Partner Payment | Select partner, enter amount → Submit | Gross amount, commission, net payable shown | Chrome + Firebase | [ ] |
-| PAY-PART-CRUD-3 | Commission Deduction | Record payment for partner with 10% commission on 1000 | Shows: Gross=1000, Commission=100, Net=900 | Chrome + Firebase | [ ] |
-| PAY-PART-CRUD-4 | Account Updates | Record partner payment | Partner account credited, cash/bank account debited | Chrome + Firebase | [ ] |
-| PAY-PART-CRUD-5 | Partner Statement | View partner statement | All transactions shown with commission breakdown | Chrome + Firebase | [ ] |
-| PAY-PART-CRUD-6 | Commission Status | Pay partner for invoice | Invoice commission status updated | Chrome + Firebase | [ ] |
+| STM-PTR-1 | Partner statement | Select partner account | Shows partner transactions | Chrome MCP | [ ] |
+| STM-PTR-2 | Commission breakdown | Check partner entries | Commission amounts visible | Chrome MCP | [ ] |
+| STM-PTR-3 | Settlement entries | Check credits | Partner payments as credits | Chrome MCP | [ ] |
 
-### Mobile Tests
+#### Export Tests
 | ID | Test | Steps | Expected | Tool | Status |
 |----|------|-------|----------|------|--------|
-| PAY-MOB-1 | Layout | Set viewport 375x812 | Responsive payment list | Chrome | [ ] |
+| STM-EXP-1 | Export PDF button | Check actions | Export/Download PDF button visible | Chrome MCP | [ ] |
+| STM-EXP-2 | Download PDF | Click export | PDF file downloads | Chrome MCP | [ ] |
 
-### **HARD STOP** - Payments Page Complete
-- [ ] All UI tests pass
-- [ ] All i18n resolved
-- [ ] Customer payment recording works (US3)
-- [ ] Partner payment recording works (US4)
+#### i18n Tests
+| ID | Test | Steps | Expected | Tool | Status |
+|----|------|-------|----------|------|--------|
+| STM-i18n-1 | Page title translated | Check EN and AR | No raw translation keys | Chrome MCP | [ ] |
+| STM-i18n-2 | Column headers translated | Check table headers | Date, Description, Debit, Credit, Balance | Chrome MCP | [ ] |
+| STM-i18n-3 | Filter labels translated | Check filters | All labels proper | Chrome MCP | [ ] |
+
+#### Mobile Tests
+| ID | Test | Steps | Expected | Tool | Status |
+|----|------|-------|----------|------|--------|
+| STM-MOB-1 | Responsive layout | Set viewport 375x812 | Statement displays properly | Chrome MCP | [ ] |
+
+### **HARD STOP** - Statements Module Complete
+- [ ] Customer statements work
+- [ ] Partner statements work
+- [ ] PDF export works
+- [ ] i18n is correct
+
+---
+
+## Module 4: Journal Entries (User Story 7)
+
+### Page: /accounting/journal
+
+#### UI Tests
+| ID | Test | Steps | Expected | Tool | Status |
+|----|------|-------|----------|------|--------|
+| JRN-UI-1 | Page loads | Navigate to /accounting/journal | Journal page renders | Chrome MCP | [ ] |
+| JRN-UI-2 | Page title displays | Check header | "Journal Entries" or Arabic equivalent | Chrome MCP | [ ] |
+| JRN-UI-3 | Date filter | Check filters | Date range picker visible | Chrome MCP | [ ] |
+| JRN-UI-4 | Account filter | Check filters | Account selector visible | Chrome MCP | [ ] |
+| JRN-UI-5 | Transaction type filter | Check filters | Type filter (Invoice/Payment/Expense) | Chrome MCP | [ ] |
+
+#### Journal Table Tests
+| ID | Test | Steps | Expected | Tool | Status |
+|----|------|-------|----------|------|--------|
+| JRN-TBL-1 | Entries display | Check table | Journal entries listed | Chrome MCP | [ ] |
+| JRN-TBL-2 | Entry date shown | Check columns | Date column with dates | Chrome MCP | [ ] |
+| JRN-TBL-3 | Entry number shown | Check columns | Entry/Reference number visible | Chrome MCP | [ ] |
+| JRN-TBL-4 | Description shown | Check columns | Entry description visible | Chrome MCP | [ ] |
+| JRN-TBL-5 | Debit/Credit shown | Check columns | Debit and Credit amounts | Chrome MCP | [ ] |
+| JRN-TBL-6 | Account shown | Check columns | Account name visible | Chrome MCP | [ ] |
+
+#### Filter Tests
+| ID | Test | Steps | Expected | Tool | Status |
+|----|------|-------|----------|------|--------|
+| JRN-FLT-1 | Date filter works | Set date range | Only entries in range shown | Chrome MCP | [ ] |
+| JRN-FLT-2 | Account filter works | Select account | Only entries for account shown | Chrome MCP | [ ] |
+| JRN-FLT-3 | Clear filters | Clear all filters | All entries shown | Chrome MCP | [ ] |
+
+#### Entry Detail Tests
+| ID | Test | Steps | Expected | Tool | Status |
+|----|------|-------|----------|------|--------|
+| JRN-DET-1 | Click entry row | Click on entry | Detail view opens | Chrome MCP | [ ] |
+| JRN-DET-2 | Entry details shown | Check detail | Full entry info with all lines | Chrome MCP | [ ] |
+| JRN-DET-3 | Linked document | Check links | Link to invoice/payment | Chrome MCP | [ ] |
+
+#### i18n Tests
+| ID | Test | Steps | Expected | Tool | Status |
+|----|------|-------|----------|------|--------|
+| JRN-i18n-1 | Page title translated | Check EN and AR | No raw keys | Chrome MCP | [ ] |
+| JRN-i18n-2 | Column headers translated | Check table | All headers translated | Chrome MCP | [ ] |
+| JRN-i18n-3 | Filter labels translated | Check filters | All labels proper | Chrome MCP | [ ] |
+
+#### Mobile Tests
+| ID | Test | Steps | Expected | Tool | Status |
+|----|------|-------|----------|------|--------|
+| JRN-MOB-1 | Responsive layout | Set viewport 375x812 | Table displays properly | Chrome MCP | [ ] |
+
+### **HARD STOP** - Journal Module Complete
+- [ ] Journal entries display
+- [ ] Filters work
+- [ ] Entry details accessible
+- [ ] i18n is correct
+
+---
+
+## Module 5: Expenses (User Story 8)
+
+### Page: /accounting/expenses
+
+#### UI Tests
+| ID | Test | Steps | Expected | Tool | Status |
+|----|------|-------|----------|------|--------|
+| EXP-UI-1 | Page loads | Navigate to /accounting/expenses | Expenses page renders | Chrome MCP | [ ] |
+| EXP-UI-2 | Page title displays | Check header | "Expenses" or Arabic equivalent | Chrome MCP | [ ] |
+| EXP-UI-3 | Create button visible | Look for add button | "Add Expense" button visible | Chrome MCP | [ ] |
+| EXP-UI-4 | Expense list displays | Check list | Expenses shown with date, amount, category | Chrome MCP | [ ] |
+| EXP-UI-5 | Empty state | Check when empty | Empty state message shown | Chrome MCP | [ ] |
+
+#### i18n Tests
+| ID | Test | Steps | Expected | Tool | Status |
+|----|------|-------|----------|------|--------|
+| EXP-i18n-1 | Page title translated | Check EN and AR | No raw translation keys | Chrome MCP | [ ] |
+| EXP-i18n-2 | Category labels translated | Check categories | All categories proper | Chrome MCP | [ ] |
+| EXP-i18n-3 | Form labels translated | Check form | All labels translated | Chrome MCP | [ ] |
+
+#### CRUD Tests - Create
+| ID | Test | Steps | Expected | Tool | Status |
+|----|------|-------|----------|------|--------|
+| EXP-CR-1 | Navigate to create form | Click "Add Expense" | Create form opens | Chrome MCP | [ ] |
+| EXP-CR-2 | Form fields present | Check form | Amount, Date, Category, Description, Payment method | Chrome MCP | [ ] |
+| EXP-CR-3 | Create expense | Fill form → Submit | Expense created | Chrome MCP | [ ] |
+| EXP-CR-4 | Validation errors | Submit empty form | Required field errors | Chrome MCP | [ ] |
+| EXP-CR-5 | Attachment upload | Add receipt → Submit | Receipt attached to expense | Chrome MCP | [ ] |
+
+#### CRUD Tests - Read
+| ID | Test | Steps | Expected | Tool | Status |
+|----|------|-------|----------|------|--------|
+| EXP-RD-1 | View expense detail | Click on expense | Detail view opens | Chrome MCP | [ ] |
+| EXP-RD-2 | All fields displayed | Check detail | Amount, date, category, description visible | Chrome MCP | [ ] |
+| EXP-RD-3 | Receipt displayed | Check attachments | Attached receipt visible | Chrome MCP | [ ] |
+
+#### CRUD Tests - Update
+| ID | Test | Steps | Expected | Tool | Status |
+|----|------|-------|----------|------|--------|
+| EXP-UP-1 | Edit button visible | View expense detail | Edit button present | Chrome MCP | [ ] |
+| EXP-UP-2 | Edit form pre-populated | Click edit | Form shows current values | Chrome MCP | [ ] |
+| EXP-UP-3 | Update expense | Modify amount → Save | Amount updated | Chrome MCP | [ ] |
+
+#### CRUD Tests - Delete
+| ID | Test | Steps | Expected | Tool | Status |
+|----|------|-------|----------|------|--------|
+| EXP-DL-1 | Delete button visible | View expense detail | Delete button present | Chrome MCP | [ ] |
+| EXP-DL-2 | Delete confirmation | Click delete | Confirmation dialog shown | Chrome MCP | [ ] |
+| EXP-DL-3 | Delete expense | Confirm delete | Expense removed, journal reversed | Chrome MCP | [ ] |
+
+#### Accounting Tests
+| ID | Test | Steps | Expected | Tool | Status |
+|----|------|-------|----------|------|--------|
+| EXP-ACC-1 | Journal entry created | Create expense | Journal entry generated | Chrome MCP | [ ] |
+| EXP-ACC-2 | Expense account debited | Check journal | Expense account has debit | Chrome MCP | [ ] |
+| EXP-ACC-3 | Cash/Bank credited | Check journal | Payment source has credit | Chrome MCP | [ ] |
+
+#### Mobile Tests
+| ID | Test | Steps | Expected | Tool | Status |
+|----|------|-------|----------|------|--------|
+| EXP-MOB-1 | Responsive layout | Set viewport 375x812 | List displays properly | Chrome MCP | [ ] |
+| EXP-MOB-2 | Form responsive | View create form on mobile | Form fields stack properly | Chrome MCP | [ ] |
+
+### **HARD STOP** - Expenses Module Complete
+- [ ] All CRUD operations work
 - [ ] Journal entries created correctly
-- [ ] Mobile tested
+- [ ] i18n is correct
 
 ---
 
-## 📄 Page: /payments/[paymentId] (User Story 3, 4)
+## Final Verification
 
-### UI Tests
+### Cross-Module Tests
 | ID | Test | Steps | Expected | Tool | Status |
 |----|------|-------|----------|------|--------|
-| PAY-DTL-UI-1 | Page Load | Navigate to payment detail | Payment detail renders | Chrome | [ ] |
-| PAY-DTL-UI-2 | All Fields Display | Check display | Amount, date, method, transaction number, attachments shown | Chrome | [ ] |
+| CROSS-1 | Invoice creates journal | Create and issue invoice | Journal entry in accounting | Chrome MCP | [ ] |
+| CROSS-2 | Payment creates journal | Record customer payment | Journal entry in accounting | Chrome MCP | [ ] |
+| CROSS-3 | Partner payment creates journal | Record partner payment | Journal entry in accounting | Chrome MCP | [ ] |
+| CROSS-4 | Customer balance accurate | Check customer statement | Balance matches invoices - payments | Chrome MCP | [ ] |
+| CROSS-5 | Partner balance accurate | Check partner statement | Balance matches commissions - payments | Chrome MCP | [ ] |
 
-### i18n Tests
+### Performance Criteria
 | ID | Test | Steps | Expected | Tool | Status |
 |----|------|-------|----------|------|--------|
-| PAY-DTL-i18n-1 | Translations EN | English locale | No translation keys visible | Chrome | [ ] |
-| PAY-DTL-i18n-2 | Translations AR | Arabic locale | No translation keys visible | Chrome | [ ] |
-
-### CRUD Tests
-| ID | Test | Steps | Expected | Tool | Status |
-|----|------|-------|----------|------|--------|
-| PAY-DTL-CRUD-1 | View Payment | Load payment detail | All payment data displays correctly | Chrome + Firebase | [ ] |
-
-### Mobile Tests
-| ID | Test | Steps | Expected | Tool | Status |
-|----|------|-------|----------|------|--------|
-| PAY-DTL-MOB-1 | Layout | Set viewport 375x812 | Responsive payment detail | Chrome | [ ] |
-
-### **HARD STOP** - Payment Detail Page Complete
-- [ ] All UI tests pass
-- [ ] All i18n resolved
-- [ ] Payment viewing works
-- [ ] Mobile tested
+| PERF-1 | Invoice creation < 5 min | Time invoice creation flow | Under 5 minutes | Manual | [ ] |
+| PERF-2 | Payment recording < 1 min | Time payment recording | Under 1 minute | Manual | [ ] |
+| PERF-3 | Statement generation < 30 sec | Time statement generation | Under 30 seconds | Manual | [ ] |
 
 ---
 
-## 📄 Page: /statements (User Story 5)
+## Success Criteria
 
-### UI Tests
-| ID | Test | Steps | Expected | Tool | Status |
-|----|------|-------|----------|------|--------|
-| STMT-UI-1 | Page Load | Navigate to /statements | Statements page renders | Chrome | [x] PASS |
-| STMT-UI-2 | Elements | Check all elements | Account selector, date range filters, "Generate Statement" button visible | Chrome | [x] PASS |
-
-### i18n Tests
-| ID | Test | Steps | Expected | Tool | Status |
-|----|------|-------|----------|------|--------|
-| STMT-i18n-1 | Translations EN | English locale | No translation keys visible | Chrome | [ ] SKIP |
-| STMT-i18n-2 | Translations AR | Arabic locale | No translation keys visible | Chrome | [x] PASS |
-| STMT-i18n-3 | RTL AR | Arabic locale | Right-aligned layout | Chrome | [ ] SKIP |
-
-### CRUD Tests
-| ID | Test | Steps | Expected | Tool | Status |
-|----|------|-------|----------|------|--------|
-| STMT-CRUD-1 | Generate Customer Statement | Select customer, set date range → Generate | Statement shows opening balance, transactions, closing balance | Chrome + Firebase | [x] PASS - 5 transactions, SDG 2,200 |
-| STMT-CRUD-2 | Generate Partner Statement | Select partner, set date range → Generate | Statement shows transactions with commission breakdown | Chrome + Firebase | [x] PASS - 1 transaction, SDG 600 |
-| STMT-CRUD-3 | Transaction Lines | Check statement content | Each line shows date, description, debit, credit, running balance | Chrome | [x] PASS - All fields visible |
-| STMT-CRUD-4 | Export PDF | Click "Export PDF" | Statement downloaded as PDF in <30 seconds | Chrome | [!] BLOCKED - @react-pdf/renderer error (separate issue) |
-| STMT-CRUD-5 | Date Filter | Change date range → Regenerate | Only transactions in range shown | Chrome | [x] PASS - Dec 2025 = 0 transactions |
-
-### Mobile Tests
-| ID | Test | Steps | Expected | Tool | Status |
-|----|------|-------|----------|------|--------|
-| STMT-MOB-1 | Layout | Set viewport 375x812 | Responsive statement view | Chrome | [ ] SKIP |
-
-### **HARD STOP** - Statements Page Complete
-- [x] All UI tests pass (2/2)
-- [x] All i18n resolved (1/3 - Arabic tested, EN/RTL skipped)
-- [x] Statement generation works (customer & partner verified)
-- [!] PDF export BLOCKED (@react-pdf/renderer issue - not a regression)
-- [ ] Mobile tested (skipped)
+- All [ ] tests marked [x]
+- All HARD STOPs verified
+- All fixes committed with proper commit messages
+- TEST-REPORT.md generated
+- Screenshots saved for any failures
+- Output `<promise>ALL_TESTS_COMPLETE</promise>` when done
 
 ---
 
-## 📄 Page: /accounting/journal (User Story 7)
+## Test Accounts
 
-### UI Tests
-| ID | Test | Steps | Expected | Tool | Status |
-|----|------|-------|----------|------|--------|
-| JNL-UI-1 | Page Load | Navigate to /accounting/journal | Journal page renders | Chrome | [ ] |
-| JNL-UI-2 | Elements | Check all elements | Journal entries table, filters (date, account, type) visible | Chrome | [ ] |
+```yaml
+primary:
+  email: hossamsharif1990@gmail.com
+  password: Hossam1990@
+  role: admin
 
-### i18n Tests
-| ID | Test | Steps | Expected | Tool | Status |
-|----|------|-------|----------|------|--------|
-| JNL-i18n-1 | Translations EN | English locale | No translation keys visible | Chrome | [ ] |
-| JNL-i18n-2 | Translations AR | Arabic locale | No translation keys visible | Chrome | [ ] |
-| JNL-i18n-3 | RTL AR | Arabic locale | Right-aligned layout | Chrome | [ ] |
+backup_1:
+  email: halabija@gmail.com
+  password: Hossam1990@
 
-### CRUD Tests
-| ID | Test | Steps | Expected | Tool | Status |
-|----|------|-------|----------|------|--------|
-| JNL-CRUD-1 | List Entries | Load page | All journal entries listed chronologically | Chrome + Firebase | [ ] |
-| JNL-CRUD-2 | Filter by Date | Set date range filter → Apply | Only entries in range shown | Chrome | [ ] |
-| JNL-CRUD-3 | Filter by Account | Select account filter → Apply | Only entries affecting that account shown | Chrome | [ ] |
-| JNL-CRUD-4 | Filter by Type | Select type filter → Apply | Only entries of that type shown | Chrome | [ ] |
-| JNL-CRUD-5 | Entry Detail | Click on journal entry | Full details shown with linked invoice/payment | Chrome + Firebase | [ ] |
-| JNL-CRUD-6 | Audit Trail | Check entries | All financial transactions visible (invoices, payments, expenses) | Chrome + Firebase | [ ] |
-
-### Mobile Tests
-| ID | Test | Steps | Expected | Tool | Status |
-|----|------|-------|----------|------|--------|
-| JNL-MOB-1 | Layout | Set viewport 375x812 | Responsive journal table | Chrome | [ ] |
-
-### **HARD STOP** - Journal Page Complete
-- [ ] All UI tests pass
-- [ ] All i18n resolved
-- [ ] Journal listing works
-- [ ] Filters work correctly
-- [ ] Mobile tested
-
----
-
-## 📄 Page: /accounting/expenses (User Story 8)
-
-### UI Tests
-| ID | Test | Steps | Expected | Tool | Status |
-|----|------|-------|----------|------|--------|
-| EXP-UI-1 | Page Load | Navigate to /accounting/expenses | Expenses page renders | Chrome | [x] PASS |
-| EXP-UI-2 | Elements | Check all elements | "Record Expense" button, expense list visible | Chrome | [x] PASS - Record button + 2 expenses visible |
-
-### i18n Tests
-| ID | Test | Steps | Expected | Tool | Status |
-|----|------|-------|----------|------|--------|
-| EXP-i18n-1 | Translations EN | English locale | No translation keys visible | Chrome | [ ] SKIP |
-| EXP-i18n-2 | Translations AR | Arabic locale | No translation keys visible | Chrome | [x] PASS - All Arabic text rendered correctly |
-| EXP-i18n-3 | RTL AR | Arabic locale | Right-aligned layout | Chrome | [x] PASS - RTL layout observed |
-
-### CRUD Tests
-| ID | Test | Steps | Expected | Tool | Status |
-|----|------|-------|----------|------|--------|
-| EXP-CRUD-1 | List Expenses | Load page | All expenses displayed | Chrome + Firebase | [x] PASS - EXP-2026-0001 & EXP-2026-0002 |
-| EXP-CRUD-2 | Record Expense | Click "Record Expense", fill form (amount=500, category="Rent", method=Cash) → Submit | Expense recorded in Firebase | Chrome + Firebase | [x] PASS - EXP-2026-0002 created (SAR 250) |
-| EXP-CRUD-3 | Attach Receipt | Record expense with attachment | Receipt stored with expense record | Chrome + Firebase | [ ] SKIP |
-| EXP-CRUD-4 | Journal Entry | Record expense | Expense account debited, cash/bank credited | Chrome + Firebase | [x] PASS - Journal ID visible (QshYTSV6...) |
-| EXP-CRUD-5 | Account Balance | Record cash expense | Cash account balance decreased | Chrome + Firebase | [x] INFERRED - Cash account referenced |
-
-### Validation Tests
-| ID | Test | Steps | Expected | Tool | Status |
-|----|------|-------|----------|------|--------|
-| EXP-VAL-1 | Required Amount | Leave amount empty → Submit | Error: "Amount is required" | Chrome | [x] PASS - "Amount must be positive" shown |
-| EXP-VAL-2 | Required Category | Leave category empty → Submit | Error: "Category is required" | Chrome | [x] PASS - "Description is required" shown |
-
-### Mobile Tests
-| ID | Test | Steps | Expected | Tool | Status |
-|----|------|-------|----------|------|--------|
-| EXP-MOB-1 | Layout | Set viewport 375x812 | Responsive expense list | Chrome | [ ] SKIP |
-
-### **HARD STOP** - Expenses Page Complete
-- [x] All UI tests pass (2/2)
-- [x] All i18n resolved (2/3 - Arabic + RTL tested, EN skipped)
-- [x] Expense recording works (EXP-2026-0002 verified)
-- [x] Journal entries created (Journal ID visible in list)
-- [ ] Mobile tested (skipped)
-
----
-
-## 🚨 Blocked Protocol
-
-If unable to proceed after 3 attempts on any test:
-
-1. Mark test as BLOCKED
-2. Document in this section:
-   - Issue description
-   - Error messages
-   - Attempted solutions
-3. Continue to next test
-4. If >50% tests blocked: Output `<promise>BLOCKED</promise>`
-
-### Blocked Issues
-*(None yet)*
-
----
-
-## ✅ Success Criteria
-
-All must be true to output `<promise>ALL_TESTS_COMPLETE</promise>`:
-
-- [ ] All test cases marked [x]
-- [ ] All HARD STOPs passed
-- [ ] All fixes committed to git
-- [ ] TEST-REPORT.md generated
-- [ ] Screenshots saved for failures
-
----
-
-## 🔄 Ralph Wiggum Execution
-
-Run this plan with:
-
-```bash
-/ralph-loop "Execute specs/001-service-invoice-accounting/TEST-PLAN.md autonomously.
-
-RULES:
-1. Read each test case in order
-2. Execute using specified MCP tool
-3. Mark [x] when passed
-4. Fix failures immediately, commit with: git commit -m 'fix([scope]): [desc]'
-5. Re-test after fix
-6. Pause at HARD STOP markers for verification
-7. Log console errors to report (don't stop)
-8. Take screenshots on failure
-9. After 3 failed fix attempts: mark BLOCKED, continue
-
-OUTPUT:
-- <promise>BLOCKED</promise> if >50% tests blocked
-- <promise>ALL_TESTS_COMPLETE</promise> when all pass
-" --max-iterations 50 --completion-promise "ALL_TESTS_COMPLETE"
+backup_2:
+  email: husameldeenh@gmail.com
+  password: Hossam1990@
 ```
 
 ---
 
-## 📊 Test Summary
+## Total Test Count
 
-| User Story | Pages | Total Tests |
-|------------|-------|-------------|
-| US2 - Services | /services, /services/new, /services/[serviceId] | 42 |
-| US6 - Accounts | /accounting/accounts | 12 |
-| US1 - Invoices | /invoices, /invoices/new, /invoices/[invoiceId] | 58 |
-| US3 - Customer Payments | /payments, /payments/[paymentId] | 22 |
-| US4 - Partner Payments | /payments | 12 |
-| US5 - Statements | /statements | 15 |
-| US7 - Journal | /accounting/journal | 18 |
-| US8 - Expenses | /accounting/expenses | 16 |
-| US9 - Cancel Invoice | /invoices/[invoiceId] | (included in US1) |
-| US10 - Quick-Add | /invoices/new | (included in US1) |
-| **Total** | **9 pages** | **195 tests** |
-
----
-
-## 📝 Notes
-
-- Auth checkpoint must pass before any other tests
-- Each page has HARD STOP checkpoint - verify all tests pass before proceeding
-- i18n tests check both English and Arabic with RTL verification
-- CRUD tests verify Firebase data correctness
-- Mobile tests check responsive design at 375x812
-- Commission calculations must be 100% accurate (Success Criteria SC-009)
-- Invoice creation target: <5 minutes (Success Criteria SC-001)
-- Payment recording target: <1 minute (Success Criteria SC-002)
-- Statement export target: <30 seconds (Success Criteria SC-004)
+| Module | Tests |
+|--------|-------|
+| Authentication | 2 |
+| Services | 25 |
+| Invoices | 44 |
+| Statements | 20 |
+| Journal | 18 |
+| Expenses | 24 |
+| Cross-Module | 5 |
+| Performance | 3 |
+| **TOTAL** | **141** |
