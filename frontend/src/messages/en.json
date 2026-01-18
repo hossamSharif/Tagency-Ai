@@ -201,8 +201,34 @@
     "title": "Customers",
     "subtitle": "Manage your customer database",
     "customer": "Customer",
-    "passport": "Passport",
-    "documents": "Documents",
+    "passport": {
+      "title": "Passport Data",
+      "scan": "Scan Passport",
+      "number": "Passport Number",
+      "fullName": "Full Name",
+      "dateOfBirth": "Date of Birth",
+      "expiryDate": "Expiry Date",
+      "issuingCountry": "Issuing Country",
+      "gender": "Gender",
+      "male": "Male",
+      "female": "Female",
+      "scanInstructions": "Position the passport facing the camera",
+      "extracting": "Extracting data...",
+      "extractionSuccess": "Data extracted successfully",
+      "extractionFailed": "Extraction failed, please enter manually",
+      "verify": "Verify Data"
+    },
+    "documents": {
+      "title": "Documents",
+      "upload": "Upload Document",
+      "types": {
+        "passport": "Passport",
+        "visa": "Visa",
+        "photo": "Photo",
+        "vaccination": "Vaccination Certificate",
+        "other": "Other"
+      }
+    },
     "create": "Add New Customer",
     "addCustomer": "Add New Customer",
     "addFirstCustomer": "Add First Customer",
@@ -227,39 +253,11 @@
     "details": "Details",
     "passportTab": "Passport",
     "documentsTab": "Documents",
-    "passport": {
-      "title": "Passport Data",
-      "scan": "Scan Passport",
-      "number": "Passport Number",
-      "fullName": "Full Name",
-      "dateOfBirth": "Date of Birth",
-      "expiryDate": "Expiry Date",
-      "issuingCountry": "Issuing Country",
-      "gender": "Gender",
-      "male": "Male",
-      "female": "Female",
-      "scanInstructions": "Position the passport facing the camera",
-      "extracting": "Extracting data...",
-      "extractionSuccess": "Data extracted successfully",
-      "extractionFailed": "Extraction failed, please enter manually",
-      "verify": "Verify Data"
-    },
     "bookings": "Bookings",
     "invoices": "Invoices",
     "totalInvoices": "Total Invoices",
     "noInvoices": "No invoices found",
     "createInvoice": "Create Invoice",
-    "documents": {
-      "title": "Documents",
-      "upload": "Upload Document",
-      "types": {
-        "passport": "Passport",
-        "visa": "Visa",
-        "photo": "Photo",
-        "vaccination": "Vaccination Certificate",
-        "other": "Other"
-      }
-    },
     "contactInfo": "Contact Information",
     "notes": "Notes",
     "notesPlaceholder": "Add any notes about this customer...",
@@ -535,8 +533,8 @@
     "statuses": {
       "draft": "Draft",
       "issued": "Issued",
-      "paid": "Paid",
       "partial": "Partially Paid",
+      "paid": "Paid",
       "cancelled": "Cancelled",
       "overdue": "Overdue",
       "pending": "Pending"
@@ -716,16 +714,7 @@
     "creditAppliedDescription": "{amount} {currency} has been credited to {customerName}'s account",
     "refundCreated": "Refund Created",
     "refundCreatedDescription": "A refund of {amount} {currency} has been created for {customerName}",
-    "overpaymentError": "Failed to handle overpayment",
-    "statuses": {
-      "draft": "Draft",
-      "issued": "Issued",
-      "partial": "Partially Paid",
-      "paid": "Paid",
-      "cancelled": "Cancelled",
-      "overdue": "Overdue",
-      "pending": "Pending"
-    }
+    "overpaymentError": "Failed to handle overpayment"
   },
   "payments": {
     "title": "Payments",
@@ -751,7 +740,12 @@
     "paymentNumber": "Payment Number",
     "paymentDate": "Payment Date",
     "paymentMethod": "Payment Method",
-    "method": "Payment Method",
+    "method": {
+      "stripe": "Credit Card",
+      "bank_transfer": "Bank Transfer",
+      "cash": "Cash",
+      "bank": "Bank"
+    },
     "selectMethod": "Select Payment Method",
     "selectAccount": "Select Account",
     "account": "Account",
@@ -846,12 +840,6 @@
     "types": {
       "customerReceipt": "Customer Payment",
       "partnerPayment": "Partner Payment"
-    },
-    "method": {
-      "stripe": "Credit Card",
-      "bank_transfer": "Bank Transfer",
-      "cash": "Cash",
-      "bank": "Bank"
     },
     "methods": {
       "stripe": "Credit Card",
@@ -1204,13 +1192,39 @@
       "description": "A complete platform for managing Hajj, Umrah, honeymoon, and custom travel packages. Manage your customers, bookings, and invoices from one place.",
       "startTrial": "Start Free Trial",
       "viewPricing": "View Pricing",
-      "trialNote": "7-day free trial - No credit card required"
+      "trialNote": "7-day free trial - No credit card required",
+      "showcase": {
+        "passportScan": {
+          "title": "Smart Passport Scanning",
+          "scanning": "Scanning...",
+          "detected": "Detected!",
+          "fullName": "Full Name",
+          "passportNumber": "Passport Number",
+          "nationality": "Nationality",
+          "dateOfBirth": "Date of Birth",
+          "saving": "Saving..."
+        },
+        "invoiceCreation": {
+          "title": "Quick Invoice Generation",
+          "createInvoice": "Create Invoice",
+          "totalRevenue": "Total Revenue",
+          "invoiceCount": "Invoices",
+          "invoices": "invoices",
+          "success": "Success!"
+        },
+        "journalEntries": {
+          "title": "Accounting Journal Entries"
+        },
+        "dashboard": {
+          "title": "Interactive Dashboard"
+        }
+      }
     },
     "features": {
       "title": "Everything You Need to Manage Your Agency",
       "subtitle": "Integrated tools designed specifically for travel agencies in Sudan",
-      "packages": "Package Management",
-      "packagesDesc": "Create and manage Hajj, Umrah, honeymoon, and custom travel packages easily",
+      "packages": "Group Management",
+      "packagesDesc": "Create and manage Hajj and Umrah groups and track passport status easily",
       "customers": "Customer Management",
       "customersDesc": "Comprehensive customer database with automatic passport scanning (OCR)",
       "bookings": "Booking Management",
@@ -1465,7 +1479,7 @@
   },
   "statements": {
     "title": "Account Statements",
-    "description": "View and generate account statements for customers and partners",
+    "description": "Description",
     "infoMessage": "Account statements show all financial transactions for customer and partner accounts. Select an account and date range to view the statement.",
     "selectAccount": "Select Account",
     "selectAccountPlaceholder": "Choose an account...",
@@ -1491,7 +1505,6 @@
     "noTransactions": "No transactions in this period",
     "date": "Date",
     "reference": "Reference",
-    "description": "Description",
     "debit": "Debit",
     "credit": "Credit",
     "balance": "Balance",
@@ -1645,7 +1658,6 @@
     },
     "chartOfAccountsDescription": "Manage your financial accounts",
     "journalEntriesDescription": "View all financial transactions and journal entries",
-    "accountName": "Account Name",
     "createAccount": "Create Account",
     "createAccountDescription": "Add a new account to your chart of accounts",
     "editAccount": "Edit Account",
@@ -1656,7 +1668,6 @@
     "accountUpdated": "Account updated successfully",
     "accountDeleted": "Account deleted successfully",
     "allAccounts": "All Accounts",
-    "totalBalance": "Total Balance",
     "date": "Date",
     "entryNumber": "Entry Number",
     "description": "Description",

@@ -201,8 +201,34 @@
     "title": "العملاء",
     "subtitle": "إدارة قاعدة بيانات العملاء",
     "customer": "عميل",
-    "passport": "جواز السفر",
-    "documents": "المستندات",
+    "passport": {
+      "title": "بيانات جواز السفر",
+      "scan": "مسح جواز السفر",
+      "number": "رقم الجواز",
+      "fullName": "الاسم الكامل",
+      "dateOfBirth": "تاريخ الميلاد",
+      "expiryDate": "تاريخ الانتهاء",
+      "issuingCountry": "بلد الإصدار",
+      "gender": "الجنس",
+      "male": "ذكر",
+      "female": "أنثى",
+      "scanInstructions": "ضع جواز السفر في مواجهة الكاميرا",
+      "extracting": "جاري استخراج البيانات...",
+      "extractionSuccess": "تم استخراج البيانات بنجاح",
+      "extractionFailed": "فشل استخراج البيانات، يرجى الإدخال يدوياً",
+      "verify": "تحقق من البيانات"
+    },
+    "documents": {
+      "title": "المستندات",
+      "upload": "رفع مستند",
+      "types": {
+        "passport": "جواز السفر",
+        "visa": "التأشيرة",
+        "photo": "صورة شخصية",
+        "vaccination": "شهادة التطعيم",
+        "other": "أخرى"
+      }
+    },
     "create": "إضافة عميل جديد",
     "addCustomer": "إضافة عميل جديد",
     "addFirstCustomer": "إضافة أول عميل",
@@ -227,39 +253,11 @@
     "details": "التفاصيل",
     "passportTab": "جواز السفر",
     "documentsTab": "المستندات",
-    "passport": {
-      "title": "بيانات جواز السفر",
-      "scan": "مسح جواز السفر",
-      "number": "رقم الجواز",
-      "fullName": "الاسم الكامل",
-      "dateOfBirth": "تاريخ الميلاد",
-      "expiryDate": "تاريخ الانتهاء",
-      "issuingCountry": "بلد الإصدار",
-      "gender": "الجنس",
-      "male": "ذكر",
-      "female": "أنثى",
-      "scanInstructions": "ضع جواز السفر في مواجهة الكاميرا",
-      "extracting": "جاري استخراج البيانات...",
-      "extractionSuccess": "تم استخراج البيانات بنجاح",
-      "extractionFailed": "فشل استخراج البيانات، يرجى الإدخال يدوياً",
-      "verify": "تحقق من البيانات"
-    },
     "bookings": "الحجوزات",
     "invoices": "الفواتير",
     "totalInvoices": "إجمالي الفواتير",
     "noInvoices": "لا توجد فواتير",
     "createInvoice": "إنشاء فاتورة",
-    "documents": {
-      "title": "المستندات",
-      "upload": "رفع مستند",
-      "types": {
-        "passport": "جواز السفر",
-        "visa": "التأشيرة",
-        "photo": "صورة شخصية",
-        "vaccination": "شهادة التطعيم",
-        "other": "أخرى"
-      }
-    },
     "contactInfo": "معلومات التواصل",
     "notes": "ملاحظات",
     "notesPlaceholder": "أضف أي ملاحظات عن هذا العميل...",
@@ -428,8 +426,8 @@
     "subtitle": "إدارة وتتبع جميع الفواتير",
     "invoice": "فاتورة",
     "invoiceDetails": "تفاصيل الفاتورة",
-    "viewInvoiceDescription": "عرض وإدارة تفاصيل الفاتورة",
-    "createdOn": "تم الإنشاء في",
+    "viewInvoiceDescription": "عرض تفاصيل الفاتورة الكاملة",
+    "createdOn": "تاريخ الإنشاء",
     "issueInvoice": "إصدار الفاتورة",
     "summary": "الملخص",
     "create": "إنشاء فاتورة",
@@ -511,16 +509,10 @@
       "sibling": "أخ/أخت",
       "other": "أخرى"
     },
-    "invoiceDetails": "تفاصيل الفاتورة",
-    "viewInvoiceDescription": "عرض تفاصيل الفاتورة الكاملة",
-    "createdOn": "تاريخ الإنشاء",
-    "summary": "الملخص",
     "paid": "المدفوع",
     "balance": "الرصيد المتبقي",
     "partnerCommissions": "عمولات الشركاء",
     "totalCommissions": "إجمالي العمولات",
-    "paid": "المدفوع",
-    "balance": "الرصيد المتبقي",
     "providedBy": "مقدم من قبل",
     "attachments": "المرفقات",
     "commissionStatus": {
@@ -1129,19 +1121,45 @@
       "signup": "ابدأ مجاناً"
     },
     "hero": {
-      "badge": "منصة SaaS متكاملة",
-      "headline": "إدارة الوكالة بتقنية الذكاء الاصطناعي",
-      "headlineHighlight": "بكل سهولة واحترافية",
-      "description": "منصة متكاملة لإدارة باقات الحج والعمرة وشهر العسل والرحلات المخصصة. أدر عملاءك وحجوزاتك وفواتيرك من مكان واحد.",
+      "badge": "منصة ذكية متكاملة",
+      "headline": "لإدارة وكالات السفر في السودان",
+      "headlineHighlight": "مدعمة بالذكاء الإصطناعي",
+      "description": "سهولة إدارة مجموعات العمرة والحج، وإدارة حسابات العملاء والوسطاء، تحليلات متقدمة، قسم محاسبي مبسط، والمزيد",
       "startTrial": "ابدأ تجربة مجانية",
       "viewPricing": "عرض الأسعار",
-      "trialNote": "تجربة مجانية لمدة 7 أيام - لا حاجة لبطاقة ائتمان"
+      "trialNote": "تجربة مجانية لمدة 7 أيام - لا حاجة لبطاقة ائتمان",
+      "showcase": {
+        "passportScan": {
+          "title": "مسح جواز السفر الذكي",
+          "scanning": "جارٍ المسح...",
+          "detected": "تم الكشف!",
+          "fullName": "الاسم الكامل",
+          "passportNumber": "رقم جواز السفر",
+          "nationality": "الجنسية",
+          "dateOfBirth": "تاريخ الميلاد",
+          "saving": "جارٍ الحفظ..."
+        },
+        "invoiceCreation": {
+          "title": "إنشاء الفواتير السريع",
+          "createInvoice": "إنشاء فاتورة",
+          "totalRevenue": "إجمالي الإيرادات",
+          "invoiceCount": "الفواتير",
+          "invoices": "فواتير",
+          "success": "نجح!"
+        },
+        "journalEntries": {
+          "title": "قيود اليومية المحاسبية"
+        },
+        "dashboard": {
+          "title": "لوحة المعلومات التفاعلية"
+        }
+      }
     },
     "features": {
       "title": "كل ما تحتاجه لإدارة وكالتك",
       "subtitle": "أدوات متكاملة صُممت خصيصاً لوكالات السفر في السودان",
-      "packages": "إدارة الباقات",
-      "packagesDesc": "أنشئ وأدر باقات الحج والعمرة وشهر العسل والرحلات المخصصة بسهولة",
+      "packages": "إدارة المجموعات",
+      "packagesDesc": "أنشئ وأدر مجموعات الحج والعمرة وتتبع حالة الجوازات بسهولة",
       "customers": "إدارة العملاء",
       "customersDesc": "قاعدة بيانات شاملة للعملاء مع مسح جواز السفر التلقائي (OCR)",
       "bookings": "إدارة الحجوزات",
@@ -1396,7 +1414,7 @@
   },
   "statements": {
     "title": "كشوف الحسابات",
-    "description": "عرض وإنشاء كشوف الحسابات للعملاء والشركاء",
+    "description": "الوصف",
     "infoMessage": "تعرض كشوف الحسابات جميع المعاملات المالية لحسابات العملاء والشركاء. اختر حسابًا ونطاقًا زمنيًا لعرض الكشف.",
     "selectAccount": "اختر الحساب",
     "selectAccountPlaceholder": "اختر حسابًا...",
@@ -1422,7 +1440,6 @@
     "noTransactions": "لا توجد معاملات في هذه الفترة",
     "date": "التاريخ",
     "reference": "المرجع",
-    "description": "الوصف",
     "debit": "مدين",
     "credit": "دائن",
     "balance": "الرصيد",
@@ -1465,7 +1482,7 @@
     "isActive": "نشط",
     "linkedEntity": "الكيان المرتبط",
     "lastUpdated": "آخر تحديث",
-    "totalBalance": "إجمالي الرصيد",
+    "totalBalance": "الرصيد الإجمالي",
     "accountTypes": {
       "asset": "أصول",
       "liability": "خصوم",
@@ -1576,7 +1593,6 @@
     },
     "chartOfAccountsDescription": "إدارة حساباتك المالية",
     "journalEntriesDescription": "عرض جميع المعاملات المالية وقيود اليومية",
-    "accountName": "اسم الحساب",
     "createAccount": "إنشاء حساب",
     "createAccountDescription": "إضافة حساب جديد إلى دليل الحسابات",
     "editAccount": "تعديل الحساب",
@@ -1587,7 +1603,6 @@
     "accountUpdated": "تم تحديث الحساب بنجاح",
     "accountDeleted": "تم حذف الحساب بنجاح",
     "allAccounts": "جميع الحسابات",
-    "totalBalance": "الرصيد الإجمالي",
     "date": "التاريخ",
     "entryNumber": "رقم القيد",
     "description": "الوصف",

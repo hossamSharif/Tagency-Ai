@@ -1,4 +1,4 @@
-import { Noto_Kufi_Arabic } from 'next/font/google';
+import { Noto_Kufi_Arabic, Inter } from 'next/font/google';
 import { notFound } from 'next/navigation';
 import { NextIntlClientProvider } from 'next-intl';
 import { getMessages, setRequestLocale } from 'next-intl/server';
@@ -10,8 +10,15 @@ import '../globals.css';
 export const dynamic = 'force-dynamic';
 
 const notoKufiArabic = Noto_Kufi_Arabic({
-  subsets: ['arabic', 'latin'],
+  subsets: ['arabic'],
   variable: '--font-noto-kufi-arabic',
+  display: 'swap',
+  weight: ['400', '500', '600', '700'],
+});
+
+const inter = Inter({
+  subsets: ['latin'],
+  variable: '--font-inter',
   display: 'swap',
   weight: ['400', '500', '600', '700'],
 });
@@ -48,13 +55,18 @@ export default async function LocaleLayout({ children, params }: LocaleLayoutPro
 
   // Get direction for the locale
   const dir = getDirection(locale as Locale);
+  const isArabic = locale === 'ar';
 
   // Get messages for the locale
   const messages = await getMessages();
 
   return (
     <html lang={locale} dir={dir} suppressHydrationWarning>
-      <body className={`${notoKufiArabic.variable} font-arabic antialiased`}>
+      <body
+        className={`${notoKufiArabic.variable} ${inter.variable} ${
+          isArabic ? 'font-arabic' : 'font-sans'
+        } antialiased`}
+      >
         <NextIntlClientProvider messages={messages}>
           <Providers>{children}</Providers>
         </NextIntlClientProvider>

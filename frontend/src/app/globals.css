@@ -6,7 +6,7 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-noto-kufi-arabic), ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
   --font-arabic: var(--font-noto-kufi-arabic), ui-sans-serif, system-ui, sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
   --color-sidebar-ring: var(--sidebar-ring);
@@ -48,6 +48,10 @@
 }
 
 :root {
+  /* Font families - resolved at runtime from Next.js font loader */
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-arabic: var(--font-noto-kufi-arabic), ui-sans-serif, system-ui, sans-serif;
+
   --radius: 0.625rem;
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);
@@ -140,9 +144,13 @@
   --text-direction: ltr;
 }
 
-/* Unified font family using Noto Kufi Arabic for all locales */
-body {
+/* Font family utilities - apply fonts based on locale */
+.font-arabic {
   font-family: var(--font-noto-kufi-arabic), ui-sans-serif, system-ui, sans-serif;
+}
+
+.font-sans {
+  font-family: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
 }
 
 /* Arabic Typography - Modern & Readable */
@@ -220,4 +228,45 @@ body {
 
 .animate-slide-in-right {
   animation: slide-in-right 0.3s ease-out;
+}
+
+/* Hero Showcase Slider Animations */
+@keyframes border-glow {
+  0%, 100% {
+    border-color: oklch(0.35 0.08 145); /* Primary green */
+    box-shadow: 0 0 20px oklch(0.35 0.08 145 / 0.3);
+  }
+  50% {
+    border-color: oklch(0.76 0.15 85); /* Accent gold */
+    box-shadow: 0 0 30px oklch(0.76 0.15 85 / 0.4);
+  }
+}
+
+@keyframes border-glow-dark {
+  0%, 100% {
+    border-color: oklch(0.45 0.10 145); /* Lighter primary for dark mode */
+    box-shadow: 0 0 20px oklch(0.45 0.10 145 / 0.3);
+  }
+  50% {
+    border-color: oklch(0.82 0.14 85); /* Lighter accent for dark mode */
+    box-shadow: 0 0 30px oklch(0.82 0.14 85 / 0.4);
+  }
+}
+
+@keyframes gradient-shift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.showcase-glow-border {
+  animation: border-glow 3s ease-in-out infinite;
+}
+
+.dark .showcase-glow-border {
+  animation: border-glow-dark 3s ease-in-out infinite;
+}
+
+.animate-gradient-shift {
+  animation: gradient-shift 3s ease-in-out infinite;
 }

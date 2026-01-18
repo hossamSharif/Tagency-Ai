@@ -10,8 +10,6 @@ import { useTranslations } from 'next-intl';
 import {
   Package,
   Users,
-  FileText,
-  CreditCard,
   Building2,
   Globe,
   Shield,
@@ -41,16 +39,6 @@ const features: Feature[] = [
     icon: Users,
     titleKey: 'customers',
     descriptionKey: 'customersDesc',
-  },
-  {
-    icon: FileText,
-    titleKey: 'bookings',
-    descriptionKey: 'bookingsDesc',
-  },
-  {
-    icon: CreditCard,
-    titleKey: 'payments',
-    descriptionKey: 'paymentsDesc',
   },
   {
     icon: Building2,
@@ -91,7 +79,7 @@ export function FeaturesSection({ className }: FeaturesSectionProps) {
         </div>
 
         {/* Features grid */}
-        <div className="mx-auto mt-16 grid max-w-6xl gap-6 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="mx-auto mt-16 grid max-w-5xl gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {features.map((feature, index) => (
             <Card
               key={feature.titleKey}
