@@ -291,9 +291,10 @@ export async function getFinanceDashboardAction(
     const invoices = invoicesSnapshot.docs.map(doc => doc.data() as Invoice);
     const services = servicesSnapshot.docs.map(doc => doc.data());
 
+    // Use invoice total (not paidAmount) to show full service revenue
     const totalRevenue = invoices
       .filter(inv => inv.status !== 'cancelled')
-      .reduce((sum, inv) => sum + (inv.paidAmount || 0), 0);
+      .reduce((sum, inv) => sum + (inv.total || 0), 0);
 
     const totalInvoices = invoices.filter(inv => inv.status !== 'cancelled').length;
     const totalCustomers = customersSnapshot.size;
@@ -313,7 +314,7 @@ export async function getFinanceDashboardAction(
     const prevInvoices = prevInvoicesSnapshot.docs.map(doc => doc.data() as Invoice);
     const prevRevenue = prevInvoices
       .filter(inv => inv.status !== 'cancelled')
-      .reduce((sum, inv) => sum + (inv.paidAmount || 0), 0);
+      .reduce((sum, inv) => sum + (inv.total || 0), 0);
     const prevInvoicesCount = prevInvoices.filter(inv => inv.status !== 'cancelled').length;
     const prevCustomersCount = prevCustomersSnapshot.size;
 
@@ -338,14 +339,14 @@ export async function getFinanceDashboardAction(
       revenueByMonthMap.set(key, { revenue: 0, invoices: 0 });
     }
 
-    // Populate with invoice data
+    // Populate with invoice data - use total (not paidAmount) to show full service revenue
     invoices.forEach(inv => {
       if (inv.status !== 'cancelled' && inv.createdAt) {
         const date = inv.createdAt.toDate();
         const key = formatMonthKey(date);
         const existing = revenueByMonthMap.get(key);
         if (existing) {
-          existing.revenue += inv.paidAmount || 0;
+          existing.revenue += inv.total || 0;
           existing.invoices += 1;
         }
       }

@@ -37,6 +37,8 @@ interface ServiceLineItemProps {
   partners: PartnerOffice[];
   onRemove: () => void;
   disabled?: boolean;
+  quickAddServiceButton?: React.ReactNode;
+  quickAddPartnerButton?: React.ReactNode;
 }
 
 export function ServiceLineItem({
@@ -44,7 +46,9 @@ export function ServiceLineItem({
   services,
   partners,
   onRemove,
-  disabled
+  disabled,
+  quickAddServiceButton,
+  quickAddPartnerButton
 }: ServiceLineItemProps) {
   const t = useTranslations();
   const locale = useLocale();
@@ -186,24 +190,27 @@ export function ServiceLineItem({
         render={({ field }) => (
           <FormItem>
             <FormLabel>{t('invoices.selectService')}</FormLabel>
-            <Select
-              onValueChange={field.onChange}
-              defaultValue={field.value}
-              disabled={disabled}
-            >
-              <FormControl>
-                <SelectTrigger>
-                  <SelectValue placeholder={t('invoices.selectServicePlaceholder')} />
-                </SelectTrigger>
-              </FormControl>
-              <SelectContent>
-                {services.map((service) => (
-                  <SelectItem key={service.id} value={service.id}>
-                    {locale === 'ar' ? service.nameAr : service.name} - {service.price}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <div className="flex items-center gap-2">
+              <Select
+                onValueChange={field.onChange}
+                defaultValue={field.value}
+                disabled={disabled}
+              >
+                <FormControl>
+                  <SelectTrigger className="flex-1">
+                    <SelectValue placeholder={t('invoices.selectServicePlaceholder')} />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  {services.map((service) => (
+                    <SelectItem key={service.id} value={service.id}>
+                      {locale === 'ar' ? service.nameAr : service.name} - {service.price}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {quickAddServiceButton}
+            </div>
             <FormMessage />
           </FormItem>
         )}
@@ -313,31 +320,34 @@ export function ServiceLineItem({
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>{t('invoices.selectPartner')}</FormLabel>
-                  <Select
-                    onValueChange={(value) => {
-                      field.onChange(value);
-                      const partner = partners.find(p => p.id === value);
-                      if (partner) {
-                        form.setValue(`${fieldPrefix}.partnerName`, partner.name);
-                        form.setValue(`${fieldPrefix}.commissionPercentage`, partner.defaultCommissionPercentage);
-                      }
-                    }}
-                    defaultValue={field.value}
-                    disabled={disabled}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder={t('invoices.selectPartnerPlaceholder')} />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {partners.map((partner) => (
-                        <SelectItem key={partner.id} value={partner.id}>
-                          {partner.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <div className="flex items-center gap-2">
+                    <Select
+                      onValueChange={(value) => {
+                        field.onChange(value);
+                        const partner = partners.find(p => p.id === value);
+                        if (partner) {
+                          form.setValue(`${fieldPrefix}.partnerName`, partner.name);
+                          form.setValue(`${fieldPrefix}.commissionPercentage`, partner.defaultCommissionPercentage);
+                        }
+                      }}
+                      defaultValue={field.value}
+                      disabled={disabled}
+                    >
+                      <FormControl>
+                        <SelectTrigger className="flex-1">
+                          <SelectValue placeholder={t('invoices.selectPartnerPlaceholder')} />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {partners.map((partner) => (
+                          <SelectItem key={partner.id} value={partner.id}>
+                            {partner.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {quickAddPartnerButton}
+                  </div>
                   <FormMessage />
                 </FormItem>
               )}

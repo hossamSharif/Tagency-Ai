@@ -5,8 +5,8 @@
  * T075 [US8] Client-side logic for expenses page
  */
 
-import { useState, useTransition } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useTransition, useEffect } from 'react';
+import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 import {
@@ -16,18 +16,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
 import { ExpenseList } from '@/components/features/expenses/expense-list';
 import { ExpenseForm } from '@/components/features/expenses/expense-form';
+import { DeleteExpenseDialog } from '@/components/features/expenses/delete-expense-dialog';
 import { createExpense, deleteExpense, updateExpense } from '@/app/actions/expenses';
 import type { Expense, CreateExpenseInput } from '@/types/models/expense';
 import type { Account } from '@/types/models/account';
@@ -49,11 +40,25 @@ export function ExpensesPageClient({
 }: ExpensesPageClientProps) {
   const t = useTranslations();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const pathname = usePathname();
   const [isPending, startTransition] = useTransition();
 
   const [expenses, setExpenses] = useState<Expense[]>(initialExpenses);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [expenseToDelete, setExpenseToDelete] = useState<Expense | null>(null);
+
+  // Handle URL query param to auto-open the create modal
+  useEffect(() => {
+    const openModal = searchParams.get('openModal');
+    if (openModal === 'true') {
+      setShowCreateDialog(true);
+      // Clean up the URL by removing the query param
+      const url = new URL(window.location.href);
+      url.searchParams.delete('openModal');
+      window.history.replaceState({}, '', url.pathname);
+    }
+  }, [searchParams]);
 
   const handleCreateExpense = async (data: CreateExpenseInput) => {
     startTransition(async () => {
@@ -74,12 +79,12 @@ export function ExpensesPageClient({
     });
   };
 
-  const handleDeleteExpense = async () => {
+  const handleDeleteExpense = async (reason: string) => {
     if (!expenseToDelete) return;
 
     startTransition(async () => {
       try {
-        const result = await deleteExpense(expenseToDelete.id);
+        const result = await deleteExpense(expenseToDelete.id, reason);
 
         if (result.success) {
           toast.success(t('expenses.expenseDeleted'));
@@ -145,41 +150,15 @@ export function ExpensesPageClient({
         </DialogContent>
       </Dialog>
 
-      {/* Delete Confirmation Dialog */}
-      <AlertDialog
+      {/* Delete Expense Dialog with Reason */}
+      <DeleteExpenseDialog
+        expense={expenseToDelete}
         open={!!expenseToDelete}
         onOpenChange={(open) => !open && setExpenseToDelete(null)}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>{t('expenses.deleteExpense')}</AlertDialogTitle>
-            <AlertDialogDescription>
-              {t('expenses.deleteExpenseConfirmation')}
-              <br />
-              <br />
-              <span className="font-semibold">
-                {expenseToDelete?.expenseNumber}: {expenseToDelete?.description}
-              </span>
-              <br />
-              <span className="text-sm text-muted-foreground">
-                {t('expenses.deleteWarning')}
-              </span>
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={isPending}>
-              {t('common.cancel')}
-            </AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleDeleteExpense}
-              disabled={isPending}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              {isPending ? t('common.deleting') : t('common.delete')}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+        onConfirm={handleDeleteExpense}
+        isLoading={isPending}
+        locale={locale}
+      />
     </>
   );
 }

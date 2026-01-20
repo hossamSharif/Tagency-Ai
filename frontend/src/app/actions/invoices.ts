@@ -578,7 +578,8 @@ import { createJournalEntry, createReversalEntry } from '@/lib/accounting/journa
 import { FieldValue } from 'firebase-admin/firestore';
 
 /**
- * T039 [US1] Create a service-based invoice (draft status)
+ * T039 [US1] Create a service-based invoice (issued directly)
+ * Invoices are now issued directly upon creation, creating journal entries immediately
  */
 export async function createServiceInvoice(data: any): Promise<ActionResult<Invoice>> {
   try {
@@ -607,10 +608,144 @@ export async function createServiceInvoice(data: any): Promise<ActionResult<Invo
     const tenantDoc = await adminDb.doc(`tenants/${tenantId}`).get();
     const currency = tenantDoc.data()?.currency || 'SAR';
 
-    // Create invoice
+    // Create invoice reference
     const invoiceRef = adminDb.doc(`tenants/${tenantId}/invoices/${adminDb.collection('dummy').doc().id}`);
     const now = new Date();
 
+    const lineItems = data.lineItems.map((item: any, index: number) => ({
+      ...item,
+      id: `${invoiceRef.id}-${index}`,
+      displayOrder: index
+    }));
+
+    // Create journal entry for double-entry accounting (Net/Agency Method)
+    // Get customer account
+    const customerAccountQuery = await adminDb
+      .collection(`tenants/${tenantId}/accounts`)
+      .where('linkedEntityType', '==', 'customer')
+      .where('linkedEntityId', '==', data.customerId)
+      .limit(1)
+      .get();
+
+    if (customerAccountQuery.empty) {
+      return { success: false, error: 'Customer account not found in chart of accounts' };
+    }
+
+    const customerAccount = customerAccountQuery.docs[0].data();
+
+    // Get revenue account
+    const revenueAccountQuery = await adminDb
+      .collection(`tenants/${tenantId}/accounts`)
+      .where('code', '==', '4001')
+      .where('isSystem', '==', true)
+      .limit(1)
+      .get();
+
+    if (revenueAccountQuery.empty) {
+      return { success: false, error: 'Revenue account not found. Please initialize default accounts.' };
+    }
+
+    const revenueAccount = revenueAccountQuery.docs[0].data();
+
+    // Build journal lines dynamically based on partner services
+    const journalLines: Array<{
+      accountId: string;
+      accountName: string;
+      accountCode: string;
+      debit: number;
+      credit: number;
+    }> = [];
+
+    // Always: Debit AR for full invoice amount (what customer owes us)
+    journalLines.push({
+      accountId: customerAccount.id,
+      accountName: customerAccount.name,
+      accountCode: customerAccount.code,
+      debit: data.total,
+      credit: 0
+    });
+
+    // Calculate partner liabilities and our commission revenue
+    let totalPartnerLiability = 0;
+    let totalCommissionRevenue = 0;
+    const commissionsByPartner = data.commissionsByPartner || [];
+
+    // Process partner services from commissionsByPartner
+    if (commissionsByPartner.length > 0) {
+      for (const commission of commissionsByPartner) {
+        const partnerId = commission.partnerId || commission.partnerOfficeId;
+        const commissionAmount = commission.amount || commission.totalAmount || 0;
+
+        if (partnerId && commissionAmount > 0) {
+          // Calculate gross amount for this partner from line items
+          let partnerGross = 0;
+          for (const item of lineItems) {
+            const itemPartnerId = item.partnerId || item.partnerOfficeId;
+            if (item.isOutsourced && itemPartnerId === partnerId) {
+              partnerGross += item.total || 0;
+            }
+          }
+
+          // Net amount we owe partner = gross - our commission
+          const partnerNet = partnerGross - commissionAmount;
+
+          if (partnerNet > 0) {
+            // Get partner AP account
+            const partnerAccountQuery = await adminDb
+              .collection(`tenants/${tenantId}/accounts`)
+              .where('linkedEntityType', '==', 'partner')
+              .where('linkedEntityId', '==', partnerId)
+              .limit(1)
+              .get();
+
+            if (!partnerAccountQuery.empty) {
+              const partnerAccount = partnerAccountQuery.docs[0].data();
+
+              // Credit AP for net amount owed to partner
+              journalLines.push({
+                accountId: partnerAccount.id,
+                accountName: partnerAccount.name,
+                accountCode: partnerAccount.code,
+                debit: 0,
+                credit: partnerNet
+              });
+
+              totalPartnerLiability += partnerNet;
+            }
+          }
+
+          totalCommissionRevenue += commissionAmount;
+        }
+      }
+    }
+
+    // Calculate direct revenue (non-partner services)
+    const directRevenue = data.total - totalPartnerLiability - totalCommissionRevenue;
+
+    // Credit Revenue for our earnings (commission + direct services)
+    const ourRevenue = totalCommissionRevenue + directRevenue;
+    if (ourRevenue > 0) {
+      journalLines.push({
+        accountId: revenueAccount.id,
+        accountName: revenueAccount.name,
+        accountCode: revenueAccount.code,
+        debit: 0,
+        credit: ourRevenue
+      });
+    }
+
+    // Create journal entry
+    const journalEntry = await createJournalEntry({
+      tenantId,
+      description: `Invoice ${invoiceNumber} issued to ${customer.firstName} ${customer.lastName}`,
+      type: 'invoice_created',
+      lines: journalLines,
+      sourceType: 'invoice',
+      sourceId: invoiceRef.id,
+      createdBy: user.uid
+    });
+
+    // Create invoice with status 'issued'
     const invoice: Invoice = {
       id: invoiceRef.id,
       invoiceNumber,
@@ -618,25 +753,23 @@ export async function createServiceInvoice(data: any): Promise<ActionResult<Invo
       customerName: `${customer.firstName} ${customer.lastName}`,
       customerEmail: customer.email,
       customerPhone: customer.phone || '',
-      lineItems: data.lineItems.map((item: any, index: number) => ({
-        ...item,
-        id: `${invoiceRef.id}-${index}`,
-        displayOrder: index
-      })),
+      lineItems,
       subtotal: data.subtotal,
       discount: data.discount,
       discountPercentage: data.discountPercentage || 0,
       total: data.total,
       currency,
       totalCommissions: data.totalCommissions,
-      commissionsByPartner: data.commissionsByPartner || [],
-      status: 'draft',
+      commissionsByPartner: commissionsByPartner,
+      status: 'issued',
       paidAmount: 0,
       balance: data.total,
       invoiceDate: data.invoiceDate ? new Date(data.invoiceDate) : now,
+      issueDate: now,
       dueDate: data.dueDate ? new Date(data.dueDate) : null,
       notes: data.notes || '',
       attachments: data.attachments || [],
+      journalEntryId: journalEntry.id,
       version: 1,
       createdBy: user.uid,
       createdAt: now,
@@ -645,6 +778,48 @@ export async function createServiceInvoice(data: any): Promise<ActionResult<Invo
 
     await invoiceRef.set(invoice);
 
+    // Update partner pending commissions and total commissions
+    if (commissionsByPartner.length > 0) {
+      for (const commission of commissionsByPartner) {
+        const partnerId = commission.partnerId || commission.partnerOfficeId;
+        const commissionAmount = commission.amount || commission.totalAmount || 0;
+
+        if (partnerId && commissionAmount > 0) {
+          const partnerRef = adminDb.doc(
+            `tenants/${tenantId}/partnerOffices/${partnerId}`
+          );
+
+          await partnerRef.update({
+            pendingCommissions: FieldValue.increment(commissionAmount),
+            totalCommissionsEarned: FieldValue.increment(commissionAmount),
+            updatedAt: new Date()
+          });
+        }
+      }
+    }
+
+    // Increment service usage counts for all services in the invoice
+    if (lineItems.length > 0) {
+      const serviceIds = new Set<string>();
+      for (const item of lineItems) {
+        if (item.serviceId) {
+          serviceIds.add(item.serviceId);
+        }
+      }
+      // Update usage count for each unique service
+      for (const serviceId of serviceIds) {
+        try {
+          const serviceRef = adminDb.doc(`tenants/${tenantId}/serviceCatalog/${serviceId}`);
+          await serviceRef.update({
+            usageCount: FieldValue.increment(1),
+          });
+        } catch (err) {
+          // Log but don't fail the invoice creation if usage update fails
+          console.warn(`Failed to increment usage count for service ${serviceId}:`, err);
+        }
+      }
+    }
+
     // Create audit log
     await createAuditLog({
       tenantId,
@@ -652,7 +827,7 @@ export async function createServiceInvoice(data: any): Promise<ActionResult<Invo
       action: 'create',
       resource: 'invoice',
       resourceId: invoice.id,
-      details: { invoiceNumber: invoice.invoiceNumber, status: 'draft' }
+      details: { invoiceNumber: invoice.invoiceNumber, status: 'issued', journalEntryId: journalEntry.id }
     });
 
     revalidatePath('/[locale]/(dashboard)/invoices');

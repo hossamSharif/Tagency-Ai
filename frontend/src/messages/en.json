@@ -60,6 +60,7 @@
     "active": "Active",
     "inactive": "Inactive",
     "update": "Update",
+    "note": "Note",
     "actions": {
       "label": "Actions",
       "create": "Create",
@@ -422,7 +423,7 @@
     }
   },
   "invoices": {
-    "title": "Invoices",
+    "title": "Invoices & Customer Payments",
     "subtitle": "Manage and track all invoices",
     "invoice": "Invoice",
     "invoiceDetails": "Invoice Details",
@@ -432,6 +433,7 @@
     "summary": "Summary",
     "create": "Create Invoice",
     "createInvoice": "Create Invoice",
+    "viewPayments": "Payments",
     "updateInvoice": "Update Invoice",
     "createInvoiceDescription": "Create a new invoice for services provided to a customer",
     "createFirstInvoice": "Create First Invoice",
@@ -511,6 +513,8 @@
     },
     "partnerCommissions": "Partner Commissions",
     "totalCommissions": "Total Commissions",
+    "officeCommission": "Office Commission",
+    "amountDueToPartner": "Amount Due to Partner",
     "paid": "Paid",
     "balance": "Balance",
     "providedBy": "Provided By",
@@ -609,6 +613,14 @@
     },
     "quickAddCustomer": "Quick Add Customer",
     "quickAddCustomerDescription": "Create a new customer without leaving the invoice form",
+    "newCustomer": "New Customer",
+    "existingCustomer": "Existing Customer",
+    "customerName": "Customer Name",
+    "customerNamePlaceholder": "Enter customer name",
+    "customerPhone": "Customer Phone",
+    "customerPhonePlaceholder": "Enter phone number",
+    "customerNameRequired": "Customer name is required",
+    "selectCustomerRequired": "Please select a customer",
     "quickAddPartner": "Quick Add Partner",
     "quickAddPartnerDescription": "Create a new partner without leaving the invoice form",
     "quickAddService": "Quick Add Service",
@@ -872,29 +884,30 @@
     }
   },
   "partners": {
-    "title": "Partners",
-    "partner": "Partner",
-    "create": "Add New Partner",
-    "edit": "Edit Partner",
-    "noPartners": "No partners found",
+    "title": "Agents & Airlines",
+    "partner": "Agent",
+    "create": "Add New Agent",
+    "edit": "Edit Agent",
+    "noPartners": "No agents found",
+    "subtitle": "Manage agent and airline accounts and commissions",
     "status": {
       "active": "Active",
       "suspended": "Suspended",
       "pending": "Pending"
     },
-    "name": "Office Name",
+    "name": "Agent / Company Name",
     "code": "Code",
     "contactPerson": "Contact Person",
     "email": "Email",
     "phone": "Phone",
     "defaultCommission": "Default Commission Rate",
-    "namePlaceholder": "Enter partner office name",
-    "codePlaceholder": "e.g., PART001",
+    "namePlaceholder": "Enter agent or airline name",
+    "codePlaceholder": "e.g., AGT001",
     "contactPersonPlaceholder": "Enter contact person name",
-    "emailPlaceholder": "partner@example.com",
+    "emailPlaceholder": "agent@example.com",
     "phonePlaceholder": "+966XXXXXXXXX",
     "fields": {
-      "name": "Office Name",
+      "name": "Agent / Company Name",
       "code": "Code",
       "contactPerson": "Contact Person",
       "email": "Email",
@@ -920,6 +933,33 @@
         "disputed": "Disputed"
       }
     }
+  },
+  "partnerEntries": {
+    "title": "Agent Account Entries",
+    "selectPartner": "Select Agent",
+    "currentBalance": "Current Balance",
+    "entryType": "Entry Type",
+    "credit": "Credit (Add to agent)",
+    "debit": "Debit (Deduct from agent)",
+    "amount": "Amount",
+    "paymentMethod": "Payment Method",
+    "reference": "Reference",
+    "notes": "Notes",
+    "createEntry": "Create Entry",
+    "recentEntries": "Recent Entries",
+    "successCreated": "Entry created successfully",
+    "cash": "Cash",
+    "bank": "Bank",
+    "noEntries": "No entries found",
+    "balanceCredit": "Credit",
+    "balanceDebit": "Debit",
+    "cancelEntry": "Cancel Entry",
+    "cancelConfirmTitle": "Cancel Agent Entry?",
+    "cancelConfirmMessage": "This will create a reversal entry to offset the original. This action cannot be undone.",
+    "cancelReason": "Cancellation Reason",
+    "successCancelled": "Entry cancelled successfully",
+    "alreadyReversed": "This entry has already been reversed",
+    "reversed": "Reversed"
   },
   "subscription": {
     "title": "Subscription",
@@ -1046,6 +1086,38 @@
     "clearReadDescription": "Are you sure you want to delete all read notifications? This action cannot be undone.",
     "cancel": "Cancel",
     "confirm": "Confirm"
+  },
+  "dashboard": {
+    "quickActions": {
+      "title": "Quick Actions",
+      "newInvoice": {
+        "title": "Create New Invoice",
+        "description": "Issue a service invoice for visa, tickets, hotels, or insurance services"
+      },
+      "partnerTransaction": {
+        "title": "Agent & Airline Transaction",
+        "description": "Record payment or withdrawal for agents and airline companies accounts",
+        "modalTitle": "Add Agent/Airline Transaction",
+        "selectPartner": "Select Agent or Airline"
+      },
+      "addExpense": {
+        "title": "Record Business Expense",
+        "description": "Track office expenses like rent, utilities, supplies, and operational costs"
+      }
+    },
+    "balanceOverview": {
+      "title": "Financial Overview",
+      "cashBalance": "Cash Balance",
+      "cashDescription": "Available cash in hand",
+      "bankBalance": "Bank Balance",
+      "bankDescription": "Available funds in bank accounts",
+      "netProfit": "Net Profit",
+      "netLoss": "Net Loss",
+      "revenue": "Revenue",
+      "expenses": "Expenses",
+      "totalLiquidity": "Total Liquidity",
+      "totalLiquidityDescription": "Combined cash and bank balances"
+    }
   },
   "reports": {
     "title": "Reports",
@@ -1193,6 +1265,20 @@
       "startTrial": "Start Free Trial",
       "viewPricing": "View Pricing",
       "trialNote": "7-day free trial - No credit card required",
+      "features": {
+        "1": {
+          "subtitle": "Hajj & Umrah Group Management",
+          "description": "Easy input of Hajj and Umrah groups using passport scanning technology, with simple tracking of passport status (receipt - visa issuance - delivery and payment)"
+        },
+        "2": {
+          "subtitle": "Hajj & Umrah Agent and Airline Account Management",
+          "description": "Recharge agent and airline balances, calculate office commissions and profits"
+        },
+        "3": {
+          "subtitle": "Specialized Accounting Section",
+          "description": "Displays bank, cash balances, and profits in detail, with comprehensive tracking of all financial accounts, profit and loss reports, and automatic journal entries for every transaction"
+        }
+      },
       "showcase": {
         "passportScan": {
           "title": "Smart Passport Scanning",
@@ -1269,6 +1355,21 @@
       "startTrial": "Start Free Trial",
       "subscribe": "Subscribe Now",
       "note": "All plans include free updates and email support"
+    },
+    "preorder": {
+      "badge": "Coming Soon",
+      "title": "Reserve Your Spot Today",
+      "subtitle": "Be among the first to experience the future of travel agency management. Contact us now to preorder and secure exclusive early-bird benefits.",
+      "email": "Email Us",
+      "emailDesc": "Send us your inquiry",
+      "emailSubject": "Preorder Inquiry - Agency AI",
+      "phone": "Call Us",
+      "phoneDesc": "Speak with our team",
+      "callNow": "Call Now",
+      "whatsapp": "WhatsApp",
+      "whatsappDesc": "Chat with us instantly",
+      "whatsappMessage": "Hello! I'm interested in preordering Agency AI.",
+      "instantResponse": "We respond instantly to all inquiries!"
     },
     "cta": {
       "title": "Ready to Transform How You Manage Your Agency?",
@@ -1705,6 +1806,8 @@
       "invoice_cancelled": "Invoice Cancelled",
       "customer_payment": "Customer Payment",
       "partner_payment": "Partner Payment",
+      "partner_prepayment": "Partner Prepayment",
+      "partner_withdrawal": "Partner Withdrawal",
       "expense": "Expense",
       "adjustment": "Adjustment"
     },
@@ -1726,6 +1829,11 @@
     "delete": "Delete Expense",
     "deleteExpense": "Delete Expense",
     "deleteExpenseConfirmation": "Are you sure you want to delete this expense? This action cannot be undone.",
+    "deleteExpenseDescription": "Deleting this expense will create a reversal journal entry to maintain accounting integrity.",
+    "deleteJournalEntryInfo": "A reversal entry will be automatically created in the journal to offset the original expense transaction. This ensures your accounting records remain balanced.",
+    "deleteReason": "Deletion Reason",
+    "deleteReasonRequired": "Please provide a reason for deleting this expense",
+    "deleteReasonPlaceholder": "e.g., Duplicate entry, Entered in error, Incorrect amount...",
     "deleteWarning": "Note: This will not reverse the journal entry. Use a reversal entry if needed.",
     "noExpenses": "No expenses recorded yet",
     "noExpensesFound": "No expenses match your filters",

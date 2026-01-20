@@ -70,6 +70,12 @@ export interface Expense {
   createdBy: string;
   createdAt: Timestamp;
   updatedAt: Timestamp;
+
+  // Soft-delete fields
+  deletedAt?: Timestamp;
+  deletedBy?: string;
+  deletionReason?: string;
+  reversalJournalEntryId?: string;
 }
 
 /**

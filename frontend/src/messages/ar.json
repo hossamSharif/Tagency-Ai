@@ -60,6 +60,7 @@
     "active": "نشط",
     "inactive": "غير نشط",
     "update": "تحديث",
+    "note": "ملاحظة",
     "actions": {
       "label": "الإجراءات",
       "create": "إنشاء",
@@ -422,7 +423,7 @@
     }
   },
   "invoices": {
-    "title": "الفواتير",
+    "title": "الفواتير ومدفوعات العملاء",
     "subtitle": "إدارة وتتبع جميع الفواتير",
     "invoice": "فاتورة",
     "invoiceDetails": "تفاصيل الفاتورة",
@@ -432,6 +433,7 @@
     "summary": "الملخص",
     "create": "إنشاء فاتورة",
     "createInvoice": "إنشاء فاتورة",
+    "viewPayments": "المدفوعات",
     "updateInvoice": "تحديث الفاتورة",
     "createInvoiceDescription": "إنشاء فاتورة جديدة للخدمات المقدمة للعميل",
     "createFirstInvoice": "إنشاء أول فاتورة",
@@ -513,6 +515,8 @@
     "balance": "الرصيد المتبقي",
     "partnerCommissions": "عمولات الشركاء",
     "totalCommissions": "إجمالي العمولات",
+    "officeCommission": "عمولة المكتب",
+    "amountDueToPartner": "المستحق للوكيل/شركة الطيران",
     "providedBy": "مقدم من قبل",
     "attachments": "المرفقات",
     "commissionStatus": {
@@ -582,6 +586,14 @@
     },
     "quickAddCustomer": "إضافة سريعة للعميل",
     "quickAddCustomerDescription": "إنشاء عميل جديد دون مغادرة نموذج الفاتورة",
+    "newCustomer": "عميل جديد",
+    "existingCustomer": "عميل موجود",
+    "customerName": "اسم العميل",
+    "customerNamePlaceholder": "أدخل اسم العميل",
+    "customerPhone": "هاتف العميل",
+    "customerPhonePlaceholder": "أدخل رقم الهاتف",
+    "customerNameRequired": "اسم العميل مطلوب",
+    "selectCustomerRequired": "يرجى اختيار عميل",
     "quickAddPartner": "إضافة سريعة للشريك",
     "quickAddPartnerDescription": "إنشاء شريك جديد دون مغادرة نموذج الفاتورة",
     "quickAddService": "إضافة سريعة للخدمة",
@@ -807,29 +819,30 @@
     }
   },
   "partners": {
-    "title": "الشركاء",
-    "partner": "شريك",
-    "create": "إضافة شريك جديد",
-    "edit": "تعديل بيانات الشريك",
-    "noPartners": "لا يوجد شركاء",
+    "title": "الوكلاء وشركات الطيران",
+    "partner": "وكيل",
+    "create": "إضافة وكيل جديد",
+    "edit": "تعديل بيانات الوكيل",
+    "noPartners": "لا يوجد وكلاء",
+    "subtitle": "إدارة حسابات الوكلاء وشركات الطيران والعمولات",
     "status": {
       "active": "نشط",
       "suspended": "موقوف",
       "pending": "قيد الانتظار"
     },
-    "name": "اسم المكتب",
+    "name": "اسم الوكيل / الشركة",
     "code": "الرمز",
     "contactPerson": "شخص التواصل",
     "email": "البريد الإلكتروني",
     "phone": "رقم الهاتف",
     "defaultCommission": "نسبة العمولة الافتراضية",
-    "namePlaceholder": "أدخل اسم مكتب الشريك",
-    "codePlaceholder": "مثال: PART001",
+    "namePlaceholder": "أدخل اسم الوكيل أو شركة الطيران",
+    "codePlaceholder": "مثال: AGT001",
     "contactPersonPlaceholder": "أدخل اسم شخص التواصل",
-    "emailPlaceholder": "partner@example.com",
+    "emailPlaceholder": "agent@example.com",
     "phonePlaceholder": "+966XXXXXXXXX",
     "fields": {
-      "name": "اسم المكتب",
+      "name": "اسم الوكيل / الشركة",
       "code": "الرمز",
       "contactPerson": "شخص التواصل",
       "email": "البريد الإلكتروني",
@@ -855,6 +868,33 @@
         "disputed": "معترض عليها"
       }
     }
+  },
+  "partnerEntries": {
+    "title": "حركات حسابات الوكلاء",
+    "selectPartner": "اختر الوكيل",
+    "currentBalance": "الرصيد الحالي",
+    "entryType": "نوع العملية",
+    "credit": "دائن (إضافة للوكيل)",
+    "debit": "مدين (خصم من الوكيل)",
+    "amount": "المبلغ",
+    "paymentMethod": "طريقة الدفع",
+    "reference": "المرجع",
+    "notes": "ملاحظات",
+    "createEntry": "إنشاء العملية",
+    "recentEntries": "آخر العمليات",
+    "successCreated": "تم إنشاء العملية بنجاح",
+    "cash": "نقدي",
+    "bank": "بنكي",
+    "noEntries": "لا توجد عمليات",
+    "balanceCredit": "دائن",
+    "balanceDebit": "مدين",
+    "cancelEntry": "إلغاء العملية",
+    "cancelConfirmTitle": "إلغاء عملية الوكيل؟",
+    "cancelConfirmMessage": "سيتم إنشاء قيد عكسي لإلغاء القيد الأصلي. لا يمكن التراجع عن هذا الإجراء.",
+    "cancelReason": "سبب الإلغاء",
+    "successCancelled": "تم إلغاء العملية بنجاح",
+    "alreadyReversed": "تم عكس هذه العملية مسبقاً",
+    "reversed": "ملغي"
   },
   "subscription": {
     "title": "الاشتراك",
@@ -981,6 +1021,38 @@
     "clearReadDescription": "هل أنت متأكد من حذف جميع الإشعارات المقروءة؟ لا يمكن التراجع عن هذا الإجراء.",
     "cancel": "إلغاء",
     "confirm": "تأكيد"
+  },
+  "dashboard": {
+    "quickActions": {
+      "title": "إجراءات سريعة",
+      "newInvoice": {
+        "title": "إنشاء فاتورة جديدة",
+        "description": "إصدار فاتورة خدمات للتأشيرات والتذاكر والفنادق والتأمين"
+      },
+      "partnerTransaction": {
+        "title": "معاملة الوكلاء وشركات الطيران",
+        "description": "تسجيل دفعة أو سحب من حسابات الوكلاء وشركات الطيران",
+        "modalTitle": "إضافة معاملة وكيل/شركة طيران",
+        "selectPartner": "اختر الوكيل أو شركة الطيران"
+      },
+      "addExpense": {
+        "title": "تسجيل مصروف المكتب",
+        "description": "تتبع مصاريف المكتب مثل الإيجار والمرافق والمستلزمات والتكاليف التشغيلية"
+      }
+    },
+    "balanceOverview": {
+      "title": "النظرة المالية العامة",
+      "cashBalance": "رصيد الصندوق",
+      "cashDescription": "النقدية المتوفرة في الصندوق",
+      "bankBalance": "رصيد البنك",
+      "bankDescription": "الأموال المتوفرة في الحسابات البنكية",
+      "netProfit": "صافي الربح",
+      "netLoss": "صافي الخسارة",
+      "revenue": "الإيرادات",
+      "expenses": "المصروفات",
+      "totalLiquidity": "إجمالي السيولة",
+      "totalLiquidityDescription": "مجموع رصيد الصندوق والبنك"
+    }
   },
   "reports": {
     "title": "التقارير",
@@ -1128,6 +1200,20 @@
       "startTrial": "ابدأ تجربة مجانية",
       "viewPricing": "عرض الأسعار",
       "trialNote": "تجربة مجانية لمدة 7 أيام - لا حاجة لبطاقة ائتمان",
+      "features": {
+        "1": {
+          "subtitle": "إدارة مجموعات العمرة والحج",
+          "description": "سهولة إدخال مجموعات العمرة والحج بتقنية مسح الجوازات, وسهولة تتبع حالة الجوازات (استلام - إصدار التأشيرة - التسليم والدفع)"
+        },
+        "2": {
+          "subtitle": "إدارة حسابات وكلاء العمرة والحج وشركات الطيران",
+          "description": "شحن أرصدة الوكلاء وشركات الطيران, حساب عمولات المكتب والأرباح"
+        },
+        "3": {
+          "subtitle": "قسم محاسبي متخصص",
+          "description": "يعرض أرصدة البنك والنقد والأرباح بشكل تفصيلي, مع تتبع شامل للأرصدة المصرفية والنقدية, عرض تقارير الأرباح والخسائر, وقيود يومية تلقائية لكل معاملة"
+        }
+      },
       "showcase": {
         "passportScan": {
           "title": "مسح جواز السفر الذكي",
@@ -1204,6 +1290,21 @@
       "startTrial": "ابدأ التجربة المجانية",
       "subscribe": "اشترك الآن",
       "note": "جميع الخطط تشمل تحديثات مجانية ودعم فني عبر البريد الإلكتروني"
+    },
+    "preorder": {
+      "badge": "قريباً",
+      "title": "احجز مكانك اليوم",
+      "subtitle": "كن من أوائل من يجربون مستقبل إدارة وكالات السفر. تواصل معنا الآن للحجز المسبق واحصل على مزايا حصرية.",
+      "email": "راسلنا",
+      "emailDesc": "أرسل لنا استفسارك",
+      "emailSubject": "استفسار حجز مسبق - Agency AI",
+      "phone": "اتصل بنا",
+      "phoneDesc": "تحدث مع فريقنا",
+      "callNow": "اتصل الآن",
+      "whatsapp": "واتساب",
+      "whatsappDesc": "تواصل معنا فوراً",
+      "whatsappMessage": "مرحباً! أنا مهتم بالحجز المسبق لـ Agency AI.",
+      "instantResponse": "نرد على جميع الاستفسارات فوراً!"
     },
     "cta": {
       "title": "جاهز لتحويل طريقة إدارة وكالتك؟",
@@ -1640,6 +1741,8 @@
       "invoice_cancelled": "إلغاء فاتورة",
       "customer_payment": "دفعة العميل",
       "partner_payment": "دفعة الشريك",
+      "partner_prepayment": "سلفة شريك",
+      "partner_withdrawal": "سحب شريك",
       "expense": "مصروف",
       "adjustment": "تسوية"
     },
@@ -1661,6 +1764,11 @@
     "delete": "حذف المصروف",
     "deleteExpense": "حذف المصروف",
     "deleteExpenseConfirmation": "هل أنت متأكد من حذف هذا المصروف؟ لا يمكن التراجع عن هذا الإجراء.",
+    "deleteExpenseDescription": "سيؤدي حذف هذا المصروف إلى إنشاء قيد عكسي في اليومية للحفاظ على سلامة الحسابات.",
+    "deleteJournalEntryInfo": "سيتم إنشاء قيد عكسي تلقائياً في اليومية لإلغاء معاملة المصروف الأصلية. هذا يضمن بقاء سجلاتك المحاسبية متوازنة.",
+    "deleteReason": "سبب الحذف",
+    "deleteReasonRequired": "يرجى تقديم سبب لحذف هذا المصروف",
+    "deleteReasonPlaceholder": "مثال: قيد مكرر، تم إدخاله بالخطأ، مبلغ غير صحيح...",
     "deleteWarning": "ملاحظة: لن يؤدي هذا إلى عكس القيد اليومي. استخدم قيد عكسي إذا لزم الأمر.",
     "noExpenses": "لا توجد مصروفات مسجلة بعد",
     "noExpensesFound": "لا توجد مصروفات تطابق الفلاتر",

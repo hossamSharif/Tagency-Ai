@@ -1,6 +1,9 @@
 import { getTranslations } from 'next-intl/server';
 import { requireAuth } from '@/lib/auth/require-role';
 import { DashboardClient } from '@/components/features/dashboard/dashboard-client';
+import { listPartnersAction } from '@/app/actions/partners';
+import { getCashBankAccountsAction } from '@/app/actions/partner-entries';
+import { getFinancialOverviewAction } from '@/app/actions/accounting';
 
 interface DashboardPageProps {
   params: Promise<{ locale: string }>;
@@ -22,6 +25,17 @@ export default async function DashboardPage({ params }: DashboardPageProps) {
   // Require authentication
   await requireAuth(locale);
 
+  // Fetch data for dashboard in parallel
+  const [partnersResult, accountsResult, financialResult] = await Promise.all([
+    listPartnersAction({ status: 'active' }),
+    getCashBankAccountsAction(),
+    getFinancialOverviewAction(),
+  ]);
+
+  const partners = partnersResult.success ? partnersResult.data || [] : [];
+  const accounts = accountsResult.success ? accountsResult.data || [] : [];
+  const financialOverview = financialResult.success ? financialResult.data : null;
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -35,7 +49,11 @@ export default async function DashboardPage({ params }: DashboardPageProps) {
       </div>
 
       {/* Dashboard Content (Client Component) */}
-      <DashboardClient />
+      <DashboardClient
+        partners={partners}
+        accounts={accounts}
+        financialOverview={financialOverview}
+      />
     </div>
   );
 }

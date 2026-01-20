@@ -21,6 +21,7 @@ import { PassportScanShowcase } from './showcases/passport-scan-showcase';
 import { InvoiceCreationShowcase } from './showcases/invoice-creation-showcase';
 import { JournalEntriesShowcase } from './showcases/journal-entries-showcase';
 import { DashboardShowcase } from './showcases/dashboard-showcase';
+import { useHeroShowcase } from '@/contexts/hero-showcase-context';
 
 // Slide configuration
 const slides = [
@@ -56,6 +57,12 @@ export function HeroShowcaseSlider() {
   const t = useTranslations('landing.hero.showcase');
   const locale = useLocale();
   const isRTL = locale === 'ar';
+  const { setActiveSlideIndex } = useHeroShowcase();
+
+  // Sync active slide to context for hero section
+  useEffect(() => {
+    setActiveSlideIndex(activeSlide);
+  }, [activeSlide, setActiveSlideIndex]);
 
   // Auto-rotation effect
   useEffect(() => {

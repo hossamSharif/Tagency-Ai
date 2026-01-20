@@ -33,7 +33,6 @@ import { Customer } from '@/types/models/customer';
 import { ServiceCatalogItem } from '@/types/models/service-catalog';
 import { PartnerOffice } from '@/types/models/partner-office';
 import { Invoice } from '@/types/models/invoice';
-import { QuickAddCustomerModal } from './quick-add-modals/customer-modal';
 import { QuickAddPartnerModal } from './quick-add-modals/partner-modal';
 import { QuickAddServiceModal } from './quick-add-modals/service-modal';
 import { quickAddCustomerAction } from '@/app/actions/customers';
@@ -102,10 +101,16 @@ export function InvoiceForm({
   const [services, setServices] = useState<ServiceCatalogItem[]>(initialServices);
   const [partners, setPartners] = useState<PartnerOffice[]>(initialPartners);
 
+  // State for customer input mode: 'new' for inline input, 'existing' for dropdown
+  const [customerMode, setCustomerMode] = useState<'new' | 'existing'>(mode === 'edit' ? 'existing' : 'new');
+
   const form = useForm({
     defaultValues: invoice
       ? {
           customerId: invoice.customerId,
+          // New customer fields for inline input
+          newCustomerName: '',
+          newCustomerPhone: '',
           lineItems: invoice.lineItems || [defaultLineItem],
           discount: invoice.discount || 0,
           discountPercentage: invoice.discountPercentage || 0,
@@ -116,6 +121,9 @@ export function InvoiceForm({
         }
       : {
           customerId: '',
+          // New customer fields for inline input
+          newCustomerName: '',
+          newCustomerPhone: '',
           lineItems: [defaultLineItem],
           discount: 0,
           discountPercentage: 0,
@@ -179,9 +187,45 @@ export function InvoiceForm({
       return;
     }
 
+    // Handle new customer creation if in 'new' mode
+    let customerId = data.customerId;
+    if (customerMode === 'new' && mode === 'create') {
+      // Validate new customer fields
+      if (!data.newCustomerName || data.newCustomerName.trim().length < 2) {
+        toast.error(t('invoices.customerNameRequired'));
+        return;
+      }
+
+      try {
+        // Parse the name into first and last name
+        const nameParts = data.newCustomerName.trim().split(' ');
+        const firstName = nameParts[0];
+        const lastName = nameParts.slice(1).join(' ') || firstName; // Use first name as last if only one word
+
+        const newCustomer = await handleQuickAddCustomer({
+          firstName,
+          lastName,
+          phone: data.newCustomerPhone || '',
+          email: '',
+          nationality: '',
+        });
+        customerId = newCustomer.id;
+      } catch (error) {
+        // Error already shown by handleQuickAddCustomer
+        return;
+      }
+    }
+
+    // Validate that we have a customer
+    if (!customerId) {
+      toast.error(t('invoices.selectCustomerRequired'));
+      return;
+    }
+
     // Add calculated fields
     const formData = {
       ...data,
+      customerId,
       subtotal,
       discount: discountAmount,
       total,
@@ -191,6 +235,10 @@ export function InvoiceForm({
         status: 'pending' as const
       }))
     };
+
+    // Remove temporary fields
+    delete formData.newCustomerName;
+    delete formData.newCustomerPhone;
 
     await onSubmit(formData);
   }
@@ -241,91 +289,133 @@ export function InvoiceForm({
             <CardTitle>{t('invoices.customerInfo')}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <FormField
-                control={form.control}
-                name="customerId"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>{t('invoices.selectCustomer')}</FormLabel>
-                    <Select
-                      onValueChange={(value) => {
-                        field.onChange(value);
-                        const customer = customers.find(c => c.id === value);
-                        if (customer) {
-                          // Could pre-fill customer details if needed
-                        }
-                      }}
-                      defaultValue={field.value}
-                      disabled={isPending || mode === 'edit'}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder={t('invoices.selectCustomerPlaceholder')} />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {customers.map((customer) => (
-                          <SelectItem key={customer.id} value={customer.id}>
-                            {customer.firstName} {customer.lastName} - {customer.email}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              {/* T088 [US10] Quick-add customer button */}
-              {mode === 'create' && (
-                <QuickAddCustomerModal
-                  onCustomerAdded={(customer) => {
-                    form.setValue('customerId', customer.id);
+            {/* Customer Mode Toggle - only show in create mode */}
+            {mode === 'create' && (
+              <div className="flex gap-2 p-1 bg-muted rounded-lg w-fit">
+                <Button
+                  type="button"
+                  variant={customerMode === 'new' ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => {
+                    setCustomerMode('new');
+                    form.setValue('customerId', '');
                   }}
-                  onCreateCustomer={handleQuickAddCustomer}
+                  className="gap-2"
+                >
+                  <Plus className="h-4 w-4" />
+                  {t('invoices.newCustomer')}
+                </Button>
+                <Button
+                  type="button"
+                  variant={customerMode === 'existing' ? 'default' : 'ghost'}
+                  size="sm"
+                  onClick={() => {
+                    setCustomerMode('existing');
+                    form.setValue('newCustomerName', '');
+                    form.setValue('newCustomerPhone', '');
+                  }}
+                  className="gap-2"
+                >
+                  {t('invoices.existingCustomer')}
+                </Button>
+              </div>
+            )}
+
+            {/* New Customer Inline Input */}
+            {customerMode === 'new' && mode === 'create' && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="newCustomerName"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>{t('invoices.customerName')}</FormLabel>
+                      <FormControl>
+                        <Input
+                          {...field}
+                          placeholder={t('invoices.customerNamePlaceholder')}
+                          disabled={isPending}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
                 />
+                <FormField
+                  control={form.control}
+                  name="newCustomerPhone"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>{t('invoices.customerPhone')} ({t('common.optional')})</FormLabel>
+                      <FormControl>
+                        <Input
+                          {...field}
+                          type="tel"
+                          placeholder={t('invoices.customerPhonePlaceholder')}
+                          disabled={isPending}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+            )}
+
+            {/* Existing Customer Dropdown */}
+            {(customerMode === 'existing' || mode === 'edit') && (
+              <div className="space-y-2">
+                <FormField
+                  control={form.control}
+                  name="customerId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>{t('invoices.selectCustomer')}</FormLabel>
+                      <Select
+                        onValueChange={(value) => {
+                          field.onChange(value);
+                        }}
+                        defaultValue={field.value}
+                        disabled={isPending || mode === 'edit'}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder={t('invoices.selectCustomerPlaceholder')} />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {customers.map((customer) => (
+                            <SelectItem key={customer.id} value={customer.id}>
+                              {customer.firstName} {customer.lastName} {customer.phone ? `- ${customer.phone}` : ''}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+            )}
+
+            {/* Invoice Date */}
+            <FormField
+              control={form.control}
+              name="invoiceDate"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>{t('invoices.invoiceDate')}</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="date"
+                      {...field}
+                      disabled={isPending}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
               )}
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="invoiceDate"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>{t('invoices.invoiceDate')}</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="date"
-                        {...field}
-                        disabled={isPending}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="dueDate"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>
-                      {t('invoices.dueDate')} ({t('common.optional')})
-                    </FormLabel>
-                    <FormControl>
-                      <Input
-                        type="date"
-                        {...field}
-                        disabled={isPending}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
+            />
           </CardContent>
         </Card>
 
@@ -334,31 +424,16 @@ export function InvoiceForm({
           <CardHeader>
             <div className="flex items-center justify-between">
               <CardTitle>{t('invoices.services')}</CardTitle>
-              <div className="flex gap-2">
-                {/* T088 [US10] Quick-add buttons */}
-                <QuickAddServiceModal
-                  onServiceAdded={(service) => {
-                    // Service added to list automatically
-                  }}
-                  onCreateService={handleQuickAddService}
-                />
-                <QuickAddPartnerModal
-                  onPartnerAdded={(partner) => {
-                    // Partner added to list automatically
-                  }}
-                  onCreatePartner={handleQuickAddPartner}
-                />
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={handleAddLineItem}
-                  disabled={isPending}
-                >
-                  <Plus className="mr-2 h-4 w-4" />
-                  {t('invoices.addService')}
-                </Button>
-              </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handleAddLineItem}
+                disabled={isPending}
+              >
+                <Plus className="mr-2 h-4 w-4" />
+                {t('invoices.addService')}
+              </Button>
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -370,6 +445,22 @@ export function InvoiceForm({
                 partners={partners}
                 onRemove={() => remove(index)}
                 disabled={isPending}
+                quickAddServiceButton={
+                  <QuickAddServiceModal
+                    onServiceAdded={(service) => {
+                      // Service added to list automatically
+                    }}
+                    onCreateService={handleQuickAddService}
+                  />
+                }
+                quickAddPartnerButton={
+                  <QuickAddPartnerModal
+                    onPartnerAdded={(partner) => {
+                      // Partner added to list automatically
+                    }}
+                    onCreatePartner={handleQuickAddPartner}
+                  />
+                }
               />
             ))}
 

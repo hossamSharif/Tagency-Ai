@@ -9,6 +9,8 @@ export type JournalEntryType =
   | 'invoice_cancelled'
   | 'customer_payment'
   | 'partner_payment'
+  | 'partner_prepayment'
+  | 'partner_withdrawal'
   | 'expense'
   | 'adjustment';
 

@@ -9,17 +9,22 @@
 import {
   HeroSection,
   FeaturesSection,
-  PricingSection,
+  PreorderSection,
   CTASection,
+  WhatsAppFloatButton,
 } from '@/components/landing';
+import { HeroShowcaseProvider } from '@/contexts/hero-showcase-context';
 
 export default function LandingPage() {
   return (
     <>
-      <HeroSection />
+      <HeroShowcaseProvider>
+        <HeroSection />
+      </HeroShowcaseProvider>
       <FeaturesSection />
-      <PricingSection />
+      <PreorderSection />
       <CTASection />
+      <WhatsAppFloatButton />
     </>
   );
 }

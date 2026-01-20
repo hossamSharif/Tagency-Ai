@@ -10,8 +10,10 @@ import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { ArrowRight, Sparkles } from 'lucide-react';
+import { AnimatePresence, motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { HeroShowcaseSlider } from './hero-showcase-slider';
+import { useHeroShowcase } from '@/contexts/hero-showcase-context';
 import { cn } from '@/lib/utils';
 
 export interface HeroSectionProps {
@@ -23,6 +25,24 @@ export function HeroSection({ className }: HeroSectionProps) {
   const params = useParams();
   const locale = params.locale as string;
   const isArabic = locale === 'ar';
+  const { activeSlideIndex } = useHeroShowcase();
+
+  // Map slide index to feature content
+  // Slide 0 (Dashboard) → Feature 1
+  // Slide 1 (Passport Scan) → Feature 1
+  // Slide 2 (Invoice Creation) → Feature 2
+  // Slide 3 (Journal Entries) → Feature 3
+  const getFeatureContent = (slideIndex: number) => {
+    const featureMap = [1, 1, 2, 3]; // Index maps to feature number
+    const featureNumber = featureMap[slideIndex];
+
+    return {
+      subtitle: t(`features.${featureNumber}.subtitle`),
+      description: t(`features.${featureNumber}.description`),
+    };
+  };
+
+  const content = getFeatureContent(activeSlideIndex);
 
   return (
     <section
@@ -65,18 +85,43 @@ export function HeroSection({ className }: HeroSectionProps) {
               )}
             >
               <span className="block">{t('headline')}</span>
-              <span className="block text-primary">{t('headlineHighlight')}</span>
+              {/* Animated subtitle */}
+              <AnimatePresence mode="wait">
+                <motion.span
+                  key={`subtitle-${activeSlideIndex}`}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                  transition={{
+                    opacity: { duration: 0.2 },
+                    y: { duration: 0.3, ease: 'easeOut' }
+                  }}
+                  className="block text-primary text-lg sm:text-xl md:text-2xl lg:text-3xl"
+                >
+                  {content.subtitle}
+                </motion.span>
+              </AnimatePresence>
             </h1>
 
-            {/* Description */}
-            <p
-              className={cn(
-                'text-sm text-muted-foreground sm:text-base max-w-xl mx-auto',
-                isArabic && 'leading-relaxed [word-spacing:0.05em]'
-              )}
-            >
-              {t('description')}
-            </p>
+            {/* Animated Description */}
+            <AnimatePresence mode="wait">
+              <motion.p
+                key={`description-${activeSlideIndex}`}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                transition={{
+                  opacity: { duration: 0.2 },
+                  y: { duration: 0.3, ease: 'easeOut' }
+                }}
+                className={cn(
+                  'text-sm text-muted-foreground sm:text-base max-w-xl mx-auto',
+                  isArabic && 'leading-relaxed [word-spacing:0.05em]'
+                )}
+              >
+                {content.description}
+              </motion.p>
+            </AnimatePresence>
 
             {/* CTAs */}
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-2">

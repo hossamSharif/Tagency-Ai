@@ -19,7 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { FileText, Search, Filter, Plus } from 'lucide-react';
+import { FileText, Search, Filter, Plus, CreditCard } from 'lucide-react';
 import Link from 'next/link';
 
 interface InvoicesListClientProps {
@@ -97,12 +97,20 @@ export function InvoicesListClient({ initialInvoices, locale }: InvoicesListClie
           </h1>
           <p className="text-muted-foreground">{t('invoices.listDescription')}</p>
         </div>
-        <Button asChild>
-          <Link href={`/${locale}/invoices/new`}>
-            <Plus className="mr-2 h-4 w-4" />
-            {t('invoices.createInvoice')}
-          </Link>
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" asChild>
+            <Link href={`/${locale}/payments`}>
+              <CreditCard className="mr-2 h-4 w-4" />
+              {t('invoices.viewPayments')}
+            </Link>
+          </Button>
+          <Button asChild>
+            <Link href={`/${locale}/invoices/new`}>
+              <Plus className="mr-2 h-4 w-4" />
+              {t('invoices.createInvoice')}
+            </Link>
+          </Button>
+        </div>
       </div>
 
       {/* Filters */}

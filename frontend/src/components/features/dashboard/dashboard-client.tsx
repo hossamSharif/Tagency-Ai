@@ -15,12 +15,46 @@ import {
   ServicesByType,
   RecentActivityFeed,
 } from '@/components/features/reports';
+import { QuickActionsSection } from './quick-actions-section';
+import { BalanceOverviewSection } from './balance-overview-section';
 import { useParams } from 'next/navigation';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertCircle, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
-export function DashboardClient() {
+interface CashBankAccount {
+  id: string;
+  code: string;
+  name: string;
+  nameAr: string;
+  type: 'cash' | 'bank';
+}
+
+interface FinancialOverview {
+  cashBalance: number;
+  bankBalance: number;
+  totalLiquidity: number;
+  profit: {
+    revenue: number;
+    expenses: number;
+    netIncome: number;
+  };
+  cashAccounts: Array<{ id: string; name: string; nameAr: string; balance: number }>;
+  bankAccounts: Array<{ id: string; name: string; nameAr: string; balance: number }>;
+}
+
+interface DashboardClientProps {
+  partners: Array<{
+    id: string;
+    name: string;
+    code: string;
+    status: string;
+  }>;
+  accounts: CashBankAccount[];
+  financialOverview: FinancialOverview | null;
+}
+
+export function DashboardClient({ partners, accounts, financialOverview }: DashboardClientProps) {
   const { data, isLoading, error, refetch } = useFinanceDashboard();
   const params = useParams();
   const locale = (params.locale as string) || 'en';
@@ -43,6 +77,17 @@ export function DashboardClient() {
 
   return (
     <div className="space-y-6">
+      {/* Quick Actions */}
+      <QuickActionsSection partners={partners} accounts={accounts} />
+
+      {/* Balance Overview */}
+      {financialOverview && (
+        <BalanceOverviewSection
+          data={financialOverview}
+          currency={data?.currency || 'SAR'}
+        />
+      )}
+
       {/* Stats Cards */}
       <DashboardStats
         totalRevenue={data?.totalRevenue || 0}

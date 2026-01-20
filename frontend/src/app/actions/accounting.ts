@@ -535,6 +535,84 @@ export async function getNetIncomeAction(params?: {
 }
 
 /**
+ * Get financial overview (cash, bank balances, and profit)
+ * Used for dashboard display
+ */
+export async function getFinancialOverviewAction(): Promise<
+  ActionResult<{
+    cashBalance: number;
+    bankBalance: number;
+    totalLiquidity: number;
+    profit: {
+      revenue: number;
+      expenses: number;
+      netIncome: number;
+    };
+    cashAccounts: Array<{ id: string; name: string; nameAr: string; balance: number }>;
+    bankAccounts: Array<{ id: string; name: string; nameAr: string; balance: number }>;
+  }>
+> {
+  try {
+    const user = await requireAuthenticatedUser();
+    const tenantId = user.tenantId;
+
+    // Get all active accounts
+    const accountsSnap = await adminDb
+      .collection(`tenants/${tenantId}/accounts`)
+      .where('isActive', '==', true)
+      .get();
+
+    let cashBalance = 0;
+    let bankBalance = 0;
+    const cashAccounts: Array<{ id: string; name: string; nameAr: string; balance: number }> = [];
+    const bankAccounts: Array<{ id: string; name: string; nameAr: string; balance: number }> = [];
+
+    accountsSnap.forEach((doc) => {
+      const account = doc.data() as Account;
+
+      if (account.subtype === 'cash') {
+        cashBalance += account.balance;
+        cashAccounts.push({
+          id: doc.id,
+          name: account.name,
+          nameAr: account.nameAr || account.name,
+          balance: account.balance,
+        });
+      } else if (account.subtype === 'bank') {
+        bankBalance += account.balance;
+        bankAccounts.push({
+          id: doc.id,
+          name: account.name,
+          nameAr: account.nameAr || account.name,
+          balance: account.balance,
+        });
+      }
+    });
+
+    // Calculate profit (net income)
+    const profit = await calculateNetIncome(tenantId);
+
+    return {
+      success: true,
+      data: {
+        cashBalance: Math.round(cashBalance * 100) / 100,
+        bankBalance: Math.round(bankBalance * 100) / 100,
+        totalLiquidity: Math.round((cashBalance + bankBalance) * 100) / 100,
+        profit,
+        cashAccounts,
+        bankAccounts,
+      },
+    };
+  } catch (error) {
+    console.error('Error fetching financial overview:', error);
+    return {
+      success: false,
+      error: 'Failed to fetch financial overview',
+    };
+  }
+}
+
+/**
  * Get account statement (journal entries for a specific account)
  */
 export async function getAccountStatement(params: {

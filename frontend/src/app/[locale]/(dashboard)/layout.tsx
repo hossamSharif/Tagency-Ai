@@ -55,20 +55,20 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const isInTrial = useIsInTrial();
 
   const navItems: NavItem[] = [
-    { href: `/${locale}`, label: t('reports.dashboard'), icon: Home },
+    { href: `/${locale}/dashboard`, label: t('reports.dashboard'), icon: Home },
     { href: `/${locale}/invoices`, label: t('invoices.title'), icon: FileText },
-    { href: `/${locale}/payments`, label: t('payments.title'), icon: CreditCard },
+    { href: `/${locale}/partners`, label: t('partners.title'), icon: Building2, roles: ['owner', 'admin'] },
+    { href: `/${locale}/accounting/expenses`, label: t('expenses.title'), icon: Receipt, roles: ['owner', 'admin'] },
     { href: `/${locale}/services`, label: t('services.title'), icon: Briefcase },
     { href: `/${locale}/customers`, label: t('customers.title'), icon: Users },
-    { href: `/${locale}/partners`, label: t('partners.title'), icon: Building2, roles: ['owner', 'admin'] },
     { href: `/${locale}/accounting/accounts`, label: t('accounting.title'), icon: Calculator, roles: ['owner', 'admin'] },
     { href: `/${locale}/accounting/journal`, label: t('accounting.journal'), icon: ScrollText, roles: ['owner', 'admin'] },
     { href: `/${locale}/statements`, label: t('statements.title'), icon: FileBarChart, roles: ['owner', 'admin'] },
-    { href: `/${locale}/accounting/expenses`, label: t('expenses.title'), icon: Receipt, roles: ['owner', 'admin'] },
     { href: `/${locale}/reports`, label: t('reports.title'), icon: BarChart3, roles: ['owner', 'admin'] },
     { href: `/${locale}/settings`, label: t('settings.title'), icon: Settings },
     // { href: `/${locale}/packages`, label: t('packages.title'), icon: Package }, // Hidden - pages accessible via direct URL
     // { href: `/${locale}/bookings`, label: t('bookings.title'), icon: BookOpen }, // Hidden - pages accessible via direct URL
+    // { href: `/${locale}/payments`, label: t('payments.title'), icon: CreditCard }, // Hidden - accessible via invoices page button
   ];
 
   const filteredNavItems = navItems.filter((item) => {

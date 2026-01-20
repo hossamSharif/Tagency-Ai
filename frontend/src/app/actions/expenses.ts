@@ -21,6 +21,7 @@ import { expenseSchema, searchExpensesSchema } from '@/lib/validations/expenses'
 import {
   createJournalEntry,
   createSimpleEntry,
+  createReversalEntry,
 } from '@/lib/accounting/journal-entries';
 import { generateSequentialNumber } from '@/lib/accounting/number-generator';
 import { createAuditLog } from '@/lib/audit/create-log';
@@ -58,6 +59,7 @@ function serializeExpense(expense: Record<string, unknown>): Expense {
     expenseDate: serializeTimestamp(expense.expenseDate),
     createdAt: serializeTimestamp(expense.createdAt),
     updatedAt: serializeTimestamp(expense.updatedAt),
+    deletedAt: serializeTimestamp(expense.deletedAt),
     attachments: Array.isArray(expense.attachments)
       ? expense.attachments.map((att: Record<string, unknown>) => ({
           ...att,
@@ -305,7 +307,10 @@ export async function getExpenses(params?: {
 
     const expenses: Expense[] = [];
     snapshot.forEach((doc: any) => {
-      expenses.push(serializeExpense({ id: doc.id, ...doc.data() }));
+      const expenseData = doc.data();
+      // Filter out soft-deleted expenses
+      if (expenseData.deletedAt) return;
+      expenses.push(serializeExpense({ id: doc.id, ...expenseData }));
     });
 
     return {
@@ -446,16 +451,25 @@ export async function updateExpense(
 }
 
 /**
- * Delete an expense (soft delete - archive)
+ * Delete an expense with journal entry reversal (soft delete)
  * T071 [US8] - Delete expense
- * Note: Does NOT reverse the journal entry (use reversal for that)
+ * Creates a reversal journal entry to maintain accounting integrity
  */
 export async function deleteExpense(
-  expenseId: string
-): Promise<ActionResult<void>> {
+  expenseId: string,
+  reason: string
+): Promise<ActionResult<{ reversalJournalEntryId?: string }>> {
   try {
     const user = await requireAuthenticatedUser();
     const tenantId = user.tenantId;
+
+    // Validate reason is provided
+    if (!reason || reason.trim().length === 0) {
+      return {
+        success: false,
+        error: 'Deletion reason is required',
+      };
+    }
 
     const docRef = adminDb
       .collection(`tenants/${tenantId}/expenses`)
@@ -471,8 +485,47 @@ export async function deleteExpense(
 
     const expense = doc.data() as Expense;
 
-    // Delete the document
-    await docRef.delete();
+    // Check if expense is already deleted
+    if (expense.deletedAt) {
+      return {
+        success: false,
+        error: 'Expense has already been deleted',
+      };
+    }
+
+    let reversalJournalEntryId: string | undefined;
+
+    // Create reversal journal entry if original journal entry exists
+    if (expense.journalEntryId) {
+      try {
+        const reversalEntry = await createReversalEntry(
+          tenantId,
+          expense.journalEntryId,
+          user.uid,
+          `Expense deletion: ${reason.trim()}`
+        );
+        reversalJournalEntryId = reversalEntry.id;
+      } catch (reversalError) {
+        // If the journal entry was already reversed or doesn't exist, log and continue
+        console.warn('Could not create reversal entry:', reversalError);
+        // Don't fail the deletion if reversal fails due to already-reversed entry
+        if (reversalError instanceof Error &&
+            !reversalError.message.includes('already been reversed') &&
+            !reversalError.message.includes('not found')) {
+          throw reversalError;
+        }
+      }
+    }
+
+    // Soft-delete the expense (update with deletedAt instead of delete)
+    const now = Timestamp.now();
+    await docRef.update({
+      deletedAt: now,
+      deletedBy: user.uid,
+      deletionReason: reason.trim(),
+      ...(reversalJournalEntryId ? { reversalJournalEntryId } : {}),
+      updatedAt: now,
+    });
 
     // Create audit log
     await createAuditLog({
@@ -485,20 +538,23 @@ export async function deleteExpense(
         expenseNumber: expense.expenseNumber,
         amount: expense.amount,
         category: expense.category,
+        reason: reason.trim(),
+        reversalJournalEntryId,
       },
     });
 
     revalidatePath('/[locale]/(dashboard)/accounting/expenses');
+    revalidatePath('/[locale]/(dashboard)/accounting/journal');
 
     return {
       success: true,
-      data: undefined,
+      data: { reversalJournalEntryId },
     };
   } catch (error) {
     console.error('Error deleting expense:', error);
     return {
       success: false,
-      error: 'Failed to delete expense',
+      error: error instanceof Error ? error.message : 'Failed to delete expense',
     };
   }
 }
@@ -547,6 +603,8 @@ export async function getExpenseSummary(params?: {
 
     snapshot.forEach((doc: any) => {
       const expense = doc.data() as Expense;
+      // Filter out soft-deleted expenses
+      if (expense.deletedAt) return;
       const existing = summaryMap.get(expense.category) || {
         total: 0,
         count: 0,

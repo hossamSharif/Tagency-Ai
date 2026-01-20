@@ -154,18 +154,6 @@ export function DashboardStats({
         periodLabel={periodLabel}
       />
       <StatCard
-        title={t('totalCustomers') || 'Total Customers'}
-        value={totalCustomers}
-        change={customersChange}
-        icon={<Users className="h-4 w-4" />}
-        periodLabel={periodLabel}
-      />
-      <StatCard
-        title={t('activeServices') || 'Active Services'}
-        value={activeServices}
-        icon={<Briefcase className="h-4 w-4" />}
-      />
-      <StatCard
         title={t('pendingPayments') || 'Pending Payments'}
         value={pendingPayments}
         icon={<Clock className="h-4 w-4" />}

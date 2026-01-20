@@ -116,8 +116,19 @@ export function InvoiceCard({ invoice, onView, onEdit, onDownload }: InvoiceCard
 
         {/* Commission Summary (if applicable) */}
         {invoice.totalCommissions > 0 && (
-          <div className="text-xs text-muted-foreground pt-1 border-t">
-            {t('invoices.partnerCommissions')}: {formatCurrency(invoice.totalCommissions, locale)}
+          <div className="space-y-1 text-xs pt-1 border-t">
+            <div className="flex justify-between text-muted-foreground">
+              <span>{t('invoices.officeCommission')}:</span>
+              <span className="text-green-600 dark:text-green-400 font-medium">
+                {formatCurrency(invoice.totalCommissions, locale)}
+              </span>
+            </div>
+            <div className="flex justify-between text-muted-foreground">
+              <span>{t('invoices.amountDueToPartner')}:</span>
+              <span className="text-orange-600 dark:text-orange-400 font-medium">
+                {formatCurrency(invoice.total - invoice.totalCommissions, locale)}
+              </span>
+            </div>
           </div>
         )}
       </CardContent>
